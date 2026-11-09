@@ -4,7 +4,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '0.99';
+var VERSION = '0.100';
 var TAG = '[AR6]';
 var CFG_KEY = 'ar6.cfg';
 var LOG_KEY = 'ar6.log';
@@ -86,10 +86,10 @@ var CFG_DEFAULT = {
   base: 'on',
   /* v0.84 结构指纹：on | off（只提示；关闸时不写也不判，不进被换率） */
   shape: 'on',
-  /* v0.99 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
+  /* v0.100 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
      （注意：和上面 v0.13 的 scope/scopeList 不是一回事，那组是「按列表过滤」） */
   onlyGemini: true,
-  /* v0.99 自动更新：off | check（只查「有没有新版」，不自动下载、不自动替换）
+  /* v0.100 自动更新：off | check（只查「有没有新版」，不自动下载、不自动替换）
      updUrl 指向一个纯文本或 JSON 的版本文件；留空则只显示「未配置」 */
   upd: 'off',
   updUrl: '',
@@ -366,9 +366,9 @@ function familyOf(s) {
   return '';
 }
 
-/* v0.99 检查范围：默认只查 Gemini 家族。
+/* v0.100 检查范围：默认只查 Gemini 家族。
    scope=all 或认不出族（''）时放行——认不出的名字宁可不管，也别乱判。 */
-/* v0.99：只查 Gemini 时，「算不算 Gemini」不能只看请求名。
+/* v0.100：只查 Gemini 时，「算不算 Gemini」不能只看请求名。
    反代经常把同一个渠道换个名字（请求名写 gpt-4o，后端其实是 gemini），
    只按请求名判会把真 Gemini 也拦掉。规则：
      1) 关掉这个开关 → 什么都查；

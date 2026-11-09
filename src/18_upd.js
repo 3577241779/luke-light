@@ -262,7 +262,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v0.99）
+ * 一键更新（v0.100）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -446,17 +446,42 @@ function updInstall() {
           }
 
           /* saveSettings 是 async：不 await 就等于「发出去就算成功」 */
+          /* v0.100 修 D4：不要再跑 updSelfIndex 来自证——它按「等于运行版本」加分，
+             刚写进去的那条拿不到这 4 分，双包/副本会超过它甚至平局，于是误判 nosave。
+             改成「表里到底有没有出现这个版本」。 */
+          /* v0.100 修 D1：防抖保存是「先返回、1 秒后才落盘」。立刻回读只能看到内存里
+             同一个活对象，证明不了任何事。防抖模式下等过防抖窗口再看。 */
+          function hasNewVersion(list2) {
+            try {
+              if (!list2 || !list2.length) return false;
+              for (var i2 = 0; i2 < list2.length; i2++) {
+                var c2 = String(list2[i2] && list2[i2].content || '');
+                if (c2.indexOf('var VERSION = \'' + pv + '\'') >= 0) return true;
+              }
+            } catch (eH) {}
+            return false;
+          }
+          function waitMs(ms) {
+            return new Promise(function (res) {
+              /* 用宿主真定时器；沙盘里没有就立刻返回，别把流程挂住 */
+              if (typeof setTimeout !== 'function') { res(); return; }
+              setTimeout(res, ms);
+            });
+          }
+          var debounced = (ctx.saveKind === 'debounce');
           Promise.resolve().then(function () { return ctx.save(); }).then(function () {
+            if (debounced) return waitMs(1300);
+            return null;
+          }).then(function () {
             var c2 = updHostCtx();
             var l2 = c2 && c2.settings && c2.settings.tavern_helper && c2.settings.tavern_helper.scripts;
-            var i2 = updSelfIndex(l2);
-            if (i2 < 0 || String(l2[i2].content).indexOf('var VERSION = \'' + pv + '\'') < 0) {
+            if (!hasNewVersion(l2)) {
               rollback();
               end({ ok: false, err: 'nosave' });
               return;
             }
-            UPD_BAK = { idx: i2, name: bak.name, info: bak.info, content: bak.content, body: body };
-            end({ ok: true, version: pv, saveKind: ctx.saveKind || '' });
+            UPD_BAK = { idx: idx, name: bak.name, info: bak.info, content: bak.content, body: body };
+            end({ ok: true, version: pv, saveKind: debounced ? 'debounce' : '' });
           }, function () { rollback(); end({ ok: false, err: 'nosave' }); });
         });
       }).then(null, function () { end({ ok: false, err: 'net' }); });
@@ -544,7 +569,7 @@ function updErrText(code, r) {
     nourl: '没填版本文件地址',
     net: (r && r.timeout) ? '等太久了，没收到回音（网络慢或被拦）' : (r && r.cross ? '被浏览器拦了跨域请求（地址没有跨域头）' : '连不上更新地址（网络不通，或浏览器拦了跨域）'),
     http: '更新地址打不开' + (r && r.status ? '（HTTP ' + r.status + '）' : '') + '——多半是版本文件路径变了',
-    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.99"}）',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.100"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
     noself: '脚本表里没认出自己——手动粘贴进来的装不了，请手动重新导入',
