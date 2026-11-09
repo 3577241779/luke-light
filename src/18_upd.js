@@ -19,12 +19,13 @@
 
 var UPD_KEY = 'ar6.upd';
 var UPD_TTL = 8000;   /* 8 秒。版本文件只是一个几十字节的小文本，超过就是网络有问题 */
+var UPD_PKG_TTL = 30000;   /* 包有几百 KB，给 30 秒 */
 var UPD_URL_MAX = 500;
 
 /* 内置地址：用户不用填任何东西，点一下就能查、就能装。
    桌面版和 TT 版指向各自的版本文件，靠打包时注入的 UI_MODE 区分。 */
-var UPD_URL_D = 'https://github.com/3577241779/luke-light/releases/latest/download/version.json';
-var UPD_URL_D_M = 'https://github.com/3577241779/luke-light/releases/latest/download/version-mobile.json';
+var UPD_URL_D = 'https://raw.githubusercontent.com/3577241779/luke-light/main/dist/version.json';
+var UPD_URL_D_M = 'https://raw.githubusercontent.com/3577241779/luke-light/main/dist/version-mobile.json';
 
 function updDefUrl() {
   try {
@@ -135,79 +136,86 @@ function updSave(o) {
 
 /* 只查，不装。force 只给「用户手动点检查」用：关着闸也允许查一次，
    但自动路径（updBoot）必须尊重 updOn()。 */
-function updCheck(force) {
-  return new Promise(function (resolve) {
-    var timer = null;
-    var done = false;
+/* 取文本：主地址失败就换镜像。为什么要镜像——GitHub release 下载会 302 到
+   release-assets.githubusercontent.com，那一跳没有 Access-Control-Allow-Origin，
+   浏览器 fetch 会被跨域策略直接拦掉；raw 与 jsDelivr 都带 ACAO: *。 */
+function updMirror(u) {
+  try {
+    var t = String(u);
+    var m = t.match(/^https:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)$/);
+    if (m) return 'https://cdn.jsdelivr.net/gh/' + m[1] + '/' + m[2] + '@' + m[3] + '/' + m[4];
+    m = t.match(/^https:\/\/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^\/]+)@([^\/]+)\/(.+)$/);
+    if (m) return 'https://raw.githubusercontent.com/' + m[1] + '/' + m[2] + '/' + m[3] + '/' + m[4];
+  } catch (eM) {}
+  return '';
+}
 
-    /* 收口：只 resolve 一次，并保证 8 秒的定时器一定被清掉，
-       否则一次成功的检查会给页面留一个 8 秒后才响的空定时器。 */
+function updGetOnce(u, ttl) {
+  return new Promise(function (resolve) {
+    var done = false, timer = null, ctl = null;
     function fin(o) {
       if (done) return;
       done = true;
-      if (timer !== null) {
-        try {
+      try {
+        if (timer) {
           if (typeof HOST.clearTimeout === 'function') HOST.clearTimeout(timer);
           else if (typeof clearTimeout === 'function') clearTimeout(timer);
-        } catch (eC) {}
-        timer = null;
-      }
+        }
+      } catch (eC) {}
+      timer = null;
       resolve(o);
     }
-
     try {
-      if (!updOn() && !force) { fin({ ok: false, err: 'off' }); return; }
-
-      var u = updUrl();
-      if (!updUrlOk(u)) { fin({ ok: false, err: 'nourl' }); return; }
       if (!HOST || typeof HOST.fetch !== 'function') { fin({ ok: false, err: 'net' }); return; }
-
-      var opts = {
-        method: 'GET',
-        cache: 'no-store',
-        headers: { 'Accept': 'text/plain, application/json' }
-      };
-
-      /* 没有 AbortController 的宿主不硬造：定时器到点直接判超时，
-         两条路都不让一个卡死的请求挂住面板。 */
-      var ctl = null;
+      var opts = { method: 'GET', cache: 'no-store', headers: { 'Accept': 'text/plain, application/json' } };
+      try { if (typeof HOST.AbortController === 'function') ctl = new HOST.AbortController(); } catch (eA) { ctl = null; }
+      if (ctl) { try { opts.signal = ctl.signal; } catch (eS) {} }
       try {
-        if (typeof HOST.AbortController === 'function') ctl = new HOST.AbortController();
-      } catch (eA) { ctl = null; }
-      if (ctl) {
-        try { opts.signal = ctl.signal; } catch (eS) {}
-      }
-      try {
-        var setT = (typeof HOST.setTimeout === 'function') ? HOST.setTimeout
-          : (typeof setTimeout === 'function' ? setTimeout : null);
+        var setT = (typeof HOST.setTimeout === 'function') ? HOST.setTimeout : (typeof setTimeout === 'function' ? setTimeout : null);
         if (setT) {
           timer = setT.call(HOST, function () {
-            try {
-              if (ctl) ctl.abort();
-              else fin({ ok: false, err: 'net' });
-            } catch (eB) {}
-          }, UPD_TTL);
+            try { if (ctl) ctl.abort(); } catch (eB) {}
+            fin({ ok: false, err: 'net', timeout: true });
+          }, ttl || UPD_TTL);
         }
       } catch (eT) { timer = null; }
-
       Promise.resolve(HOST.fetch(u, opts)).then(function (res) {
-        /* res.ok === false 才算失败：有的宿主返回的对象没有 ok 字段，
-           用 !res.ok 会把正常响应误判成失败。 */
-        if (!res || res.ok === false) {
-          fin({ ok: false, err: 'http', status: res ? res.status : 0 });
-          return null;
-        }
-        return Promise.resolve(res.text()).then(function (text) {
-          var full = updParseFull(text);
-          var v = full && full.v;
-          if (!v) { fin({ ok: false, err: 'parse' }); return; }
-          updSave({ at: Date.now(), latest: v, url: u, pkgUrl: (full && full.url) || '' });
-          fin({ ok: true, latest: v, pkgUrl: (full && full.url) || '', newer: updCmp(v, VERSION) > 0 });
-        });
-      }).then(null, function () {
-        /* 断网、被 abort、跨域被拦……对用户都是同一件事：这次没查到 */
-        fin({ ok: false, err: 'net' });
+        if (!res || res.ok === false) { fin({ ok: false, err: 'http', status: res ? res.status : 0 }); return null; }
+        return Promise.resolve(res.text()).then(function (text) { fin({ ok: true, text: String(text == null ? '' : text) }); });
+      }).then(null, function (e) {
+        fin({ ok: false, err: 'net', cross: !!(e && String(e.name) === 'TypeError') });
       });
+    } catch (e2) { fin({ ok: false, err: 'net' }); }
+  });
+}
+
+function updGet(u, ttl) {
+  if (!updUrlOk(u)) return Promise.resolve({ ok: false, err: 'nourl' });
+  return updGetOnce(u, ttl).then(function (r) {
+    if (r && r.ok) return r;
+    var m = updMirror(u);
+    if (!m) return r;
+    return updGetOnce(m, ttl).then(function (r2) {
+      if (r2 && r2.ok) return r2;
+      return { ok: false, err: 'net', cross: !!(r2 && r2.cross), both: true };
+    });
+  });
+}
+
+function updCheck(force) {
+  return new Promise(function (fin) {
+    try {
+      if (!updOn() && !force) { fin({ ok: false, err: 'off' }); return; }
+      var u = updUrl();
+      if (!updUrlOk(u)) { fin({ ok: false, err: 'nourl' }); return; }
+      updGet(u, UPD_TTL).then(function (r) {
+        if (!r || !r.ok) { fin({ ok: false, err: (r && r.err) || 'net', status: r && r.status, cross: r && r.cross }); return; }
+        var full = updParseFull(r.text);
+        var v = full && full.v;
+        if (!v) { fin({ ok: false, err: 'parse' }); return; }
+        updSave({ at: Date.now(), latest: v, url: u, pkgUrl: (full && full.url) || '' });
+        fin({ ok: true, latest: v, pkgUrl: (full && full.url) || '', newer: updCmp(v, VERSION) > 0 });
+      })['catch'](function () { fin({ ok: false, err: 'net' }); });
     } catch (e) { fin({ ok: false, err: 'net' }); }
   });
 }
@@ -242,7 +250,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v0.95）
+ * 一键更新（v0.96）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -360,9 +368,10 @@ function updInstall() {
       var idx = updSelfIndex(list);
       if (idx < 0) { fin({ ok: false, err: 'noself' }); return; }
 
-      Promise.resolve(HOST.fetch(pkgUrl, { method: 'GET', cache: 'no-store' })).then(function (res) {
-        if (!res || res.ok === false) { fin({ ok: false, err: 'http', status: res ? res.status : 0 }); return null; }
-        return Promise.resolve(res.text()).then(function (text) {
+      updGet(pkgUrl, UPD_PKG_TTL).then(function (rr) {
+        if (!rr || !rr.ok) { fin({ ok: false, err: (rr && rr.err) || 'net', status: rr && rr.status, cross: rr && rr.cross }); return null; }
+        return Promise.resolve().then(function () {
+          var text = rr.text;
           if (!text || text.length > UPD_PKG_MAX) { fin({ ok: false, err: 'big' }); return; }
           var pkg = null;
           try { pkg = JSON.parse(text); } catch (eP) { pkg = null; }
@@ -467,9 +476,9 @@ function updErrText(code, r) {
   var m = {
     off: '自动更新没开',
     nourl: '没填版本文件地址',
-    net: '网络没通，或等太久超时了',
+    net: '连不上更新地址（网络不通，或浏览器拦了跨域）',
     http: '对方返回了错误' + (r && r.status ? '（' + r.status + '）' : ''),
-    parse: '版本文件看不懂（应该是 0.95 或 {"version":"0.95"}）',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.96"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
     noself: '脚本表里没认出自己——手动粘贴进来的装不了，请手动重新导入',
