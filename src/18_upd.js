@@ -262,7 +262,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v0.100）
+ * 一键更新（v0.101）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -327,35 +327,43 @@ function updHostCtx() {
    桌面包和 TT 包同时装着时，表里会有两条都像「自己」——这里按
    「版本号等于当前在跑的版本」「名字里的形态对得上」打分，取最高分；
    分不出高低就返回 -1（宁可不装，也不能装到另一条上去）。 */
+var UPD_NOSELF_WHY = '';
 function updSelfIndex(list) {
+  UPD_NOSELF_WHY = '';
   try {
-    if (!list || !list.length) return -1;
-    var best = -1, bestScore = -1, tie = false;
+    if (!list || !list.length) { UPD_NOSELF_WHY = 'none'; return -1; }
+    var best = -1, bestScore = -1, tie = false, cand = 0;
     var mob = false;
     try { mob = (typeof UI_MODE !== 'undefined' && String(UI_MODE) === 'mobile'); } catch (eM) {}
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
       if (!it || typeof it.content !== 'string') continue;
       var nm = String(it.name || '');
-      var byName = UPD_SELF_NAME_RE.test(nm) && it.content.indexOf('var VERSION') >= 0;
-      var byBody = !byName && it.content.indexOf('var VERSION') >= 0 && it.content.indexOf('AR6') >= 0;
+      var hasVer = it.content.indexOf('var VERSION') >= 0;
+      var byName = UPD_SELF_NAME_RE.test(nm) && hasVer;
+      /* v0.101：手动粘贴进来的那条，名字可能是「新脚本」「未命名」，但正文里
+         一定带我们自己的版本行和存储键前缀。名字认不出时也能当候选。 */
+      var byBody = !byName && hasVer &&
+        (it.content.indexOf('AR6') >= 0 || it.content.indexOf('ar6.') >= 0);
       if (!byName && !byBody) continue;
+      cand++;
 
       var sc = byName ? 2 : 1;
       var cv = '';
       try { cv = (it.content.match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eV) {}
-      if (cv && cv === VERSION) sc += 4;
-      if (/TT|移动|手机|mobile/i.test(nm) === mob) sc += 1;
-      /* enabled 是「哪条真在跑」最直接的信号，停用的那条不该被选中 */
+      /* 版本号等于正在跑的这一版，比名字强得多：手动粘贴那条也能认出来 */
+      if (cv && cv === VERSION) sc += 6;
+      /* 形态匹配：桌面包更新桌面那条，TT 包更新 TT 那条；双装时靠这个分开 */
+      if (/TT|移动|手机|mobile/i.test(nm) === mob) sc += 3;
       if (it.enabled === false) sc -= 10;
 
       if (sc > bestScore) { bestScore = sc; best = i; tie = false; }
       else if (sc === bestScore) { tie = true; }
     }
-    /* 分不出高低就不装：宁可让用户手动导一次，也不能把更新写进另一条 */
-    if (best >= 0 && tie) return -1;
+    if (!cand) { UPD_NOSELF_WHY = 'none'; return -1; }
+    if (best >= 0 && tie) { UPD_NOSELF_WHY = 'tie'; return -1; }
     return best;
-  } catch (e) { return -1; }
+  } catch (e) { UPD_NOSELF_WHY = 'none'; return -1; }
 }
 
 /* 版本文件里可以带一个 url，指向新包本体。没有 url 就退化成「只提示」。 */
@@ -427,7 +435,8 @@ function updInstall() {
           var ctx = updHostCtx();
           var list = ctx && ctx.settings && ctx.settings.tavern_helper && ctx.settings.tavern_helper.scripts;
           var idx = updSelfIndex(list);
-          if (!ctx || idx < 0) { end({ ok: false, err: 'noself' }); return; }
+          if (!ctx) { end({ ok: false, err: 'nohost' }); return; }
+          if (idx < 0) { end({ ok: false, err: UPD_NOSELF_WHY === 'tie' ? 'noself2' : 'noself' }); return; }
 
           var curV = '';
           try { curV = (String(list[idx].content).match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eC) {}
@@ -446,10 +455,10 @@ function updInstall() {
           }
 
           /* saveSettings 是 async：不 await 就等于「发出去就算成功」 */
-          /* v0.100 修 D4：不要再跑 updSelfIndex 来自证——它按「等于运行版本」加分，
+          /* v0.101 修 D4：不要再跑 updSelfIndex 来自证——它按「等于运行版本」加分，
              刚写进去的那条拿不到这 4 分，双包/副本会超过它甚至平局，于是误判 nosave。
              改成「表里到底有没有出现这个版本」。 */
-          /* v0.100 修 D1：防抖保存是「先返回、1 秒后才落盘」。立刻回读只能看到内存里
+          /* v0.101 修 D1：防抖保存是「先返回、1 秒后才落盘」。立刻回读只能看到内存里
              同一个活对象，证明不了任何事。防抖模式下等过防抖窗口再看。 */
           function hasNewVersion(list2) {
             try {
@@ -569,10 +578,11 @@ function updErrText(code, r) {
     nourl: '没填版本文件地址',
     net: (r && r.timeout) ? '等太久了，没收到回音（网络慢或被拦）' : (r && r.cross ? '被浏览器拦了跨域请求（地址没有跨域头）' : '连不上更新地址（网络不通，或浏览器拦了跨域）'),
     http: '更新地址打不开' + (r && r.status ? '（HTTP ' + r.status + '）' : '') + '——多半是版本文件路径变了',
-    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.100"}）',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.101"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
-    noself: '脚本表里没认出自己——手动粘贴进来的装不了，请手动重新导入',
+    noself: '脚本表里没找到「卢克之光」——先把脚本导进酒馆助手，再来点更新',
+    noself2: '表里有两条都像「卢克之光」——删掉不用那条（或先停用它），再点一次',
     big: '新包超过 4MB，不装',
     empty: '更新地址回了个空文件',
     busy: '正在装，稍等一下',
