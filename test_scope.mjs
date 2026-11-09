@@ -101,7 +101,7 @@ ok('1.5-pro 的聊天标签仍被丢弃（判不出来）', v.code !== 'diff', '
 
 group('E. 版本');
 
-ok("VERSION 是 0.91 或更高", api.VERSION === '0.93' || api.VERSION === '0.93', '0.9x', api.VERSION);
+ok("VERSION 是 0.91 或更高", api.VERSION === '0.95' || api.VERSION === '0.95', '0.9x', api.VERSION);
 
 console.log('\n通过 ' + pass + ' 条，失败 ' + fail + ' 条');
 if (fail > 0) process.exit(1);

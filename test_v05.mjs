@@ -130,7 +130,7 @@ ok('banner 剥离前导 emoji', SRC.indexOf(".replace(/^[^\\u4e00-\\u9fa5A-Za-z0
 
 /* ---------------- [七] 版本 ---------------- */
 group('[七] 版本');
-ok('VERSION = 0.7', A.VERSION === '0.93', '0.93', A.VERSION);
+ok('VERSION = 0.7', A.VERSION === '0.95', '0.95', A.VERSION);
 ok('配置结构版本没动', A.getCfg().v === 831, 831, A.getCfg().v);
 ok('源码里只有一个版本号', (SRC.match(/var VERSION = '[^']+'/g) || []).length === 1, 1, (SRC.match(/var VERSION = '[^']+'/g) || []).length);
 

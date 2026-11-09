@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC_FILE = path.join(HERE, '_src', '18_upd.js');
 const SRC = fs.readFileSync(SRC_FILE, 'utf8');
+const VER = (fs.readFileSync(path.join(HERE, '_src', '1_core.js'), 'utf8').match(/var VERSION = '([^']+)'/) || [])[1] || '0';
 
 let pass = 0;
 let fail = 0;
@@ -45,6 +46,7 @@ let lastOpts = null;
 let fetchMode = 'ok';
 let respStatus = 200;
 let respBody = '{"version":"1.2.3"}';
+const respQueue = [];   /* 依次消费的响应体：一键更新要连发两次请求 */
 let hasOkField = true;
 let pendingReject = null;
 let abortedCount = 0;
@@ -79,9 +81,10 @@ HOST.fetch = function (url, opts) {
     return new Promise(function (res2, rej2) { pendingReject = rej2; });
   }
   if (fetchMode === 'nofetch') return null;
+  const bodyNow = respQueue.length ? respQueue.shift() : respBody;
   const r = {
     status: respStatus,
-    text: function () { return Promise.resolve(respBody); }
+    text: function () { return Promise.resolve(bodyNow); }
   };
   /* 只按 ok === false 判失败，所以「有 ok 字段」和「没有 ok 字段」都要能测 */
   if (hasOkField) r.ok = respStatus >= 200 && respStatus < 300;
@@ -90,7 +93,7 @@ HOST.fetch = function (url, opts) {
 
 const sandbox = {
   cfg: cfg,
-  VERSION: '0.93',
+  VERSION: VER,
   HOST: HOST,
   localStorage: HOST.localStorage,
   banner: function (msg, kind) {
@@ -169,7 +172,7 @@ group('B 版本解析 updParse');
 ok('B1 JSON.version', U.updParse('{"version":"1.2.3"}') === '1.2.3', '1.2.3', U.updParse('{"version":"1.2.3"}'));
 ok('B2 JSON.tag 带 v 前缀 → 去 v', U.updParse('{"tag":"v1.2.3"}') === '1.2.3', '1.2.3', U.updParse('{"tag":"v1.2.3"}'));
 ok('B3 JSON.tag_name', U.updParse('{"tag_name":"v2.0.1"}') === '2.0.1', '2.0.1', U.updParse('{"tag_name":"v2.0.1"}'));
-ok('B4 JSON 两位版本', U.updParse('{"version":"0.93"}') === '0.93', '0.93', U.updParse('{"version":"0.93"}'));
+ok('B4 JSON 两位版本', U.updParse('{"version":"0.95"}') === '0.95', '0.95', U.updParse('{"version":"0.95"}'));
 ok('B5 纯文本 1.2.3', U.updParse('1.2.3') === '1.2.3', '1.2.3', U.updParse('1.2.3'));
 ok('B6 纯文本 v1.2.3', U.updParse('v1.2.3\n') === '1.2.3', '1.2.3', U.updParse('v1.2.3\n'));
 ok('B7 多行取第一个像版本号的行', U.updParse('# note\n\nv1.4.0\n1.5.0\n') === '1.4.0', '1.4.0', U.updParse('# note\n\nv1.4.0\n1.5.0\n'));
@@ -260,17 +263,23 @@ ok('E4 updOn() 读 cfg.upd=check 为真', U.updOn() === true, true, U.updOn());
 reset({ upd: 'off', url: '' });
 ok('E5 updOn() 关着为假', U.updOn() === false, false, U.updOn());
 
-/* ---------------- F URL 空 ---------------- */
-group('F URL 空 / 非法');
+/* ---------------- F 地址留空走内置 ---------------- */
+group('F 地址留空 / 非法 → 用内置地址');
 reset({ upd: 'check', url: '' });
+ok('F1 留空时 updUrlIsDefault 为真', U.updUrlIsDefault() === true, true, U.updUrlIsDefault());
+ok('F2 留空时 updUrl 返回内置地址', U.updUrl().indexOf('releases/latest/download/version') > 0, true, U.updUrl());
 r = await U.updCheck();
-ok('F1 开闸但没填地址 → err:nourl', r && r.err === 'nourl', { err: 'nourl' }, r);
-ok('F2 没地址时没有 fetch', fetchCalls === 0, 0, fetchCalls);
+ok('F3 留空也能查（不再报 nourl）', r && r.ok === true, true, r);
+ok('F4 留空时确实发了一次请求', fetchCalls === 1, 1, fetchCalls);
 
 reset({ upd: 'check', url: 'javascript:alert(1)' });
+ok('F5 非法协议也回落内置地址', U.updUrlIsDefault() === true, true, U.updUrlIsDefault());
 r = await U.updCheck();
-ok('F3 非法协议等同没地址 → err:nourl', r && r.err === 'nourl', { err: 'nourl' }, r);
-ok('F4 非法协议时没有 fetch', fetchCalls === 0, 0, fetchCalls);
+ok('F6 非法协议不报 nourl', r && r.ok === true, true, r);
+
+reset({ upd: 'check', url: 'https://x.com/v.json' });
+ok('F7 填了合法地址就用填的', U.updUrl() === 'https://x.com/v.json', 'https://x.com/v.json', U.updUrl());
+ok('F8 填了合法地址就不算内置', U.updUrlIsDefault() === false, false, U.updUrlIsDefault());
 
 /* ---------------- G 落库 ---------------- */
 group('G 落库 ar6.upd');
@@ -293,14 +302,14 @@ group('H 不打扰 updLine');
 reset();
 ok('H1 没有记录 → 空串', U.updLine() === '', '', U.updLine());
 reset();
-store['ar6.upd'] = JSON.stringify({ latest: '0.93', url: 'u' });
+store['ar6.upd'] = JSON.stringify({ latest: '0.95', url: 'u' });
 ok('H2 等于当前版本 → 空串', U.updLine() === '', '', U.updLine());
 reset();
 store['ar6.upd'] = JSON.stringify({ latest: '0.50', url: 'u' });
 ok('H3 比当前旧 → 空串', U.updLine() === '', '', U.updLine());
 reset();
 store['ar6.upd'] = JSON.stringify({ latest: '1.2.3', url: 'u' });
-ok('H4 有新版 → 文案带新旧两个版本', U.updLine() === '有新版本 v1.2.3（当前 v0.93）', '有新版本 v1.2.3（当前 v0.93）', U.updLine());
+ok('H4 有新版 → 文案带新旧两个版本', U.updLine() === '有新版本 v1.2.3（当前 v0.95）', '有新版本 v1.2.3（当前 v0.95）', U.updLine());
 ok('H5 文案不承诺「已自动更新」', U.updLine().indexOf('自动更新') < 0, true, U.updLine());
 reset();
 store['ar6.upd'] = JSON.stringify({ latest: 'garbage', url: 'u' });
@@ -346,7 +355,8 @@ ok('J7 查询失败时静默', bannerCalls.length === 0, 0, bannerCalls.length);
 group('K 接线检查（4_ui.js / build_v8.mjs）');
 const SRC_UI = fs.readFileSync(path.join(HERE, '_src', '4_ui.js'), 'utf8');
 const SRC_BUILD = fs.readFileSync(path.join(HERE, 'build_v8.mjs'), 'utf8');
-ok('K1 面板里有 chip 分派分支', SRC_UI.indexOf("act.indexOf('\u2b06 \u81ea\u52a8\u66f4\u65b0') === 0") >= 0, true);
+ok('K1 面板里有 chip 分派分支', SRC_UI.indexOf("act.indexOf('\u2b06 \u68c0\u67e5\u66f4\u65b0') === 0") >= 0, true);
+ok('K1b 一键按钮接了 updQuick', SRC_UI.indexOf('updQuick()') >= 0, true);
 ok('K2 面板里有版本地址输入框', SRC_UI.indexOf('data-ar6="updurl"') >= 0, true);
 ok('K3 save 分支会读 updurl', SRC_UI.indexOf("querySelector('[data-ar6=\"updurl\"]')") >= 0, true);
 ok('K4 启动时调了 updBoot', SRC_UI.indexOf('updBoot();') >= 0, true);
@@ -374,12 +384,12 @@ function mkHost(list) {
 function mkList() {
   return [
     { name: '别人的脚本', content: 'var OTHER = 1;' },
-    { name: '卢克之光 V0.94·桌面版', content: "var VERSION = '0.94'; /* AR6 */" }
+    { name: '卢克之光 V0.0.1·桌面版', content: "var VERSION = '0.0.1'; /* AR6 */" }
   ];
 }
 function pkgBody(ver) {
   return JSON.stringify({
-    name: '卢克之光 V0.94·桌面版',
+    name: '卢克之光 V' + VER + '·桌面版',
     type: 'script',
     content: "var VERSION = '" + ver + "'; /* AR6 */"
   });
@@ -387,7 +397,7 @@ function pkgBody(ver) {
 
 reset();
 mkHost(mkList());
-store['ar6.upd'] = JSON.stringify({ latest: '0.94', url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
+store['ar6.upd'] = JSON.stringify({ latest: '9.9', url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
 
 ok('L1 认自己：按名字命中第 2 条',
   U.updSelfIndex(HOST.extension_settings.tavern_helper.scripts) === 1,
@@ -409,37 +419,38 @@ delete store['ar6.upd'];
 ok('L8 没有记录 → 按钮不出现', U.updHasPkg() === false, false, U.updHasPkg());
 
 ok('L9 updParseFull 取到版本与包地址',
-  JSON.stringify(U.updParseFull('{"version":"0.93","url":"https://x/p.json"}')) === '{"v":"0.93","url":"https://x/p.json"}',
-  'v/url 都有', JSON.stringify(U.updParseFull('{"version":"0.93","url":"https://x/p.json"}')));
-ok('L10 只给版本不给地址也能用', U.updParseFull('0.94').url === '', '', U.updParseFull('0.94').url);
-ok('L11 非 http 的包地址被拒', U.updParseFull('{"version":"0.93","url":"file:///x"}').url === '', '',
-  U.updParseFull('{"version":"0.93","url":"file:///x"}').url);
+  JSON.stringify(U.updParseFull('{"version":"0.95","url":"https://x/p.json"}')) === '{"v":"0.95","url":"https://x/p.json"}',
+  'v/url 都有', JSON.stringify(U.updParseFull('{"version":"0.95","url":"https://x/p.json"}')));
+ok('L10 只给版本不给地址也能用', U.updParseFull('0.95').url === '', '', U.updParseFull('0.95').url);
+ok('L11 非 http 的包地址被拒', U.updParseFull('{"version":"0.95","url":"file:///x"}').url === '', '',
+  U.updParseFull('{"version":"0.95","url":"file:///x"}').url);
 
 mkHost(mkList());
-store['ar6.upd'] = JSON.stringify({ latest: '0.94', pkgUrl: 'https://x/pkg.json' });
-fetchMode = 'ok'; respStatus = 200; respBody = pkgBody('0.94');
+store['ar6.upd'] = JSON.stringify({ latest: '0.95', pkgUrl: 'https://x/pkg.json' });
+fetchMode = 'ok'; respStatus = 200; respBody = pkgBody('0.95');
 
+const snapL = HOST.extension_settings.tavern_helper.scripts[1].content;
 const p1 = U.updInstall();
 await new Promise(function (r) { setImmediate(r); });
 const r1 = await p1;
 ok('L12 装成功', r1 && r1.ok === true, true, r1);
-ok('L13 装的是 0.93', r1 && r1.version === '0.94', '0.94', r1 && r1.version);
-ok('L14 脚本表被改写', HOST.extension_settings.tavern_helper.scripts[1].content.indexOf("'0.94'") >= 0, true,
+ok('L13 装的是版本文件里那一版', r1 && r1.version === VER, VER, r1 && r1.version);
+ok('L14 脚本表被改写', HOST.extension_settings.tavern_helper.scripts[1].content.indexOf("'" + VER + "'") >= 0, true,
   HOST.extension_settings.tavern_helper.scripts[1].content);
 ok('L15 存了一次设置', HOST.saved === 1, 1, HOST.saved);
 ok('L16 装完能撤销', U.updCanUndo() === true, true, U.updCanUndo());
 ok('L17 撤销把旧内容放回去', (function () {
   const r = U.updUndo();
-  return r.ok === true && HOST.extension_settings.tavern_helper.scripts[1].content.indexOf("'0.94'") >= 0;
+  return r.ok === true && HOST.extension_settings.tavern_helper.scripts[1].content === snapL;
 })(), true);
 ok('L18 撤销之后不能再撤销', U.updCanUndo() === false, false, U.updCanUndo());
 
-mkHost(mkList()); store['ar6.upd'] = JSON.stringify({ latest: '0.94', pkgUrl: '' });
+mkHost(mkList()); store['ar6.upd'] = JSON.stringify({ latest: '0.95', pkgUrl: '' });
 const r2 = await U.updInstall();
 ok('L19 没有包地址 → nopkg', r2 && r2.err === 'nopkg', 'nopkg', r2 && r2.err);
 
 mkHost(mkList());
-store['ar6.upd'] = JSON.stringify({ latest: '0.94', pkgUrl: 'https://x/p.json' });
+store['ar6.upd'] = JSON.stringify({ latest: '0.95', pkgUrl: 'https://x/p.json' });
 HOST.extension_settings.tavern_helper.scripts = [{ name: 'nobody', content: 'x' }];
 const r3 = await U.updInstall();
 ok('L20 认不出自己 → noself，且一个字节都没动', r3 && r3.err === 'noself' && HOST.saved === 0, 'noself', r3 && r3.err);
@@ -448,7 +459,7 @@ mkHost(mkList());
 respBody = '{"name":"x","content":"no version here"}';
 const r4 = await U.updInstall();
 ok('L21 包里没有 VERSION 行 → badpkg', r4 && r4.err === 'badpkg', 'badpkg', r4 && r4.err);
-ok('L22 badpkg 不改脚本表', HOST.extension_settings.tavern_helper.scripts[1].content.indexOf("'0.94'") >= 0, true,
+ok('L22 badpkg 不改脚本表', HOST.extension_settings.tavern_helper.scripts[1].content === snapL, snapL,
   HOST.extension_settings.tavern_helper.scripts[1].content);
 
 respBody = pkgBody('0.91');
@@ -459,11 +470,11 @@ respBody = '不是 json';
 const r6 = await U.updInstall();
 ok('L24 不是 JSON → badpkg', r6 && r6.err === 'badpkg', 'badpkg', r6 && r6.err);
 
-respStatus = 404; respBody = pkgBody('0.94');
+respStatus = 404; respBody = pkgBody('0.95');
 const r7 = await U.updInstall();
 ok('L25 404 → http', r7 && r7.err === 'http', 'http', r7 && r7.err);
 
-respStatus = 200; respBody = pkgBody('0.94'); fetchMode = 'reject';
+respStatus = 200; respBody = pkgBody('0.95'); fetchMode = 'reject';
 const r8 = await U.updInstall();
 ok('L26 网络挂 → net', r8 && r8.err === 'net', 'net', r8 && r8.err);
 fetchMode = 'ok';
@@ -478,6 +489,106 @@ ok('L31 分派接上了 updInstall', SRC_UI.indexOf('updInstall().then') >= 0, t
 ok('L32 分派接上了 updUndo', SRC_UI.indexOf('updUndo()') >= 0, true);
 ok('L33 导出补齐', ['updInstall: updInstall', 'updUndo: updUndo', 'updHasPkg: updHasPkg']
   .every(function (s) { return SRC_BUILD.indexOf(s) >= 0; }), true);
+
+/* ---------------- M 一键：查 + 装 ---------------- */
+group("M updQuick 一键");
+
+/* 用远超当前的版本号，升版时这组不会自己变红 */
+mkHost(mkList());
+reset({ upd: "off", url: "" });          /* 开关关着、地址没填，照样能一键 */
+fetchMode = "ok"; respStatus = 200;
+respQueue.push("{\"version\":\"9.9\",\"url\":\"https://x/pkg.json\"}", pkgBody("9.9"));
+const q1 = await U.updQuick();
+ok("M1 关闸 + 空地址也能一键完成", q1 && q1.ok === true && q1.installed === true, true, q1);
+ok("M2 装上的版本是 9.9", q1 && q1.version === "9.9", "9.9", q1 && q1.version);
+ok("M3 脚本表真的被改写", HOST.extension_settings.tavern_helper.scripts[1].content.indexOf("9.9") >= 0, true);
+ok("M4 用的是内置地址（不是空串）", lastUrl.length > 8, true, lastUrl);
+
+mkHost(mkList());
+reset({ upd: "off", url: "" });
+fetchCalls = 0;
+respQueue.push("{\"version\":\"0.1\",\"url\":\"https://x/pkg.json\"}");
+const q2 = await U.updQuick();
+ok("M5 比当前旧 → 不装", q2 && q2.ok === true && q2.newer === false, true, q2);
+ok("M6 没有新版时只发一次请求", fetchCalls === 1, 1, fetchCalls);
+
+mkHost(mkList());
+reset({ upd: "off", url: "" });
+const snap3 = HOST.extension_settings.tavern_helper.scripts[1].content;
+respQueue.push("{\"version\":\"9.9\",\"url\":\"https://x/pkg.json\"}", "{坏包}");
+const q3 = await U.updQuick();
+ok("M7 包坏了 → 报错但不改脚本表", q3 && q3.ok === false && q3.err === "badpkg", true, q3);
+ok("M8 报错时脚本表原样", HOST.extension_settings.tavern_helper.scripts[1].content === snap3, snap3, HOST.extension_settings.tavern_helper.scripts[1].content);
+
+
+/* ---------------- N 组：0.95 审查后加固的四处 ---------------- */
+console.log('\nN 组 地址校验 / 幂等安装 / 落盘失败 / 撤销还原名字');
+
+ok('N1 "https://" 不算合法地址', U.updUrlOk('https://') === false, false, U.updUrlOk('https://'));
+ok('N2 地址中间带空格不算合法', U.updUrlOk('https://x/a b.json') === false, false, U.updUrlOk('https://x/a b.json'));
+ok('N3 正常地址仍然合法', U.updUrlOk('https://github.com/a/b/releases/download/v1/version.json') === true, true, U.updUrlOk('https://github.com/a/b/releases/download/v1/version.json'));
+
+/* 幂等：装到同一版不重写、不覆盖备份 */
+reset();
+mkHost([
+  { name: '别人的脚本', content: 'var OTHER = 1;' },
+  { name: '卢克之光 V' + VER + '·桌面版', content: "var VERSION = '" + VER + "'; /* AR6 */" }
+]);
+store['ar6.upd'] = JSON.stringify({ latest: VER, url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
+HOST.saveSettings = function () { HOST.saved++; };
+HOST.saveSettingsDebounced = function () { HOST.saved++; };
+const before = HOST.extension_settings.tavern_helper.scripts[1].content;
+const savedBefore = HOST.saved;
+respQueue.push(pkgBody(VER));
+const rN1 = await U.updInstall();
+ok('N4 已装同一版 → ok 且 already', rN1 && rN1.ok === true && rN1.already === true, true, rN1);
+ok('N5 已装同一版 → 内容没被重写', HOST.extension_settings.tavern_helper.scripts[1].content === before, true, 'same');
+ok('N6 已装同一版 → 一次保存都没发', HOST.saved === savedBefore, savedBefore, HOST.saved);
+
+/* 落盘失败：没有保存函数 / 保存抛错 */
+reset();
+mkHost(mkList());
+store['ar6.upd'] = JSON.stringify({ latest: '9.9', url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
+HOST.extension_settings.tavern_helper.scripts[1].content = "var VERSION = '0.0.1'; /* AR6 */";
+HOST.saveSettings = undefined;
+HOST.saveSettingsDebounced = undefined;
+respQueue.push(pkgBody('9.9'));
+const rN2 = await U.updInstall();
+ok('N7 没有保存函数 → nosave', rN2 && rN2.ok === false && rN2.err === 'nosave', 'nosave', rN2 && rN2.err);
+
+reset();
+mkHost(mkList());
+store['ar6.upd'] = JSON.stringify({ latest: '9.9', url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
+HOST.extension_settings.tavern_helper.scripts[1].content = "var VERSION = '0.0.1'; /* AR6 */";
+HOST.saveSettings = function () { throw new Error('disk full'); };
+HOST.saveSettingsDebounced = function () { throw new Error('disk full'); };
+respQueue.push(pkgBody('9.9'));
+const rN3 = await U.updInstall();
+ok('N8 保存抛错 → nosave', rN3 && rN3.ok === false && rN3.err === 'nosave', 'nosave', rN3 && rN3.err);
+ok('N9 nosave 有中文人话', U.updErrText('nosave').indexOf('没装成') >= 0, true, U.updErrText('nosave'));
+
+/* 撤销要连名字一起还原 */
+reset();
+mkHost(mkList());
+store['ar6.upd'] = JSON.stringify({ latest: '9.9', url: 'https://x/v.txt', pkgUrl: 'https://x/pkg.json' });
+HOST.saveSettings = function () { HOST.saved++; };
+const nameBefore = HOST.extension_settings.tavern_helper.scripts[1].name;
+respQueue.push(JSON.stringify({ name: '卢克之光 V9.9·桌面版', type: 'script', content: "var VERSION = '9.9'; /* AR6 */" }));
+await U.updInstall();
+ok('N10 装完名字被换成新包里的', HOST.extension_settings.tavern_helper.scripts[1].name === '卢克之光 V9.9·桌面版', '卢克之光 V9.9·桌面版', HOST.extension_settings.tavern_helper.scripts[1].name);
+U.updUndo();
+ok('N11 撤销后名字还原', HOST.extension_settings.tavern_helper.scripts[1].name === nameBefore, nameBefore, HOST.extension_settings.tavern_helper.scripts[1].name);
+
+/* 成功提示按保存方式分叉 */
+ok('N12 同步保存 → 直接说刷新', U.updDoneText('1.0', 'sync').indexOf('刷新一次') >= 0, true, U.updDoneText('1.0', 'sync'));
+ok('N13 防抖保存 → 先说等两秒', U.updDoneText('1.0', 'debounce').indexOf('等两秒') >= 0, true, U.updDoneText('1.0', 'debounce'));
+
+/* 认自己：双装时取版本对得上的那条 */
+const two = [
+  { name: '卢克之光 V0.1·TT酒馆适配', content: "var VERSION = '0.1'; AR6" },
+  { name: '卢克之光 V' + VER + '·桌面版', content: "var VERSION = '" + VER + "'; AR6" }
+];
+ok('N14 双装时认出正在跑的那条', U.updSelfIndex(two) === 1, 1, U.updSelfIndex(two));
 
 /* ---------------- 汇总 ---------------- */
 console.log('\n----------------------------------------');

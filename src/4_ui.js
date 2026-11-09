@@ -716,10 +716,11 @@ function mountAll() {
         (oocChannel() ? '走酒馆扩展提示位（IN_CHAT / depth 4）' : '贴末条 user 消息尾部') + '</div>';
     }
 
-    /* v0.93 查新版；v0.93 起能一键装（把新包写进酒馆助手的脚本表） */
+    /* v0.95 查新版；v0.95 起能一键装（把新包写进酒馆助手的脚本表） */
     html += '<div class="ar6-sec">体检</div>';
     html += '<div class="ar6-row">' +
-      chip('⬆ 自动更新:' + (updOn() ? '开' : '关'), updOn()) +
+      chip('⬆ 检查更新', true) +
+      chip('⟳ 开面板自动查:' + (updOn() ? '开' : '关'), updOn()) +
       chip('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), cfg.onlyGemini !== false) +
       (updHasPkg() ? chip('⬇ 装新版:' + updLatest(), true) : '') +
       (updCanUndo() ? chip('↩ 撤销更新', false) : '') +
@@ -760,10 +761,13 @@ function mountAll() {
       '<button class="ar6-b" data-ar6="save">存</button>' +
       '</div>';
 
-    /* v0.93 版本文件地址：单独一行。塞进上面那行会被挤到只剩百来像素，
+    /* v0.95 版本文件地址：单独一行。塞进上面那行会被挤到只剩百来像素，
        手机上连 placeholder 都看不全，看不全就等于没有这个输入框。 */
+    /* v0.95 内置了地址，这一格只是「你要换自己的地址才填」，平时空着就行。 */
     html += '<div class="ar6-input">' +
-      '<input data-ar6="updurl" placeholder="版本文件地址（可留空）" value="' + esc(cfg.updUrl) + '">' +
+      '<input data-ar6="updurl" placeholder="' + (updUrlIsDefault()
+        ? '版本文件地址：已内置，留空即可'
+        : esc('自定义地址：' + updUrl())) + '" value="' + esc(cfg.updUrl) + '">' +
       '</div>';
 
     html += floatSettingsHTML();
@@ -1459,7 +1463,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.93 只查 Gemini：默认开。关掉就回到「什么都查」 */
+  /* v0.95 只查 Gemini：默认开。关掉就回到「什么都查」 */
   if (act.indexOf('🟦 只查 Gemini') === 0) {
     cfg.onlyGemini = (cfg.onlyGemini === false);
     saveCfg(); render();
@@ -1470,7 +1474,25 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.93 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
+  /* v0.95 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
+  if (act.indexOf('⬆ 检查更新') === 0) {
+    banner('⬆ 正在看有没有新版…', 'gray');
+    updQuick().then(function (r) {
+      if (r && r.ok && r.installed && r.already) {
+        banner('✅ 这一版已经装过了（v' + r.version + '），没有重复写', 'ok');
+      } else if (r && r.ok && r.installed) {
+        banner(updDoneText(r.version, r.saveKind), 'ok');
+      } else if (r && r.ok && !r.newer) {
+        banner('✅ 已经是最新的 v' + VERSION, 'ok');
+      } else {
+        banner('⬆ 没更成：' + updErrText((r && r.err) || '?', r), 'warn');
+      }
+      try { render(); } catch (eQ) {}
+    })['catch'](function () { banner('⬆ 没更成：网络错误', 'warn'); });
+    return;
+  }
+
+  /* v0.95 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
   if (act.indexOf('⬇ 装新版') === 0) {
     banner('⬇ 正在取新版…', 'gray');
     updInstall().then(function (r) {
@@ -1492,19 +1514,17 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.93 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
+  /* v0.95 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
      否则用户得等下次开面板才知道有没有新版 */
-  if (act.indexOf('⬆ 自动更新') === 0) {
+  if (act.indexOf('⟳ 开面板自动查') === 0) {
     cfg.upd = (String(cfg.upd || 'off') === 'check') ? 'off' : 'check';
     saveCfg(); render();
-    banner('⬆ 自动更新 ' + (cfg.upd === 'check' ? '开' : '关'), cfg.upd === 'check' ? 'ok' : 'gray');
+    banner('⟳ 开面板自动查 ' + (cfg.upd === 'check' ? '开' : '关'), cfg.upd === 'check' ? 'ok' : 'gray');
     if (cfg.upd === 'check') {
       updCheck(true).then(function (r) {
         if (r && r.ok && r.newer) {
-          banner('⬆ ' + updLine() + '　面板里「版本文件地址」可以下载', 'warn');
+          banner('⬆ ' + updLine() + '　点「⬇ 装新版」直接装', 'warn');
           render();
-        } else if (r && r.err === 'nourl') {
-          banner('⬆ 已打开，但下面还没填版本文件地址', 'warn');
         }
         /* 其它失败一律不出声：查不到不是用户的问题 */
       })['catch'](function () {});
@@ -1988,7 +2008,7 @@ function boot() {
       setTimeout(function () { try { banner('第一次用？点面板右上角的「说明」，或长按悬浮球', 'gray'); } catch (eH) {} }, 2600);
     }
   });
-  /* v0.93 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
+  /* v0.95 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
      关着闸或查不到时 updBoot 自己保持沉默 */
   step('版本检查', function () { updBoot(); });
   step('按钮', function () { bindScriptButtons(); });
