@@ -262,7 +262,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v0.97）
+ * 一键更新（v0.98）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -285,20 +285,36 @@ var UPD_SELF_NAME_RE = /卢克之光|Anti-?Route/i;
 /* 从 iframe 往上找酒馆页的 extension_settings。找不到就返回 null：
    宁可让「一键更新」不可用，也不要瞎猜路径去写别人的配置。 */
 function updHostCtx() {
+  /* 酒馆的设置对象不在 window 上（script.js 是 ES module，extension_settings 只是模块内的变量），
+     唯一稳定的入口是 SillyTavern.getContext()。先问它，问不到再退回老办法（window 上直接挂着）。 */
+  try {
+    var w0 = HOST;
+    for (var d0 = 0; d0 < 4 && w0; d0++) {
+      var c = null;
+      try { if (w0.SillyTavern && typeof w0.SillyTavern.getContext === 'function') c = w0.SillyTavern.getContext(); } catch (eC0) { c = null; }
+      if (c && c.extensionSettings && typeof c.extensionSettings === 'object') {
+        var sv2 = null, kind2 = '';
+        try {
+          if (typeof c.saveSettings === 'function') { sv2 = c.saveSettings; kind2 = 'sync'; }
+          else if (typeof c.saveSettingsDebounced === 'function') { sv2 = c.saveSettingsDebounced; kind2 = 'debounce'; }
+        } catch (eS1) { sv2 = null; kind2 = ''; }
+        return { settings: c.extensionSettings, save: sv2, saveKind: kind2, loc: (w0.location || null), via: 'ctx' };
+      }
+      try { w0 = w0.parent; } catch (eP0) { w0 = null; }
+    }
+  } catch (e0) {}
+
   try {
     var w = HOST;
     for (var d = 0; d < 4 && w; d++) {
       try {
         if (w.extension_settings && typeof w.extension_settings === 'object') {
-          /* 优先用同步的 saveSettings（真的发出去），拿不到才退回防抖版。
-             防抖版有 1 秒窗口，用户若立刻刷新，改动会丢——所以要把
-             「用的是哪一种」告诉上层，文案才好提醒「等一下再刷」。 */
           var sv = null, kind = '';
           try {
             if (typeof w.saveSettings === 'function') { sv = w.saveSettings; kind = 'sync'; }
             else if (typeof w.saveSettingsDebounced === 'function') { sv = w.saveSettingsDebounced; kind = 'debounce'; }
           } catch (eS0) { sv = null; kind = ''; }
-          return { settings: w.extension_settings, save: sv, saveKind: kind, loc: w.location || null };
+          return { settings: w.extension_settings, save: sv, saveKind: kind, loc: w.location || null, via: 'win' };
         }
       } catch (eI) {}
       try { w = w.parent; } catch (eP) { w = null; }
@@ -528,7 +544,7 @@ function updErrText(code, r) {
     nourl: '没填版本文件地址',
     net: (r && r.timeout) ? '等太久了，没收到回音（网络慢或被拦）' : (r && r.cross ? '被浏览器拦了跨域请求（地址没有跨域头）' : '连不上更新地址（网络不通，或浏览器拦了跨域）'),
     http: '更新地址打不开' + (r && r.status ? '（HTTP ' + r.status + '）' : '') + '——多半是版本文件路径变了',
-    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.97"}）',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.98"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
     noself: '脚本表里没认出自己——手动粘贴进来的装不了，请手动重新导入',
