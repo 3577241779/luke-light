@@ -157,10 +157,13 @@ function verdictOf(ev) {
   if (sc === 'out') {
     return { code: 'skip', note: '不在检测范围（' + scopeLabel() + '）', conf: 'C' };
   }
-  /* v0.98 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了） */
+  /* v0.99 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了）。
+     v0.99 修：原来只看「请求名」。反代常给同一个渠道换名字（比如请求名写 gpt-4o、
+     实际后端是 gemini），只按请求名判会把真 Gemini 也拦在门外。现在请求名和
+     响应体/标签里认到的名字，任何一个像 Gemini 就查。 */
   try {
-    if (!inScopeModel(ev.requestedModel)) {
-      return { code: 'skip', note: '不在检查范围（只查 Gemini）', conf: 'C' };
+    if (!scopeHitGemini(ev)) {
+      return { code: 'skip', note: '不在检查范围（只查 Gemini）：' + (shortName(ev.requestedModel) || '请求名未知'), conf: 'C' };
     }
   } catch (eSC) {}
 
@@ -310,7 +313,7 @@ function finish(ev, meta) {
       ev.emptyConfirmed = true;
     }
   }
-  /* v0.98 检查范围：默认只查 Gemini。别的家族照常发、照常回，
+  /* v0.99 检查范围：默认只查 Gemini。别的家族照常发、照常回，
      不判定（verdictOf 里直接返回 skip）、不建基线，但破甲 / 抗截断 / 反 OOC 不受影响。 */
   var v = verdictOf(ev);
   /* v0.6 抗截断：先判「这一轮为什么停」，判定结果跟着记录走（关档时连看都不看） */

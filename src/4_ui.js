@@ -716,7 +716,7 @@ function mountAll() {
         (oocChannel() ? '走酒馆扩展提示位（IN_CHAT / depth 4）' : '贴末条 user 消息尾部') + '</div>';
     }
 
-    /* v0.98 查新版；v0.98 起能一键装（把新包写进酒馆助手的脚本表） */
+    /* v0.99 查新版；v0.99 起能一键装（把新包写进酒馆助手的脚本表） */
     html += '<div class="ar6-sec">体检</div>';
     html += '<div class="ar6-row">' +
       chip('⬆ 检查更新', true) +
@@ -761,9 +761,9 @@ function mountAll() {
       '<button class="ar6-b" data-ar6="save">存</button>' +
       '</div>';
 
-    /* v0.98 版本文件地址：单独一行。塞进上面那行会被挤到只剩百来像素，
+    /* v0.99 版本文件地址：单独一行。塞进上面那行会被挤到只剩百来像素，
        手机上连 placeholder 都看不全，看不全就等于没有这个输入框。 */
-    /* v0.98 内置了地址，这一格只是「你要换自己的地址才填」，平时空着就行。 */
+    /* v0.99 内置了地址，这一格只是「你要换自己的地址才填」，平时空着就行。 */
     html += '<div class="ar6-input">' +
       '<input data-ar6="updurl" placeholder="' + (updUrlIsDefault()
         ? '版本文件地址：已内置，留空即可'
@@ -1463,7 +1463,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.98 只查 Gemini：默认开。关掉就回到「什么都查」 */
+  /* v0.99 只查 Gemini：默认开。关掉就回到「什么都查」 */
   if (act.indexOf('🟦 只查 Gemini') === 0) {
     cfg.onlyGemini = (cfg.onlyGemini === false);
     saveCfg(); render();
@@ -1474,7 +1474,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.98 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
+  /* v0.99 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
   if (act.indexOf('⬆ 检查更新') === 0) {
     banner('⬆ 正在看有没有新版…', 'gray');
     updQuick().then(function (r) {
@@ -1492,7 +1492,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.98 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
+  /* v0.99 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
   if (act.indexOf('⬇ 装新版') === 0) {
     banner('⬇ 正在取新版…', 'gray');
     updInstall().then(function (r) {
@@ -1514,7 +1514,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v0.98 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
+  /* v0.99 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
      否则用户得等下次开面板才知道有没有新版 */
   if (act.indexOf('⟳ 开面板自动查') === 0) {
     cfg.upd = (String(cfg.upd || 'off') === 'check') ? 'off' : 'check';
@@ -2008,7 +2008,7 @@ function boot() {
       setTimeout(function () { try { banner('第一次用？点面板右上角的「说明」，或长按悬浮球', 'gray'); } catch (eH) {} }, 2600);
     }
   });
-  /* v0.98 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
+  /* v0.99 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
      关着闸或查不到时 updBoot 自己保持沉默 */
   step('版本检查', function () { updBoot(); });
   step('按钮', function () { bindScriptButtons(); });
