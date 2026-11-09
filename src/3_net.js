@@ -157,7 +157,7 @@ function verdictOf(ev) {
   if (sc === 'out') {
     return { code: 'skip', note: '不在检测范围（' + scopeLabel() + '）', conf: 'C' };
   }
-  /* v0.96 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了） */
+  /* v0.97 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了） */
   try {
     if (!inScopeModel(ev.requestedModel)) {
       return { code: 'skip', note: '不在检查范围（只查 Gemini）', conf: 'C' };
@@ -310,7 +310,7 @@ function finish(ev, meta) {
       ev.emptyConfirmed = true;
     }
   }
-  /* v0.96 检查范围：默认只查 Gemini。别的家族照常发、照常回，
+  /* v0.97 检查范围：默认只查 Gemini。别的家族照常发、照常回，
      不判定（verdictOf 里直接返回 skip）、不建基线，但破甲 / 抗截断 / 反 OOC 不受影响。 */
   var v = verdictOf(ev);
   /* v0.6 抗截断：先判「这一轮为什么停」，判定结果跟着记录走（关档时连看都不看） */

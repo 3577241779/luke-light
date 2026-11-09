@@ -197,7 +197,19 @@ function updGet(u, ttl) {
     if (!m) return r;
     return updGetOnce(m, ttl).then(function (r2) {
       if (r2 && r2.ok) return r2;
-      return { ok: false, err: 'net', cross: !!(r2 && r2.cross), both: true };
+      /* 两侧都失败：把信息量大的那个报上去。404 之类是 http，不是「没网」，
+         混成 net 会让人去查网络和跨域，而真正原因是路径没了。 */
+      var e1 = (r && r.err) || 'net', e2 = (r2 && r2.err) || 'net';
+      var isHttp = (e1 === 'http' || e2 === 'http');
+      return {
+        ok: false,
+        err: isHttp ? 'http' : 'net',
+        status: (r && r.status) || (r2 && r2.status) || 0,
+        cross: !!(r && r.cross) && !!(r2 && r2.cross),
+        timeout: !!(r && r.timeout) || !!(r2 && r2.timeout),
+        both: true,
+        tried: [e1, e2]
+      };
     });
   });
 }
@@ -250,7 +262,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v0.96）
+ * 一键更新（v0.97）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -266,7 +278,8 @@ function updBoot() {
  * ========================================================================== */
 
 var UPD_PKG_MAX = 4 * 1024 * 1024;  /* 4MB：现在整包 ~440KB，留足余量但不无限 */
-var UPD_BAK = null;                  /* { idx, content } —— 只在内存里，刷新即失效 */
+var UPD_BAK = null;
+var UPD_BUSY = false;   /* 装的时候按一次，防止连点叠加 */                  /* { idx, content } —— 只在内存里，刷新即失效 */
 var UPD_SELF_NAME_RE = /卢克之光|Anti-?Route/i;
 
 /* 从 iframe 往上找酒馆页的 extension_settings。找不到就返回 null：
@@ -317,11 +330,14 @@ function updSelfIndex(list) {
       try { cv = (it.content.match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eV) {}
       if (cv && cv === VERSION) sc += 4;
       if (/TT|移动|手机|mobile/i.test(nm) === mob) sc += 1;
+      /* enabled 是「哪条真在跑」最直接的信号，停用的那条不该被选中 */
+      if (it.enabled === false) sc -= 10;
 
       if (sc > bestScore) { bestScore = sc; best = i; tie = false; }
       else if (sc === bestScore) { tie = true; }
     }
-    if (best >= 0 && tie && bestScore < 6) return -1;
+    /* 分不出高低就不装：宁可让用户手动导一次，也不能把更新写进另一条 */
+    if (best >= 0 && tie) return -1;
     return best;
   } catch (e) { return -1; }
 }
@@ -353,72 +369,96 @@ function updParseFull(text) {
 
 /* 取回新包并装进去。返回 { ok, err, version } */
 function updInstall() {
-  return new Promise(function (resolve) {
-    function fin(o) { try { resolve(o); } catch (e) {} }
+  return new Promise(function (fin) {
+    var done = false;
+    function end(o) { if (done) return; done = true; UPD_BUSY = false; fin(o); }
+    if (UPD_BUSY) { fin({ ok: false, err: 'busy' }); return; }
+    UPD_BUSY = true;
     try {
       var st = updState();
       var pkgUrl = String((st && st.pkgUrl) || '').trim();
       var want = String((st && st.latest) || '').trim();
-      if (!updUrlOk(pkgUrl)) { fin({ ok: false, err: 'nopkg' }); return; }
+      if (!updUrlOk(pkgUrl)) { end({ ok: false, err: 'nopkg' }); return; }
 
-      var ctx = updHostCtx();
-      if (!ctx) { fin({ ok: false, err: 'nohost' }); return; }
-      var th = ctx.settings && ctx.settings.tavern_helper;
-      var list = th && th.scripts;
-      var idx = updSelfIndex(list);
-      if (idx < 0) { fin({ ok: false, err: 'noself' }); return; }
+      var ctx0 = updHostCtx();
+      var list0 = ctx0 && ctx0.settings && ctx0.settings.tavern_helper && ctx0.settings.tavern_helper.scripts;
+      if (!ctx0) { end({ ok: false, err: 'nohost' }); return; }
+      if (updSelfIndex(list0) < 0) { end({ ok: false, err: 'noself' }); return; }
 
       updGet(pkgUrl, UPD_PKG_TTL).then(function (rr) {
-        if (!rr || !rr.ok) { fin({ ok: false, err: (rr && rr.err) || 'net', status: rr && rr.status, cross: rr && rr.cross }); return null; }
+        if (!rr || !rr.ok) {
+          end({ ok: false, err: (rr && rr.err) || 'net', status: rr && rr.status, cross: rr && rr.cross, timeout: rr && rr.timeout });
+          return null;
+        }
         return Promise.resolve().then(function () {
           var text = rr.text;
-          if (!text || text.length > UPD_PKG_MAX) { fin({ ok: false, err: 'big' }); return; }
+          if (!text) { end({ ok: false, err: 'empty' }); return; }
+          if (text.length > UPD_PKG_MAX) { end({ ok: false, err: 'big' }); return; }
           var pkg = null;
           try { pkg = JSON.parse(text); } catch (eP) { pkg = null; }
           var body = pkg && typeof pkg.content === 'string' ? pkg.content : '';
-          if (!body || body.indexOf('var VERSION') < 0) { fin({ ok: false, err: 'badpkg' }); return; }
+          if (!body || body.indexOf('var VERSION') < 0) { end({ ok: false, err: 'badpkg' }); return; }
 
-          var got = '';
-                    try { got = (body.match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eG) {}
-                    /* 解析不出包内版本 = 这个包不可信，绝不拿版本文件里的 want 冒充 */
-                    if (!got || !UPD_VER_RE.test(got)) { fin({ ok: false, err: 'badpkg' }); return; }
-                    if (want && UPD_VER_RE.test(want) && updCmp(got, want) !== 0) {
-                      fin({ ok: false, err: 'mismatch', got: got, want: want });
-                      return;
-                    }
-          
-                    /* 已经就是这一版：不重写、不覆盖备份 */
-                    var curV = '';
-                    try { curV = (String(list[idx].content).match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eC) {}
-                    if (curV && curV === got) { fin({ ok: true, already: true, version: got }); return; }
-          
-                    if (!ctx.save) { fin({ ok: false, err: 'nosave' }); return; }
-          
-                    var oldName = list[idx].name;
-                    UPD_BAK = { idx: idx, content: list[idx].content, name: oldName };
-                    list[idx].content = body;
-                    if (pkg.name && typeof pkg.name === 'string') list[idx].name = pkg.name;
-          
-                    try { ctx.save(); } catch (eS) { fin({ ok: false, err: 'nosave' }); return; }
-                    /* 写完读回：内存里对不上就是没写进去，别报成功 */
-                    if (String(list[idx].content) !== body) { fin({ ok: false, err: 'nosave' }); return; }
-                    fin({ ok: true, version: got, saveKind: ctx.saveKind || '' });
+          var pv = '';
+          try { pv = (body.match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eG) {}
+          if (!pv || !UPD_VER_RE.test(pv)) { end({ ok: false, err: 'badpkg' }); return; }
+          if (want && UPD_VER_RE.test(want) && updCmp(pv, want) !== 0) {
+            end({ ok: false, err: 'mismatch', got: pv, want: want });
+            return;
+          }
+
+          /* 下载可能耗几十秒，宿主有机会在这期间换掉设置对象；写之前重新定位一次 */
+          var ctx = updHostCtx();
+          var list = ctx && ctx.settings && ctx.settings.tavern_helper && ctx.settings.tavern_helper.scripts;
+          var idx = updSelfIndex(list);
+          if (!ctx || idx < 0) { end({ ok: false, err: 'noself' }); return; }
+
+          var curV = '';
+          try { curV = (String(list[idx].content).match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eC) {}
+          if (curV && curV === pv) { end({ ok: true, already: true, version: pv }); return; }
+          if (!ctx.save) { end({ ok: false, err: 'nosave' }); return; }
+
+          var bak = { name: list[idx].name, info: list[idx].info, content: list[idx].content };
+          list[idx].content = body;
+          if (pkg.name && typeof pkg.name === 'string' && pkg.name.length <= 80) list[idx].name = pkg.name;
+          if (pkg.info && typeof pkg.info === 'string' && pkg.info.length <= 200) list[idx].info = pkg.info;
+
+          function rollback() {
+            try {
+              if (list[idx]) { list[idx].content = bak.content; list[idx].name = bak.name; list[idx].info = bak.info; }
+            } catch (eR) {}
+          }
+
+          /* saveSettings 是 async：不 await 就等于「发出去就算成功」 */
+          Promise.resolve().then(function () { return ctx.save(); }).then(function () {
+            var c2 = updHostCtx();
+            var l2 = c2 && c2.settings && c2.settings.tavern_helper && c2.settings.tavern_helper.scripts;
+            var i2 = updSelfIndex(l2);
+            if (i2 < 0 || String(l2[i2].content).indexOf('var VERSION = \'' + pv + '\'') < 0) {
+              rollback();
+              end({ ok: false, err: 'nosave' });
+              return;
+            }
+            UPD_BAK = { idx: i2, name: bak.name, info: bak.info, content: bak.content, body: body };
+            end({ ok: true, version: pv, saveKind: ctx.saveKind || '' });
+          }, function () { rollback(); end({ ok: false, err: 'nosave' }); });
         });
-      }).then(null, function () { fin({ ok: false, err: 'net' }); });
-    } catch (e) { fin({ ok: false, err: 'net' }); }
+      }).then(null, function () { end({ ok: false, err: 'net' }); });
+    } catch (e) { UPD_BUSY = false; end({ ok: false, err: 'net' }); }
   });
 }
 
 /* 一键：查 + 装。用户只点一下，不用先填地址、也不用先打开开关。
    返回 { ok, newer, installed, version|latest, err }。 */
 function updQuick() {
+  if (UPD_BUSY) return Promise.resolve({ ok: false, err: 'busy' });
   return updCheck(true).then(function (r) {
-    if (!r || !r.ok) return { ok: false, err: (r && r.err) || 'net', status: (r && r.status) || 0 };
+    if (!r || !r.ok) return { ok: false, err: (r && r.err) || 'net', status: (r && r.status) || 0, cross: !!(r && r.cross), timeout: !!(r && r.timeout) };
     if (!r.newer) return { ok: true, newer: false, latest: r.latest || '' };
     if (!updUrlOk(String((r && r.pkgUrl) || ''))) return { ok: false, err: 'nopkg', latest: r.latest || '' };
     return updInstall().then(function (i) {
       if (i && i.ok) return { ok: true, newer: true, installed: true, already: !!(i.already), version: i.version || r.latest || '', saveKind: i.saveKind || '' };
-      return { ok: false, err: (i && i.err) || 'net', latest: r.latest || '' };
+      return { ok: false, err: (i && i.err) || 'net', latest: r.latest || '', status: (i && i.status) || 0, cross: !!(i && i.cross), timeout: !!(i && i.timeout) };
     });
   }).then(null, function () { return { ok: false, err: 'net' }; });
 }
@@ -438,12 +478,22 @@ function updUndo() {
     if (!UPD_BAK) return { ok: false, err: 'nobak' };
     var ctx = updHostCtx();
     var list = ctx && ctx.settings && ctx.settings.tavern_helper && ctx.settings.tavern_helper.scripts;
-    if (!list || !list[UPD_BAK.idx]) return { ok: false, err: 'nohost' };
+    if (!list) return { ok: false, err: 'nohost' };
+    var idx = updSelfIndex(list);
+    if (idx < 0) return { ok: false, err: 'noself' };
+    /* 只认「这格确实还是我装进去的那份」才敢写回，免得覆盖到别人的脚本 */
+    if (UPD_BAK.body && String(list[idx].content).indexOf(String(UPD_BAK.body).slice(0, 120)) < 0) {
+      return { ok: false, err: 'nomatch' };
+    }
     if (!ctx.save) return { ok: false, err: 'nosave' };
-    list[UPD_BAK.idx].content = UPD_BAK.content;
-    if (UPD_BAK.name != null) list[UPD_BAK.idx].name = UPD_BAK.name;
-    try { ctx.save(); } catch (eS) { return { ok: false, err: 'nosave' }; }
-    if (String(list[UPD_BAK.idx].content) !== String(UPD_BAK.content)) return { ok: false, err: 'nosave' };
+    var old = { content: list[idx].content, name: list[idx].name, info: list[idx].info };
+    list[idx].content = UPD_BAK.content;
+    if (UPD_BAK.name != null) list[idx].name = UPD_BAK.name;
+    if (UPD_BAK.info != null) list[idx].info = UPD_BAK.info;
+    try { ctx.save(); } catch (eS) {
+      list[idx].content = old.content; list[idx].name = old.name; list[idx].info = old.info;
+      return { ok: false, err: 'nosave' };
+    }
     UPD_BAK = null;
     return { ok: true, saveKind: ctx.saveKind || '' };
   } catch (e) { return { ok: false, err: 'net' }; }
@@ -476,13 +526,16 @@ function updErrText(code, r) {
   var m = {
     off: '自动更新没开',
     nourl: '没填版本文件地址',
-    net: '连不上更新地址（网络不通，或浏览器拦了跨域）',
-    http: '对方返回了错误' + (r && r.status ? '（' + r.status + '）' : ''),
-    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.96"}）',
+    net: (r && r.timeout) ? '等太久了，没收到回音（网络慢或被拦）' : (r && r.cross ? '被浏览器拦了跨域请求（地址没有跨域头）' : '连不上更新地址（网络不通，或浏览器拦了跨域）'),
+    http: '更新地址打不开' + (r && r.status ? '（HTTP ' + r.status + '）' : '') + '——多半是版本文件路径变了',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"0.97"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
     noself: '脚本表里没认出自己——手动粘贴进来的装不了，请手动重新导入',
     big: '新包超过 4MB，不装',
+    empty: '更新地址回了个空文件',
+    busy: '正在装，稍等一下',
+    nomatch: '这条脚本已经不是刚装进去的那份了，不敢覆盖——请手动重新导入',
     badpkg: '新包不是有效的脚本（没有 VERSION 行）',
     mismatch: '新包版本和版本文件对不上',
     nosave: '写进酒馆设置时没成功——这次没装成，稍后再点一次',
