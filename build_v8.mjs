@@ -229,7 +229,7 @@ var AR6_API = {
   TRUNC_FIX: TRUNC_FIX,
   getTR: function () { return TR; },
   resetTR: function () { TR.code = ''; TR.note = ''; TR.at = 0; TR.try = 0; },
-  /* ---- v0.95 新版本检查与一键安装 ---- */
+  /* ---- v0.96 新版本检查与一键安装 ---- */
   updOn: updOn,
   updUrlOk: updUrlOk,
   updParse: updParse,

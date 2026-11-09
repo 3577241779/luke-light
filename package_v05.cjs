@@ -2,12 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const R = __dirname;
-const OUT = path.join(R, 'out095');
+const OUT = path.join(R, 'out096');
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 
 const VAR = [
-  { mode: 'desktop', file: 'antiroute-v8-desktop.js', name: '卢克之光 V0.95·桌面版' },
-  { mode: 'mobile', file: 'antiroute-v8-mobile.js', name: '卢克之光 V0.95·TT酒馆适配' }
+  { mode: 'desktop', file: 'antiroute-v8-desktop.js', name: '卢克之光 V0.96·桌面版' },
+  { mode: 'mobile', file: 'antiroute-v8-mobile.js', name: '卢克之光 V0.96·TT酒馆适配' }
 ];
 
 const BTN = ['🛡 防路由'];
@@ -16,7 +16,7 @@ let pass = 0, fail = 0;
 const ok = (n, c, e) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (e ? ' — ' + e : ''))); };
 
 const INFO = [
-  '卢克之光 V0.95 · 防降级观测与保档',
+  '卢克之光 V0.96 · 防降级观测与保档',
   '',
   '入口：工具栏一个「🛡 防路由」，或扩展菜单「魔法棒」——点开就是面板，其余功能全在面板里。',
   '（原来 8 个按钮全塞在工具栏，把底栏占满了。列表是导入时写死的，要 0 个按钮只能改包重导。）',
@@ -53,8 +53,8 @@ for (const v of VAR) {
   const c = back.content;
 
   ok(v.mode + ' JSON 可解析', !!back && back.type === 'script');
-  ok(v.mode + ' VERSION 0.9', /var VERSION = '0.95';/.test(c));
-  ok(v.mode + ' 包名是卢克之光 V0.95', String(back.name || '').indexOf('卢克之光 V0.95') === 0, back.name);
+  ok(v.mode + ' VERSION 0.9', /var VERSION = '0.96';/.test(c));
+  ok(v.mode + ' 包名是卢克之光 V0.96', String(back.name || '').indexOf('卢克之光 V0.96') === 0, back.name);
   ok(v.mode + ' 配置版本 831', /\bv: 831,/.test(c));
   ok(v.mode + ' UI_MODE 正确', c.indexOf("var UI_MODE = '" + v.mode + "';") >= 0);
   ok(v.mode + ' content 与源码一致', c === src);
@@ -122,7 +122,7 @@ for (const v of VAR) {
   ok(v.mode + ' 说明页有搜索', c.indexOf('id="ar6h-find"') >= 0 && c.indexOf('function helpFilter') >= 0);
   ok(v.mode + ' 说明页破甲改口为 1 次', c.indexOf('一轮只补一次') >= 0 && c.indexOf('补 2 次') < 0 && c.indexOf('最多补 2 次') < 0);
   ok(v.mode + ' INFO 已压缩', c.indexOf('【八、悬浮球') < 0 && c.indexOf('v7.4 新增三件') < 0);
-  ok(v.mode + ' 版本 0.9', /var VERSION = '0.95';/.test(c));
+  ok(v.mode + ' 版本 0.9', /var VERSION = '0.96';/.test(c));
   /* v0.5 护栏：证据层与度量层
      —— 只断「这版承诺过的东西真的在包体里」，不去猜实现细节。 */
   ok(v.mode + ' 错误体拆分（salvageError）', /function salvageError\(text, ev\)/.test(c) && c.indexOf('function salvage(text, ev)') < 0);
@@ -153,7 +153,7 @@ for (const v of VAR) {
   ok(v.mode + ' 面板有账本行', c.indexOf('esc(ledLine())') >= 0);
   ok(v.mode + ' 面板有三个新按钮', c.indexOf("btnIco('fp'") >= 0 && c.indexOf("btnIco('exportlog'") >= 0 && c.indexOf("btnIco('abtest'") >= 0);
   ok(v.mode + ' 面板体检区显示账本', c.indexOf('esc(ledLine())') >= 0 && c.indexOf('function ledLine()') >= 0);
-  ok(v.mode + ' 包名带 V0.95', String(back.name || '').indexOf('V0.95') >= 0);
+  ok(v.mode + ' 包名带 V0.96', String(back.name || '').indexOf('V0.96') >= 0);
 }
 
 console.log('\n打包：' + pass + ' 通过 / ' + fail + ' 失败');
