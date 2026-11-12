@@ -2,12 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const R = __dirname;
-const OUT = path.join(R, 'out096');
+const OUT = path.join(R, 'out11');
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
 
 const VAR = [
-  { mode: 'desktop', file: 'antiroute-v8-desktop.js', name: '卢克之光 V0.96·桌面版' },
-  { mode: 'mobile', file: 'antiroute-v8-mobile.js', name: '卢克之光 V0.96·TT酒馆适配' }
+  { mode: 'desktop', file: 'antiroute-v8-desktop.js', name: '卢克之光 V1.1·桌面版' },
+  { mode: 'mobile', file: 'antiroute-v8-mobile.js', name: '卢克之光 V1.1·TT酒馆适配' }
 ];
 
 const BTN = ['🛡 防路由'];
@@ -16,7 +16,7 @@ let pass = 0, fail = 0;
 const ok = (n, c, e) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (e ? ' — ' + e : ''))); };
 
 const INFO = [
-  '卢克之光 V0.96 · 防降级观测与保档',
+  '卢克之光 V1.1 · 防降级观测与保档',
   '',
   '入口：工具栏一个「🛡 防路由」，或扩展菜单「魔法棒」——点开就是面板，其余功能全在面板里。',
   '（原来 8 个按钮全塞在工具栏，把底栏占满了。列表是导入时写死的，要 0 个按钮只能改包重导。）',
@@ -53,8 +53,8 @@ for (const v of VAR) {
   const c = back.content;
 
   ok(v.mode + ' JSON 可解析', !!back && back.type === 'script');
-  ok(v.mode + ' VERSION 0.9', /var VERSION = '0.96';/.test(c));
-  ok(v.mode + ' 包名是卢克之光 V0.96', String(back.name || '').indexOf('卢克之光 V0.96') === 0, back.name);
+  ok(v.mode + ' VERSION 0.9', /var VERSION = '1.1';/.test(c));
+  ok(v.mode + ' 包名是卢克之光 V1.1', String(back.name || '').indexOf('卢克之光 V1.1') === 0, back.name);
   ok(v.mode + ' 配置版本 831', /\bv: 831,/.test(c));
   ok(v.mode + ' UI_MODE 正确', c.indexOf("var UI_MODE = '" + v.mode + "';") >= 0);
   ok(v.mode + ' content 与源码一致', c === src);
@@ -78,13 +78,13 @@ for (const v of VAR) {
   /* 8.30 护栏：手机面板只显示上半截 / 滑不动 */
   ok(v.mode + ' 重开不再整条覆盖 style', !/panelStyle\(uiMode\(\), false\)/.test(c));
   ok(v.mode + ' 重开路径补了 fitPanel', /function openPanelFromWand[\s\S]{0,1600}fitPanel\(r\)/.test(c));
-  ok(v.mode + ' fitPanel 夹底边', c.indexOf('var limit = vv - maxH - 6;') >= 0 && c.indexOf('if (top > limit) nt = limit;') >= 0);
-  ok(v.mode + ' fitPanel 保留桌面 0.78', c.indexOf("mode === 'mobile' ? 0.72 : 0.78") >= 0);
-  ok(v.mode + ' 移动端 72vh', c.indexOf('max-height:72vh') >= 0);
-  ok(v.mode + ' 移动端 svh 降级', c.indexOf('max-height:min(72svh,calc(100svh - 96px))') >= 0);
+  ok(v.mode + ' fitPanel 写 maxHeight 到 .ar6-p', c.indexOf('box.style.maxHeight = maxH') >= 0 && c.indexOf('if (maxH > 740) maxH = 740;') >= 0 && c.indexOf('if (maxH < 260) maxH = 260;') >= 0);
+  ok(v.mode + ' 卡片宽度上限 520px', c.indexOf('width:min(520px,calc(100vw - 24px))') >= 0);
+  ok(v.mode + ' 卡片高度 min(740px,92vh)', c.indexOf('max-height:min(740px,92vh)') >= 0 && c.indexOf('max-height:72vh') < 0);
+  ok(v.mode + ' 手机卡片圆角 14px', c.indexOf('border-radius:14px') >= 0);
   ok(v.mode + ' 移动端不再裁切 .ar6-p', c.indexOf('@media (max-width:520px){#ar6-root .ar6-p{overflow:hidden') < 0);
-  ok(v.mode + ' .ar6-body 零基弹性', c.indexOf('.ar6-body{flex:1 1 0;') >= 0);
-  ok(v.mode + ' 触摸不抢滚动', c.indexOf('(!isTouch && !hitScroll(t))') >= 0 && c.indexOf('(!touchMode || armLong)') >= 0);
+  ok(v.mode + ' .ar6-body 自适应弹性', c.indexOf('.ar6-body{flex:1 1 auto;') >= 0);
+  ok(v.mode + ' 滚动交给 .ar6-body', c.indexOf('.ar6-body{flex:1 1 auto;') >= 0 && c.indexOf('overflow-y:auto') >= 0 && c.indexOf('installRootDrag') < 0);
   ok(v.mode + ' 导出 diag', c.indexOf('diag: ar6Diag') >= 0);
   ok(v.mode + ' diag 判底边', c.indexOf('b.bottom <= vv + 2') >= 0);
 
@@ -98,7 +98,7 @@ for (const v of VAR) {
   const NC = (c.match(/var NARR_CHARM = \{[\s\S]*?\n\};/) || [''])[0];
   ok(v.mode + ' 去媚不含死亡结局', NC.length > 0 && NC.indexOf('通关方式就是') < 0 && NC.indexOf('死亡') < 0, 'NARR_CHARM 长度 ' + NC.length);
   ok(v.mode + ' 去媚换成世界自己转', NC.length > 0 && NC.indexOf('这个世界自己转') >= 0);
-  ok(v.mode + ' 面板有叙述区', c.indexOf("'<div class=\"ar6-sec\">叙述</div>") >= 0);
+  ok(v.mode + ' 面板有叙述卡', c.indexOf('ar6-mt2">叙述层</div>') >= 0);
   ok(v.mode + ' 面板有防全知/去媚 chip', c.indexOf("'🧭 防全知:'") >= 0 && c.indexOf("'💄 去媚:'") >= 0);
   ok(v.mode + ' 已删掉预览/工具栏两个按钮', c.indexOf('data-ar6="narr"') < 0 && c.indexOf('data-ar6="toolbar"') < 0);
 
@@ -106,7 +106,7 @@ for (const v of VAR) {
   ok(v.mode + ' ACTIONS 只剩 1 项', (c.match(/key: '(selftest|toggle|refract|jail|idprobe|card|unhide|clear|panel)'/g) || []).length === 1);
   ok(v.mode + ' 入口调 openPanel', c.indexOf('fn: function () { openPanel(); }') >= 0);
   ok(v.mode + ' openPanel 已定义并导出', c.indexOf('function openPanel()') >= 0 && c.indexOf('openPanel: openPanel,') >= 0);
-  ok(v.mode + ' 页脚按 btnReady 判断', c.indexOf('(btnReady() ?') >= 0);
+  ok(v.mode + ' 底部有看报告主按钮', c.indexOf('data-ar6="report"') >= 0 && c.indexOf('>看报告<') >= 0);
   ok(v.mode + ' 老按钮名留了别名', c.indexOf("'🛡️ 状态自检'") >= 0);
   ok(v.mode + ' 不再声称「8 个按钮」', c.indexOf('八按钮') < 0);
 
@@ -122,7 +122,7 @@ for (const v of VAR) {
   ok(v.mode + ' 说明页有搜索', c.indexOf('id="ar6h-find"') >= 0 && c.indexOf('function helpFilter') >= 0);
   ok(v.mode + ' 说明页破甲改口为 1 次', c.indexOf('一轮只补一次') >= 0 && c.indexOf('补 2 次') < 0 && c.indexOf('最多补 2 次') < 0);
   ok(v.mode + ' INFO 已压缩', c.indexOf('【八、悬浮球') < 0 && c.indexOf('v7.4 新增三件') < 0);
-  ok(v.mode + ' 版本 0.9', /var VERSION = '0.96';/.test(c));
+  ok(v.mode + ' 版本 0.9', /var VERSION = '1.1';/.test(c));
   /* v0.5 护栏：证据层与度量层
      —— 只断「这版承诺过的东西真的在包体里」，不去猜实现细节。 */
   ok(v.mode + ' 错误体拆分（salvageError）', /function salvageError\(text, ev\)/.test(c) && c.indexOf('function salvage(text, ev)') < 0);
@@ -151,9 +151,9 @@ for (const v of VAR) {
   ok(v.mode + ' 证据卡版本来自 VERSION', c.indexOf("'版本：卢克之光 V' + VERSION") >= 0 && c.indexOf('v7.3.0-test') < 0);
   ok(v.mode + ' 复制接 promise', /function copyTo\(txt, label\)/.test(c) && c.indexOf('复制被浏览器拒绝') >= 0);
   ok(v.mode + ' 面板有账本行', c.indexOf('esc(ledLine())') >= 0);
-  ok(v.mode + ' 面板有三个新按钮', c.indexOf("btnIco('fp'") >= 0 && c.indexOf("btnIco('exportlog'") >= 0 && c.indexOf("btnIco('abtest'") >= 0);
+  ok(v.mode + ' 首屏无体检按钮、更多里留导出', c.indexOf("btnIco('fp'") < 0 && c.indexOf("btnIco('abtest'") < 0 && c.indexOf("btnIco('exportlog'") >= 0);
   ok(v.mode + ' 面板体检区显示账本', c.indexOf('esc(ledLine())') >= 0 && c.indexOf('function ledLine()') >= 0);
-  ok(v.mode + ' 包名带 V0.96', String(back.name || '').indexOf('V0.96') >= 0);
+  ok(v.mode + ' 包名带 V1.1', String(back.name || '').indexOf('V1.1') >= 0);
 }
 
 console.log('\n打包：' + pass + ' 通过 / ' + fail + ' 失败');

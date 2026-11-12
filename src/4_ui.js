@@ -8,6 +8,8 @@ var UI_MODE = 'auto';   /* 打包时替换为 desktop / mobile */
 var ROOT_ID = 'ar6-root';
 var STYLE_ID = 'ar6-style';
 var minimized = false;
+var MORE_OPEN = false;   /* 「更多」展开态：render 是全量重绘，必须落进模块变量 */
+var PANEL_SHOWN = false; /* 弹窗已经入场过一次；后续重绘不再重播入场过渡 */
 var clickCount = 0;
 var ACT_TS = {};   /* act -> 最近一次执行时间 */
 var btnBoundAt = 0;
@@ -57,9 +59,9 @@ var CSS_TEXT = [
   '#ar6-root::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}',
   '#ar6-root::-webkit-scrollbar-track{background:transparent;}',
   '.ar6-tw{max-width:100%;touch-action:pan-x;overscroll-behavior-x:contain;}',
-  '@media (max-width:520px){#ar6-root .ar6-h{touch-action:none;cursor:grab;}}',
+  '@media (max-width:520px){#ar6-root .ar6-p{border-radius:14px;}}',
   '#ar6-root{pointer-events:auto;}',
-  '.ar6-p,.ar6-pill,.ar6-b,.ar6-x{pointer-events:auto;}',
+  '.ar6-p,.ar6-b,.ar6-x{pointer-events:auto;}',
   '.ar6-p{background:linear-gradient(180deg,rgba(22,27,34,.97),rgba(13,17,23,.98));border:1px solid var(--ar-line);border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.62),0 0 0 1px rgba(255,255,255,.03) inset;}',
   '.ar6-h{position:relative;display:flex;align-items:center;gap:8px;padding:11px 14px;background:linear-gradient(96deg,rgba(88,166,255,.16),rgba(88,166,255,.02) 52%,transparent 78%);border-bottom:1px solid var(--ar-line);}',
   '.ar6-p{position:relative;overflow:hidden}',
@@ -83,11 +85,6 @@ var CSS_TEXT = [
   '.ar6-sp{flex:1;}',
   '.ar6-x{border:0;background:transparent;font-size:15px;line-height:1;color:var(--ar-mut);cursor:pointer;padding:3px 5px;border-radius:6px;}',
   '.ar6-x:hover{color:#e6edf3;background:rgba(255,255,255,.07);}',
-  '.ar6-hb{width:18px;height:18px;border-radius:50%;margin-left:6px;cursor:grab;touch-action:none;',
-  'background:radial-gradient(circle at 35% 30%,#9ecbff,#3d7fe0 65%,#1f4d96);',
-  'box-shadow:0 0 0 1px rgba(255,255,255,.28) inset,0 2px 8px rgba(61,127,224,.55);flex:0 0 18px}',
-  '.ar6-hb:active{cursor:grabbing}',
-  '.ar6-pill{display:flex;align-items:center;gap:7px;padding:0;border-radius:999px;background:transparent;border:0;box-shadow:none;cursor:pointer;font-size:12px;color:#e6edf3;}',
   '.ar6-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px 4px;}',
   '.ar6-c{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--ar-line);border-radius:12px;padding:8px 6px;text-align:center;}',
   '.ar6-c .n{font-size:19px;font-weight:680;font-variant-numeric:tabular-nums;line-height:1.15;color:#f0f6fc;}',
@@ -158,26 +155,39 @@ var CSS_TEXT = [
   '@keyframes ar6-bump{0%{transform:translateY(0)}35%{transform:translateY(-3px)}100%{transform:translateY(0)}}',
   '.ar6-anim{animation:ar6-pop .18s cubic-bezier(.2,.8,.2,1)}',
   '.ar6-bump{animation:ar6-bump .26s cubic-bezier(.2,.8,.2,1)}',
-  '.ar6-pill{transition:transform .12s cubic-bezier(.2,.8,.2,1)}',
-  '.ar6-pill:active{transform:scale(.94)}',
   '.ar6-b{transition:transform .1s ease,background .12s linear}',
   '.ar6-b:active{transform:scale(.97)}',
-  '.ar6-b:focus-visible,.ar6-x:focus-visible,.ar6-pill:focus-visible{outline:2px solid var(--ar-acc);outline-offset:2px}',
+  '.ar6-b:focus-visible,.ar6-x:focus-visible{outline:2px solid var(--ar-acc);outline-offset:2px}',
   '@media (prefers-reduced-motion:reduce){.ar6-anim,.ar6-bump,#ar6-card,#ar6-card>div{animation:none!important;transition-duration:.01ms!important}}',
-  '.ar6-st .ok{color:#7ee787;}.ar6-st .bad{color:#ff7b72;}.ar6-st .warn{color:#f2cc60;}'
 ].join('\n');
 
 function ensureStyle(d) {
   try {
     if (!d || !d.head) return;
-    if (d.getElementById(STYLE_ID)) return;
-    var s = d.createElement('style');
-    s.id = STYLE_ID;
-    s.appendChild(d.createTextNode(CSS_TEXT));
-    d.head.appendChild(s);
-    if (!d.getElementById('ar6-style82')) {
+    var old = d.getElementById(STYLE_ID);
+    /* 旧实例（没刷新页面就热更新、或者同页装了两份）会留下一个同 id 的老样式表。
+       以前看到 id 就直接 return，结果新面板拿到的永远是上一版的 CSS ——
+       表现就是"面板完全没有美化"。这里改成：认版本戳，旧的直接换掉。 */
+    if (old && old.getAttribute('data-v') !== 'v1') {
+      try { old.parentNode.removeChild(old); } catch (eR) {}
+      old = null;
+    }
+    if (!old) {
+      var s = d.createElement('style');
+      s.id = STYLE_ID;
+      s.setAttribute('data-v', 'v1');
+      s.appendChild(d.createTextNode(CSS_TEXT));
+      d.head.appendChild(s);
+    }
+    var old2 = d.getElementById('ar6-style82');
+    if (old2 && old2.getAttribute('data-v') !== 'v1') {
+      try { old2.parentNode.removeChild(old2); } catch (eR2) {}
+      old2 = null;
+    }
+    if (!old2) {
       var s2 = d.createElement('style');
       s2.id = 'ar6-style82';
+      s2.setAttribute('data-v', 'v1');
       s2.appendChild(d.createTextNode(V82_CSS));
       d.head.appendChild(s2);
     }
@@ -188,37 +198,6 @@ function ensureStyle(d) {
 
 var V82_CSS = [
   '#ar6-root{--bg-1:#161b22;--bg-2:#0d1117;--ln-1:#30363d;--ln-2:#21262d;--acc:#58a6ff;}',
-  '.ar6-pad{display:flex;flex-direction:column;gap:6px;padding:9px 10px 8px;width:100%;height:100%;box-sizing:border-box;color:#e6edf3;min-width:0;}',
-  '.ar6-pad-r,.ar6-pad-f{min-width:0}',
-  '.ar6-pad-r input[type=range]{width:100%;min-width:0;flex:1 1 auto}',
-  '.ar6-pad-f .ar6-b{flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap}',
-  '.ar6-pad-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:grab;user-select:none;}',
-  '.ar6-pad-h b{font-size:12px;font-weight:600;letter-spacing:.2px}',
-  '.ar6-pad-h .ar6-x{margin-left:auto;width:20px;height:20px;line-height:1;font-size:13px}',
-  '.ar6-pad-r{display:flex;align-items:center;gap:8px;font-size:11px;color:#c9d1d9}',
-  '.ar6-pad-r span{flex:0 0 22px}',
-  '.ar6-pad-r input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:18px;background:transparent}',
-  '.ar6-pad-r input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#30363d}',
-  '.ar6-pad-r input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#58a6ff;box-shadow:0 0 0 3px rgba(88,166,255,.18)}',
-  '.ar6-pad-r input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#30363d}',
-  '.ar6-pad-r input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#58a6ff}',
-  '.ar6-grip{margin-top:1px;padding:6px 0;border:1px dashed #3d444d;border-radius:8px;text-align:center;font-size:11px;color:#c9d1d9;cursor:grab;touch-action:none;user-select:none;}',
-  '.ar6-grip:active{border-color:#58a6ff;color:#c9d1d9}',
-  '.ar6-pad-f{display:flex;gap:6px;margin-top:auto}',
-  '.ar6-pad-f .ar6-b{flex:1;justify-content:center;font-size:11px;padding:5px 0}',
-  '.ar6-ring{position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:.55;',
-  'background:conic-gradient(from 0deg,rgba(88,166,255,0) 0deg,rgba(88,166,255,.85) 70deg,rgba(88,166,255,0) 150deg,rgba(88,166,255,0) 360deg);',
-  '-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px));',
-  'animation:ar6spin 3.6s linear infinite;}',
-  '@keyframes ar6spin{to{transform:rotate(360deg)}}',
-  '.ar6-sheen{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;}',
-  '.ar6-sheen::after{content:"";position:absolute;top:0;left:-60%;width:45%;height:100%;',
-  'background:linear-gradient(100deg,rgba(255,255,255,0) 0,rgba(255,255,255,.28) 50%,rgba(255,255,255,0) 100%);',
-  'transform:skewX(-18deg);animation:ar6sheen 4.8s ease-in-out infinite;}',
-  '@keyframes ar6sheen{0%,72%{left:-60%;opacity:0}78%{opacity:.85}100%{left:120%;opacity:0}}',
-  '#ar6-root[data-st="bad"] .ar6-ring{animation-duration:2.2s;opacity:.75}',
-  '#ar6-root[data-st="ok"] .ar6-ring{animation-duration:6s;opacity:.4}',
-  '#ar6-root[data-st="bad"] .ar6-sheen::after{animation-duration:2.6s}',
   '#ar6-bn2{position:fixed;left:50%;transform:translateX(-50%) translateY(-8px);z-index:2147483002;',
   'display:flex;align-items:flex-start;gap:9px;max-width:min(560px,92vw);padding:9px 11px 9px 12px;border-radius:12px;',
   'background:rgba(22,27,34,.94);border:1px solid #30363d;border-left-width:3px;',
@@ -239,14 +218,57 @@ var V82_CSS = [
   '.ar6-mode-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;color:#c9d1d9}',
   '.ar6-sel{background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:4px 6px;font-size:12px}',
   '.ar6-hint{font-size:11px;color:#6e7681;margin:2px 0 6px}',
-  '#ar6-root .ar6-body{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));}',
+  '#ar6-root .ar6-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));}',
   '#ar6-root .ar6-body::-webkit-scrollbar{width:9px;height:9px;}',
   '#ar6-root .ar6-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border:2px solid transparent;background-clip:content-box;border-radius:6px;}',
-  '#ar6-root .ar6-p{display:flex;flex-direction:column;height:100%;max-height:100%;min-height:0;overflow:hidden;}',
+  '#ar6-root .ar6-p{display:flex;flex-direction:column;width:min(520px,calc(100vw - 24px));max-width:100%;height:auto;max-height:min(740px,92vh);min-height:0;overflow:hidden;border-radius:18px;transform:translateY(8px) scale(.985);opacity:0;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}',
+  '#ar6-root .ar6-p[data-in="1"]{transform:none;opacity:1;}',
   '#ar6-root .ar6-h{flex:0 0 auto;position:relative;z-index:3;}',
   '#ar6-root .ar6-p>.ar6-h{position:sticky;top:0}',
-  '@media (prefers-reduced-motion: reduce){.ar6-ring,.ar6-sheen::after{animation:none!important}}',
-  '#ar6-root[data-rm="1"] .ar6-ring,#ar6-root[data-rm="1"] .ar6-sheen::after{animation:none!important}'
+  '@media (prefers-reduced-motion: reduce){#ar6-root .ar6-p{transition-duration:.01ms!important}}',
+  '#ar6-root.ar6-mobile .ar6-p{border-radius:14px;max-height:calc(100% - 20px);}',
+  '#ar6-root .ar6-h{padding:13px 14px 11px;gap:10px;}',
+  '.ar6-logo{flex:0 0 38px;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#3fb950,#1f6feb);box-shadow:0 6px 16px rgba(31,111,235,.32),inset 0 1px 0 rgba(255,255,255,.25);}',
+  '.ar6-logo svg.ar6-i{width:20px!important;height:20px!important;min-width:20px!important;max-width:20px!important;flex:0 0 20px!important;stroke:#fff!important;stroke-width:1.9!important;opacity:1!important;}',
+  '.ar6-hx{display:flex;flex-direction:column;min-width:0;flex:1 1 auto;}',
+  '.ar6-mt{display:block;font-size:15px;font-weight:680;letter-spacing:.4px;color:#f0f6fc;line-height:1.25;}',
+  '.ar6-ms{display:block;font-size:11px;color:var(--ar-mut);line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+  '.ar6-mx{margin-left:auto;flex:0 0 auto;}',
+  '.ar6-mk{display:flex;flex-direction:column;align-items:stretch;width:auto;margin:10px 12px 0;padding:11px 12px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.035);color:#e6edf3;font:inherit;text-align:left;cursor:pointer;transition:background .14s,border-color .14s;}',
+  '.ar6-mk.on{background:linear-gradient(135deg,rgba(63,185,80,.20),rgba(31,111,235,.10));border-color:rgba(63,185,80,.45);}',
+  '.ar6-mkc{cursor:default;}',
+  '.ar6-mk-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:640;color:#f0f6fc;}',
+  '.ar6-mk-d{display:block;margin-top:3px;font-size:11.5px;color:var(--ar-mut);line-height:1.45;}',
+  '.ar6-mt2{font-size:13px;font-weight:640;color:#f0f6fc;}',
+  '#ar6-root .ar6-mk-t{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;}',
+  '#ar6-root .ar6-mk{align-items:stretch;}',
+  '#ar6-root .ar6-mk{position:relative;display:flex;flex-direction:column;width:calc(100% - 24px);box-sizing:border-box;}',
+  '#ar6-root .ar6-mk>.ar6-mk-t{padding-right:46px;}',
+  '#ar6-root .ar6-mk .ar6-sw{position:absolute;right:12px;top:12px;margin:0;}',
+  '.ar6-sw{z-index:2;width:34px;height:19px;border-radius:999px;margin-left:auto;flex:0 0 34px;position:relative;background:rgba(210,153,34,.42);transition:background .16s;}',
+  '.ar6-sw::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#e3b341;transition:transform .16s,background .16s;}',
+  '.ar6-sw[data-on="1"]{background:rgba(46,160,67,.55);}',
+  '.ar6-sw[data-on="1"]::after{transform:translateX(15px);background:#7ee787;}',
+  '.ar6-nums{display:flex;gap:8px;padding:12px 12px 0;}',
+  '.ar6-hint{margin:12px 12px 0;padding:10px 11px;border-radius:11px;font-size:11.5px;line-height:1.55;color:#9fb0c6;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.18);}',
+  '.ar6-n{flex:1 1 0;min-width:0;text-align:center;padding:9px 4px;border-radius:11px;background:rgba(255,255,255,.028);border:1px solid var(--ar-line);}',
+  '.ar6-n b{display:block;font-size:18px;font-weight:680;color:#f0f6fc;font-variant-numeric:tabular-nums;line-height:1.2;}',
+  '.ar6-n span{display:block;font-size:10.5px;color:var(--ar-mut);margin-top:2px;}',
+  '.ar6-mr{display:flex;align-items:center;gap:10px;margin:10px 12px 0;padding:11px 12px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.03);}',
+  '.ar6-mc{flex:1 1 auto;min-width:0;}',
+  '.ar6-cyc{flex:0 0 auto;min-width:58px;padding:7px 12px;border-radius:9px;border:1px solid var(--ar-line);background:rgba(255,255,255,.05);color:#c9d1d9;font:inherit;font-size:12px;font-weight:640;cursor:pointer;}',
+  '.ar6-cyc.on{background:rgba(63,185,80,.16);border-color:rgba(63,185,80,.5);color:#7ee787;}',
+  '.ar6-mrow{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;}',
+  '.ar6-mind{margin:6px 14px 0;padding:0;}',
+  '.ar6-dline{font-size:11px;color:var(--ar-mut);line-height:1.5;}',
+  '.ar6-mline{display:flex;align-items:center;gap:10px;padding:8px 0 0;margin-top:8px;border-top:1px solid rgba(255,255,255,.07);}',
+  '.ar6-mline span{flex:1 1 auto;font-size:12.5px;color:#c9d1d9;}',
+  '.ar6-mf{flex:0 0 auto;display:flex;gap:8px;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--ar-line);background:rgba(0,0,0,.18);}',
+  '.ar6-mbtn{flex:1 1 0;height:40px;border-radius:11px;border:1px solid var(--ar-line);background:rgba(255,255,255,.05);color:#e6edf3;font:inherit;font-size:13px;font-weight:650;cursor:pointer;}',
+  '.ar6-mbtn.ar6-pri{flex:0 0 60%;background:linear-gradient(135deg,#2da44e,#1f883d);border-color:rgba(63,185,80,.55);box-shadow:0 6px 18px rgba(35,134,54,.28);}',
+  '.ar6-mbtn.ar6-sec{flex:1 1 0;}',
+  '.ar6-more{margin:12px 12px 0;padding-top:2px;border-top:1px dashed rgba(255,255,255,.10);}',
+  '.ar6-mmore-h{font-size:10.5px;letter-spacing:.9px;color:var(--ar-mut);text-transform:uppercase;padding:10px 0 2px;}'
 ].join('');
 
 var BANNER_KIND = { ok: '#2da44e', warn: '#bf8700', bad: '#cf222e', gray: '#57606a' };
@@ -335,46 +357,15 @@ function counts() {
 }
 
 function panelStyle(mode, mini) {
-  if (mini) {
-    var ns = floatSizePx();
-    var box = 'width:' + ns + 'px;height:' + ns + 'px;min-width:' + ns + 'px;min-height:' + ns + 'px;left:0;top:0;';
-    if (mode === 'mobile') return 'position:fixed;z-index:2147483000;' + box;
-    return 'position:fixed;z-index:2147483000;' + box;
-  }
+  /* v1.1：根节点是全屏遮罩，弹窗盒子居中；位置不再记忆，也不再拖动 */
+  var base = 'position:fixed;left:0;top:0;right:auto;bottom:auto;width:100vw;' +
+    'height:var(--TH-viewport-height,100vh);z-index:2147483000;display:flex;justify-content:center;' +
+    'background:rgba(1,4,9,.62);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow:hidden;';
   if (mode === 'mobile') {
-    // 悬浮窗：可拖动、可记忆位置，不再铺满底部
-    var baseW = 'width:min(92vw,380px);max-height:72vh;max-height:min(72vh,calc(100vh - 96px));max-height:min(72svh,calc(100svh - 96px));' +
-      'border-radius:16px;display:flex;flex-direction:column;' +
-      'overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;scrollbar-width:thin;box-shadow:0 12px 36px rgba(0,0,0,.28);';
-    var lx = cfg.mx, ly = cfg.my;
-    if (typeof lx === 'number' && typeof ly === 'number') {
-      var ww = (HOST.innerWidth || 360), hh = (HOST.innerHeight || 640);
-      /* 面板实际宽/高：按视口和 72vh 上限估，再把记忆坐标夹回可视区 */
-      var pw = Math.min(Math.round(ww * 0.92), 380);
-      var ph = Math.min(Math.round(hh * 0.72), hh - 24);
-      if (!isFinite(lx) || !isFinite(ly) || lx < -20 || ly < -20 || lx > ww - 40 || ly > hh - 60) { lx = null; ly = null; }
-      else {
-        lx = Math.max(6, Math.min(lx, ww - pw - 6));
-        ly = Math.max(6, Math.min(ly, hh - ph - 6));
-      }
-    }
-    if (typeof lx === 'number' && typeof ly === 'number') {
-      return 'position:fixed;left:' + Math.round(lx) + 'px;top:' + Math.round(ly) + 'px;z-index:2147483000;' + baseW;
-    }
-    return 'position:fixed;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:2147483000;' + baseW;
+    return base + 'align-items:flex-start;padding:12px 8px 8px;' +
+      'padding-top:calc(12px + env(safe-area-inset-top,0px));';
   }
-  var dw = (HOST.innerWidth || 1280);
-  var wPx = Math.min(440, dw - 32);
-  var hPx = Math.min(Math.round((HOST.innerHeight || 800) * 0.78), 820);
-  var dx = cfg.mx, dy = cfg.my;
-  if (typeof dx === 'number' && typeof dy === 'number' && isFinite(dx) && isFinite(dy)) {
-    dx = Math.max(8, Math.min(dx, dw - wPx - 8));
-    dy = Math.max(8, Math.min(dy, (HOST.innerHeight || 800) - hPx - 8));
-  }
-  return 'position:fixed;right:16px;bottom:18px;z-index:2147483000;width:' + wPx + 'px;max-width:calc(100vw - 32px);' +
-    'max-height:min(78vh,820px);overflow-y:auto;overflow-x:auto;scrollbar-width:thin;' +
-    (typeof dx === 'number' ? ('left:' + Math.round(dx) + 'px;right:auto;') : '') +
-    (typeof dy === 'number' ? ('top:' + Math.round(dy) + 'px;bottom:auto;') : '');
+  return base + 'align-items:center;padding:16px;';
 }
 
 var DISPOSED = false;   /* dispose 之后禁止一切渲染，避免面板被"复活" */
@@ -500,25 +491,10 @@ function btnIco(act, name, text, cls) {
     ico(name) + '<span>' + esc(text) + '</span></button>';
 }
 
-function openPad() {
-  PAD_OPEN = true;
-  minimized = true;
-  cfg.min = true;
-  try { closeCard(); } catch (eC) {}
-  render();
-  try { floatApplyPosition(root(), true); } catch (eA) {}
-}
-
-function closePad() {
-  PAD_OPEN = false;
-  try { saveCfg(); } catch (eS) {}
-  render();
-  try { floatApplyPosition(root(), true); } catch (eA) {}
-}
-
 var OUTSIDE_BOUND = false;
 
 /* 点面板外的空白处：有浮层就关浮层，没浮层就收起面板 */
+/* 点弹窗外面的遮罩空白：关掉弹窗。Esc 同样关。 */
 function bindOutsideDismiss() {
   if (OUTSIDE_BOUND) return;
   if (!DOC || typeof DOC.addEventListener !== 'function') return;
@@ -535,48 +511,127 @@ function bindOutsideDismiss() {
       if (minimized) return;
       var el = DOC.getElementById(ROOT_ID);
       if (!el) return;
-      if (t && el.contains && el.contains(t)) return;
-      if (t && t.closest && t.closest('#' + ROOT_ID)) return;
+      /* v1.1：根节点本身就是遮罩（el.contains 恒真），只能以弹窗盒子为界 */
+      var box = el.querySelector ? el.querySelector('.ar6-p') : null;
+      if (box && t && box.contains && box.contains(t)) return;
       minimized = true;
+      MORE_OPEN = false;
       syncMin();
       render();
     } catch (e) {}
   }, true);
+  DOC.addEventListener('keydown', function (ev) {
+    try {
+      if (DISPOSED || minimized) return;
+      var k = ev && (ev.key || ev.keyCode);
+      if (k === 'Escape' || k === 'Esc' || k === 27) {
+        minimized = true;
+        MORE_OPEN = false;
+        syncMin();
+        render();
+      }
+    } catch (e) {}
+  });
 }
 
 function fitPanel(el) {
   try {
-    if (!el || minimized) return;
+    if (!el) return;
+    if (minimized) return;   /* 关闭态是 display:none，别把盒子又摆出来 */
     var vv = (HOST.visualViewport && HOST.visualViewport.height) || HOST.innerHeight || 720;
-    var mode = uiMode();
-    var maxH = Math.round(vv * (mode === 'mobile' ? 0.72 : 0.78));
-    if (mode !== 'mobile') maxH = Math.min(maxH, 820);
-    /* v8.30：给固定定位的底部按钮（#send_form）留出空间，避免面板底边压在输入框下面 */
-    if (maxH > vv - 96) maxH = Math.round(vv - 96);
-    if (maxH < 240) maxH = 240;
-    el.style.height = maxH + 'px';
-    el.style.maxHeight = maxH + 'px';
+    /* 弹窗上限：桌面 min(740, 92vh)；手机再让掉安全区的上下留白 */
+    var maxH = Math.round(vv * 0.92) - (uiMode() === 'mobile' ? 20 : 32);
+    if (maxH > 740) maxH = 740;
+    if (maxH < 260) maxH = 260;
     el.style.display = 'flex';
-    el.style.flexDirection = 'column';
-    el.style.overflow = 'hidden';
-    /* v8.30：高度定死之后必须把 top 夹回可见区。
-       8.28 只写高度不看位置，手机上一旦 top 偏下，底边就落到屏幕外，
-       用户看到的正是「只有上半截」——这正是本次反馈的根因之一。 */
-    var top = parseFloat(el.style.top);
-    if (!isFinite(top)) top = el.getBoundingClientRect().top;
-    if (isFinite(top)) {
-      var limit = vv - maxH - 6;
-      if (limit < 6) limit = 6;
-      var nt = top;
-      if (top > limit) nt = limit;
-      else if (top < 6) nt = 6;
-      if (nt !== top) { el.style.top = Math.round(nt) + 'px'; el.style.bottom = 'auto'; }
-      if (typeof cfg === 'object' && cfg) {
-        if (!(Math.abs((cfg.my == null ? nt : cfg.my) - nt) <= 2)) { cfg.my = Math.round(nt); try { saveCfg(); } catch (eS) {} }
-        else cfg.my = Math.round(nt);
-      }
-    }
+    el.style.alignItems = uiMode() === 'mobile' ? 'flex-start' : 'center';
+    el.style.justifyContent = 'center';
+    var box = el.querySelector ? el.querySelector('.ar6-p') : null;
+    if (box) { box.style.maxHeight = maxH + 'px'; }
   } catch (e) {}
+}
+
+/* 循环档位按钮：显示当前档（关/轻/中、关/轻/强），data-ar6 与原 chip 一字不差，
+   所以 onPanelClick 里的分支不用动。 */
+function cycBtn(label, text, on) {
+  return '<button class="ar6-cyc' + (on ? ' on' : '') + '" data-ar6="' + esc(String(label)) + '">' +
+    esc(String(text)) + '</button>';
+}
+
+/* 「更多」展开块：更新 / 防护细项 / 反 OOC 细项 / 数据 / 地址凭据 / 自检 / 说明卡。
+   全部沿用原有 data-ar6 标签，分支零改动。 */
+function moreHTML() {
+  var h = '<div class="ar6-more">';
+  h += '<div class="ar6-mmore-h">更新</div>';
+  h += '<div class="ar6-mrow">' +
+    chip('⬆ 检查更新', true) +
+    (updHasPkg() ? chip('⬇ 装新版:' + updLatest(), true) : '') +
+    (updCanUndo() ? chip('↩ 撤销更新', false) : '') +
+    '</div>';
+  h += '<div class="ar6-mrow">' +
+    chip('⟳ 开面板自动查:' + (updOn() ? '开' : '关'), updOn()) +
+    chip('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), cfg.onlyGemini !== false) +
+    '</div>';
+  var updTxt = updLine();
+  if (updTxt) h += '<div class="ar6-dline">' + esc(updTxt) + '</div>';
+  h += '<div class="ar6-dline">' + esc(ledLine()) + '</div>';
+  if (AB_STATE.last || AB_STATE.running) h += '<div class="ar6-dline">' + esc(abLine()) + '</div>';
+
+  h += '<div class="ar6-mmore-h">防护细项</div>';
+  h += '<div class="ar6-mrow">' +
+    chip('🪶 微扰:' + profileLabel(), cfg.refract !== 'off') +
+    chip('🧠 思考:' + (cfg.think === 'high' ? '高' : '不改'), cfg.think === 'high') +
+    chip('📌 钉参数:' + (cfg.pin ? '开' : '关'), cfg.pin) +
+    chip('👁 观察器:' + (cfg.observe ? '开' : '关'), cfg.observe) +
+    chip(cfg.safe ? '🩺 安全:开' : '🩺 安全:关', cfg.safe) +
+    chip('🎯 范围:' + scopeLabel(), cfg.scope !== 'all') +
+    chip(truncLenChipLabel(), truncLevel(cfg.trunc) !== 'off' && truncLenOf(cfg.truncLen) > 0) +
+    '</div>';
+  h += '<div class="ar6-input">' +
+    '<input data-ar6="scope" placeholder="范围关键词，逗号分隔（如 deepseek,gemini）" value="' + esc(cfg.scopeList) + '">' +
+    '<button class="ar6-b" data-ar6="savescope">存范围</button>' +
+    '</div>';
+  if (cfg.jail === 'strong') {
+    h += '<div class="ar6-mrow">' +
+      chip('保底token:' + (cfg.jailTok ? '开' : '关'), cfg.jailTok) +
+      chip('解安全:' + (cfg.jailSafe ? '开' : '关'), cfg.jailSafe) +
+      chip('预审框:' + (cfg.jailPre ? '开' : '关'), cfg.jailPre) +
+      chip('输出契约:' + (cfg.jailText ? '开' : '关'), cfg.jailText) +
+      '</div>';
+  }
+
+  h += '<div class="ar6-mmore-h">反 OOC 细项</div>';
+  h += '<div class="ar6-mrow">' +
+    chip('📈 行为基线:' + (String(cfg.base || 'on') === 'on' ? '开' : '关'), String(cfg.base || 'on') === 'on') +
+    chip('🔬 返回格式:' + (String(cfg.shape || 'on') === 'on' ? '开' : '关'), String(cfg.shape || 'on') === 'on') +
+    oocChip('roll') + oocChip('tpl') + oocChip('chg') + oocChip('voice') +
+    '</div>';
+
+  h += '<div class="ar6-mmore-h">数据</div>';
+  h += '<div class="ar6-mrow">' +
+    btnIco('exportlog', 'out', '导出记录') +
+    btnIco('help', 'ask', '说明') +
+    btnIco('clear', 'trash', '清空', 'danger') +
+    btnIco('rebuild', 'refresh', '重建基线') +
+    '</div>';
+
+  h += '<div class="ar6-mmore-h">地址与凭据</div>';
+  h += '<div class="ar6-input"><input data-ar6="updurl" placeholder="' +
+    (updUrlIsDefault() ? '版本文件地址：已内置，留空即可' : esc('自定义地址：' + updUrl())) +
+    '" value="' + esc(cfg.updUrl) + '"></div>';
+  h += '<div class="ar6-input">' +
+    '<input data-ar6="base" placeholder="反代 Base（如 https://x/v1）" value="' + esc(cfg.dualBase) + '">' +
+    '<input data-ar6="key" type="password" autocomplete="off" spellcheck="false" placeholder="API Key（可留空）" value="' + esc(cfg.dualKey) + '">' +
+    '<button class="ar6-b" data-ar6="save">存</button>' +
+    '</div>';
+
+  /* 自检卡与身份筛选卡：V1.1 起入口已删，这两块永远只会显示「未跑」，一并从面板撤掉
+     （runSelfTest / runIdentityProbe 仍保留导出，需要时可在控制台调用） */
+  var lg = readLog() || [];
+  h += '<div class="ar6-dline">v' + esc(VERSION) + ' · ' + (hooked ? '钩子已挂' : '钩子未挂') +
+    ' · 记账 ' + lg.length + '/' + MAX_LOG + ' 条 · ' + esc(uiMode()) + '</div>';
+  h += '</div>';
+  return h;
 }
 
 function mountAll() {
@@ -586,225 +641,126 @@ function mountAll() {
   bindOutsideDismiss();
   var mode = uiMode();
   var c = counts();
-  var log = readLog();
   var st = stateOfRun();
+  var K = (typeof kpi === 'function') ? kpi() : { bad: 0, eff: 0 };
+  var tier = truncLevel(cfg.trunc);
+  var tierTxt = tier === TRUNC_OFF ? '关' : (tier === TRUNC_LIGHT ? '轻' : '中');
+  var oocOn = String(cfg.ooc || 'off') === 'on';
 
-  var html = '';
+  /* 关闭态：整块隐藏（右上角 ✕ / 点遮罩 / Esc 都走这里） */
   if (minimized) {
-    /* v8.4：不再常驻悬浮球/控制盘 —— 收起即完全隐藏，用扩展菜单「魔法棒」或工具栏重开 */
+    PANEL_SHOWN = false;
+    r.className = '';
     r.setAttribute('data-min', '1');
-    html = '';
     r.innerHTML = '';
-    try { r.style.display = 'none'; } catch (eMin) {}
+    try { r.style.display = 'none'; } catch (eMn) {}
     return true;
   }
-  if (minimized) {
-    r.className = '';
-    r.setAttribute('style', panelStyle(mode, true));
-    r.setAttribute('data-min', '1');
-    r.setAttribute('data-st', PAD_OPEN ? 'ok' : st.kind);
-    try { r.setAttribute('data-rm', cfg.rm || cfg.fx === 'off' ? '1' : '0'); } catch (eR1) {}
-    if (PAD_OPEN) {
-      r.setAttribute('style', floatStyle());
-      html += '<div class="ar6-pad">' +
-        '<div class="ar6-pad-h" data-ar6-grip="1">' + ico('ghost') +
-        '<b>位置</b><button class="ar6-x" data-ar6="padclose" title="收起">✕</button></div>' +
-        '<label class="ar6-pad-r"><span>左右</span><input type="range" min="0" max="100" step="1" data-ar6-pad="x" value="' + Math.round((cfg.fxN || 0) * 100) + '"></label>' +
-        '<label class="ar6-pad-r"><span>上下</span><input type="range" min="0" max="100" step="1" data-ar6-pad="y" value="' + Math.round((cfg.fyN || 0) * 100) + '"></label>' +
-        '<div class="ar6-grip" data-ar6-grip="1">按住这里移动</div>' +
-        '<div class="ar6-pad-f">' +
-        '<button class="ar6-b" data-ar6="padpanel">' + ico('file') + '<span>面板</span></button>' +
-        '<button class="ar6-b" data-ar6="tuck">' + ico('ghost') + '<span>贴边</span></button>' +
-        '</div></div>';
-    } else {
-      r.setAttribute('style', floatStyle());
-      var tab = String(cfg.floatMode || 'dock') === 'tuck';
-      html += '<div class="ar6-pill" data-ar6="expand" style="all:unset;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;">' +
-        '<span class="ar6-ring"></span><span class="ar6-sheen"></span>' +
-        (tab ? '<span class="ar6-tabmark"></span>' : floatIconMarkup()) +
-        '<span class="ar6-dot ' + st.kind + '" style="position:absolute;right:1px;bottom:1px;width:8px;height:8px;"></span>' +
-        '</div>';
-    }
-  } else {
-    r.className = mode === 'mobile' ? 'ar6-mobile' : '';
-    try { r.removeAttribute('data-min'); } catch (eR0) {}
-    r.setAttribute('data-rm', cfg.rm || cfg.fx === 'off' ? '1' : '0');
-    r.setAttribute('style', panelStyle(mode, false));
-    html += '<div class="ar6-p"><div class="ar6-h">' +
-      '<span class="ar6-dot ' + st.kind + '"></span><b>卢克之光 V' + esc(VERSION) + '</b>' +
-      '<span class="ar6-sp"></span>' +
-      '<span class="ar6-hb" data-ar6-grip="1" title="按住拖动"></span>' +
-      '<button class="ar6-x" data-ar6="help" title="使用说明">' + ico('ask') + '</button>' +
-      '<button class="ar6-x" data-ar6="min" title="收起">▾</button>' +
-      '<button class="ar6-x" data-ar6="hide" title="隐藏（点悬浮球恢复）">✕</button>' +
-      '</div><div class="ar6-body" data-ar6-scroll="1">';
 
-    html += '<div class="ar6-st">' + st.line + '</div>';
+  r.className = mode === 'mobile' ? 'ar6-mobile' : '';
+  try { r.removeAttribute('data-min'); } catch (eR0) {}
+  r.setAttribute('data-st', st.kind);
+  r.setAttribute('data-rm', cfg.rm ? '1' : '0');
+  r.setAttribute('style', panelStyle(mode, false));
 
-    html += '<div class="ar6-cards' + (mode === 'mobile' ? ' mobile' : '') + '">' +
-      '<div class="ar6-c bad"><div class="n">' + c.diff + '</div><div class="l">被换</div></div>' +
-      '<div class="ar6-c warn"><div class="n">' + c.thin + '</div><div class="l">无思考</div></div>' +
-      '<div class="ar6-c ok"><div class="n">' + c.same + '</div><div class="l">一致</div></div>' +
-      '<div class="ar6-c"><div class="n">' + c.unknown + '</div><div class="l">未定</div></div>' +
-      '</div>' + kpiLine();
+  var html = '<div class="ar6-p">';
 
-    html += '<div class="ar6-sec">防护</div><div class="ar6-row">' +
-      chip(cfg.enabled ? '● 已开启' : '○ 已关闭', cfg.enabled) +
-      chip('🪶 微扰:' + profileLabel(), cfg.refract !== 'off') +
-      chip('🧠 思考:' + (cfg.think === 'high' ? '高' : '不改'), cfg.think === 'high') +
-      chip('📌 钉参数:' + (cfg.pin ? '开' : '关'), cfg.pin) +
-      chip('👁 观察器:' + (cfg.observe ? '开' : '关'), cfg.observe) +
-      chip(cfg.safe ? '🩺 安全:开' : '🩺 安全:关', cfg.safe) +
-      chip('🎯 范围:' + scopeLabel(), cfg.scope !== 'all') +
-      '</div>';
+  /* ===== 1. 头部：logo + 标题 + 副标题 + 关闭 ===== */
+  html += '<div class="ar6-h ar6-mh">' +
+    '<span class="ar6-logo">' + ico('shield') + '</span>' +
+    '<span class="ar6-hx">' +
+      '<span class="ar6-mt">卢克之光</span>' +
+      '<span class="ar6-ms">v' + esc(VERSION) + ' · 只发现，不阻止</span>' +
+    '</span>' +
+    '<button class="ar6-x ar6-mx" data-ar6="close" title="关闭">✕</button>' +
+    '</div>';
 
-    html += '<div class="ar6-input">' +
-      '<input data-ar6="scope" placeholder="范围关键词，逗号分隔（如 deepseek,gemini）" value="' + esc(cfg.scopeList) + '">' +
-      '<button class="ar6-b" data-ar6="savescope">存范围</button>' +
-      '</div>';
+  html += '<div class="ar6-body" data-ar6-scroll="1">';
 
-    /* v0.7：抗截断独立成段（用户要求「从破甲里独立出来，变成一个单独的条目」）。
-       位置：防护之后、破甲之前，和叙述/破甲同级，不再搭破甲的便车。 */
-    html += '<div class="ar6-sec">抗截断</div><div class="ar6-row">' +
-      chip(truncChipLabel(), truncLevel(cfg.trunc) !== 'off') +
-      chip(truncLenChipLabel(), truncLevel(cfg.trunc) !== 'off' && truncLenOf(cfg.truncLen) > 0) +
-      '</div>' +
-      '<div style="font-size:11px;opacity:.72;margin:-2px 0 6px;line-height:1.5">' + esc(truncStatLine()) + '</div>';
+  /* ===== 2. 总开关卡（开=绿 关=琥珀） ===== */
+  html += '<button class="ar6-mk' + (cfg.enabled ? ' on' : '') + '" data-ar6="' +
+    (cfg.enabled ? '● 已开启' : '○ 已关闭') + '">' +
+    '<span class="ar6-mk-t">防路由<i class="ar6-sw" data-on="' + (cfg.enabled ? '1' : '0') + '"></i></span>' +
+    '<span class="ar6-mk-d">' + (cfg.enabled
+      ? '已开启：每个请求都会检查并记账，被换时在报告里给出提示。'
+      : '已关闭：请求原样透传，不检查、不记账。') + '</span>' +
+    '</button>';
 
-    html += '<div class="ar6-sec">破甲</div><div class="ar6-row">' +
-      chip(jailChipLabel(), cfg.jail !== 'off') +
-      (cfg.jail === 'off' ? '' : chip('🩹 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), cfg.jailConfirm !== false)) +
-      btnIco('jailnow', 'bandage', '补一次') +
-      '</div>' +
-      '<div style="font-size:11px;opacity:.72;margin:-2px 0 6px;line-height:1.5">' + esc(jailStatLine()) + '</div>';
-    if (cfg.jail === 'strong') {
-      html += '<div class="ar6-row">' +
-        chip('保底token:' + (cfg.jailTok ? '开' : '关'), cfg.jailTok) +
-        chip('解安全:' + (cfg.jailSafe ? '开' : '关'), cfg.jailSafe) +
-        chip('预审框:' + (cfg.jailPre ? '开' : '关'), cfg.jailPre) +
-        chip('输出契约:' + (cfg.jailText ? '开' : '关'), cfg.jailText) +
-        '</div>';
-    }
-    var jst = jailStatus();
-    if (jst) {
-      html += '<div style="font-size:11px;padding:0 12px 6px;color:' +
-        (jst.charAt(0) === '⚠' ? '#a40e26' : '#57606a') + '">' + esc(jst) + '</div>';
-    }
+  /* ===== 3. 数字行：今天拦下 / 拿不准 / 当前档位 ===== */
+  var cTotal = c.same + c.diff + c.thin + c.unknown + c.other;
+  html += '<div class="ar6-nums">' +
+    '<div class="ar6-n"><b>' + (K.eff ? K.bad : '—') + '</b><span>今天拦下</span></div>' +
+    '<div class="ar6-n"><b>' + c.unknown + '</b><span>拿不准</span></div>' +
+    '<div class="ar6-n"><b>' + esc(tierTxt) + '</b><span>当前档位</span></div>' +
+    '</div>';
 
-    html += '<div class="ar6-sec">叙述</div><div class="ar6-row">' +
-      chip('🧭 防全知:' + narrTag(cfg.know), cfg.know !== 'off') +
-      chip('💄 去媚:' + narrTag(cfg.charm), cfg.charm !== 'off') +
-      '</div>';
-    if (cfg.know !== 'off' || cfg.charm !== 'off') {
-      html += '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">每轮 +约 ' +
-        narrTokens() + ' tok，贴在末条 user 消息尾部</div>';
-    }
-
-    /* v0.76 反 OOC：总闸 + 四个子项。
-       子 chip 的 data-off 只在「总闸关」或「这一项已让给预设」时出现（变灰）；
-       总闸关时点它们不报错，只提示先开总闸。 */
-    html += '<div class="ar6-sec">反 OOC</div><div class="ar6-row">' +
-      chip('🎭 反OOC:' + (String(cfg.ooc || 'off') === 'on' ? '开' : '关'), String(cfg.ooc || 'off') === 'on') +
-      chip('📈 行为基线:' + (String(cfg.base || 'on') === 'on' ? '开' : '关'), String(cfg.base || 'on') === 'on') +
-      chip('🔬 返回格式:' + (String(cfg.shape || 'on') === 'on' ? '开' : '关'), String(cfg.shape || 'on') === 'on') +
-      oocChip('roll') + oocChip('tpl') + oocChip('chg') + oocChip('voice') +
-      '</div>' +
-      '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">' + esc(oocStatusLine()) + '</div>';
-    if (String(cfg.ooc || 'off') === 'on') {
-      html += '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">每轮 +约 ' +
-        oocTokens() + ' tok，' +
-        (oocChannel() ? '走酒馆扩展提示位（IN_CHAT / depth 4）' : '贴末条 user 消息尾部') + '</div>';
-    }
-
-    /* v1.0 查新版；v1.0 起能一键装（把新包写进酒馆助手的脚本表） */
-    html += '<div class="ar6-sec">体检</div>';
-    html += '<div class="ar6-row">' +
-      chip('⬆ 检查更新', true) +
-      chip('⟳ 开面板自动查:' + (updOn() ? '开' : '关'), updOn()) +
-      chip('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), cfg.onlyGemini !== false) +
-      (updHasPkg() ? chip('⬇ 装新版:' + updLatest(), true) : '') +
-      (updCanUndo() ? chip('↩ 撤销更新', false) : '') +
-      '</div>';
-    /* 有新版才多一行灰字；没有就什么都不显示，别占位置 */
-    var updTxt = updLine();
-    if (updTxt) {
-      html += '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">' + esc(updTxt) +
-        (updHasPkg() ? '　点「装新版」直接装，装完刷新一次页面' : '') + '</div>';
-    }
-    html += '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">' + esc(ledLine()) + '</div>';
-    if (AB_STATE.last || AB_STATE.running) {
-      html += '<div style="font-size:11px;padding:0 12px 6px;color:#57606a">' + esc(abLine()) + '</div>';
-    }
-    html += '<div class="ar6-row">' +
-      btnIco('native', 'microscope', '原生探针') +
-      btnIco('dual', 'flask', '双通道') +
-      btnIco('self', 'stethoscope', '自检 20 项') +
-      btnIco('verify', 'telescope', '验渠道') +
-      btnIco('alias', 'tag', '扫别名') +
-      btnIco('level', 'gauge', '档位检查') +
-      btnIco('slim', 'feather', '瘦身报告') +
-      btnIco('fp', 'tag', '渠道卡') +
-      btnIco('exportlog', 'out', '导出记录') +
-      btnIco('abtest', 'scale', 'A/B 对照') +
-      btnIco('idprobe', 'target', '身份筛选') +
-      btnIco('report', 'card', '报告') +
-      btnIco('card', 'wrench', '排查') +
-      btnIco('help', 'ask', '说明') +
-      btnIco('copy', 'file', '最近请求') +
-      btnIco('clear', 'trash', '清空', 'danger') +
-      btnIco('rebuild', 'refresh', '重建基线') +
-      '</div>';
-
-    html += '<div class="ar6-input">' +
-      '<input data-ar6="base" placeholder="反代 Base（如 https://x/v1）" value="' + esc(cfg.dualBase) + '">' +
-      '<input data-ar6="key" type="password" autocomplete="off" spellcheck="false" placeholder="API Key（可留空）" value="' + esc(cfg.dualKey) + '">' +
-      '<button class="ar6-b" data-ar6="save">存</button>' +
-      '</div>';
-
-    /* v1.0 版本文件地址：单独一行。塞进上面那行会被挤到只剩百来像素，
-       手机上连 placeholder 都看不全，看不全就等于没有这个输入框。 */
-    /* v1.0 内置了地址，这一格只是「你要换自己的地址才填」，平时空着就行。 */
-    html += '<div class="ar6-input">' +
-      '<input data-ar6="updurl" placeholder="' + (updUrlIsDefault()
-        ? '版本文件地址：已内置，留空即可'
-        : esc('自定义地址：' + updUrl())) + '" value="' + esc(cfg.updUrl) + '">' +
-      '</div>';
-
-    html += floatSettingsHTML();
-
-    if (selfTestResult) html += renderSelfTest(selfTestResult);
-
-    html += idCard();
-
-    html += '<div class="ar6-tbl">' + renderTable(log) + '</div>';
-
-    html += '<div class="ar6-foot"><span>挂钩 <b class="' + (hooked ? 'ok' : 'bad') + '">' + (hooked ? '是' : '否') + '</b></span>' +
-      '<span>XHR <b class="' + (HOOK_TARGET.xhr ? 'ok' : 'gray') + '">' + (HOOK_TARGET.xhr ? '是' : '关') + '</b></span>' +
-      '<span class="ar6-sp"></span><span>宿主 ' + ((HOST === HOST.top) ? 'top' : 'iframe') + '</span>' +
-      '<span>样式 <b class="' + (DOC.getElementById(STYLE_ID) ? 'ok' : 'bad') + '">' + (DOC.getElementById(STYLE_ID) ? '✓' : '✗') + '</b></span>' +
-      '<span>点击 <b class="mono">' + clickCount + '</b></span>' +
-      '<span>按钮 <b class="' + (btnReady() ? 'ok' : (BTN_OK ? 'warn' : 'bad')) + '">' + btnSummary() + '</b></span>' +
-      '<span>可验 <b class="' + (verifiableCode() === 'yes' ? 'ok' : (verifiableCode() === 'no' ? 'bad' : 'gray')) + '">' + verifiableLabel() + '</b></span>' +
-      (cfg.alias ? '<span>别名 <b class="mono">' + esc(cfg.alias) + '</b></span>' : '') +
-      '<span>钉住 <b class="' + auditColor() + '">' + auditLabel() + '</b></span>' +
-      (foreignCount() >= 2 ? '<span>护盾 <b class="warn">' + foreignCount() + '</b></span>' : '') +
-      '<span>' + esc(idFooter()) + '</span>' +
-      '<span>保留 ' + readLog().length + '/' + (cfg.keep || MAX_LOG) + '</span></div>';
-
-    html += '</div></div>';
+  /* 首次使用：还没收到任何记录时给一句人话，替代原来被删掉的「自检」入口 */
+  if (!cTotal) {
+    html += '<div class="ar6-hint">还没收到记录。照常聊一轮，这里就会多一行；' +
+      '聊了还是没有，点「更多」看一眼「只查 Gemini」是不是把你要查的模型挡在外面了。</div>';
   }
+
+  /* ===== 4. 卡 2：破甲 + 抗截断（右侧循环按钮显示 关/轻/中） ===== */
+  html += '<div class="ar6-mr">' +
+    '<div class="ar6-mc">' +
+      '<div class="ar6-mt2">破甲 + 抗截断</div>' +
+      '<div class="ar6-mk-d">' + esc(truncStatLine()) + '</div>' +
+    '</div>' +
+    cycBtn(truncChipLabel(), tierTxt, tier !== TRUNC_OFF) +
+    '</div>';
+  html += '<div class="ar6-mrow ar6-mind">' +
+    chip(jailChipLabel(), cfg.jail !== 'off') +
+    (cfg.jail === 'off' ? '' : chip('🩹 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), cfg.jailConfirm !== false)) +
+    btnIco('jailnow', 'bandage', '补一次') +
+    '</div>';
+  var jst = jailStatus();
+  if (jst) {
+    html += '<div class="ar6-dline ar6-mind" style="color:' +
+      (jst.charAt(0) === '⚠' ? '#ff7b72' : '#8b949e') + '">' + esc(jst) + '</div>';
+  }
+
+  /* ===== 5. 卡 3：叙述层（卡内两行，各带循环按钮 关/轻/强） ===== */
+  html += '<div class="ar6-mk ar6-mkc">' +
+    '<div class="ar6-mt2">叙述层</div>' +
+    '<div class="ar6-mline"><span>防全知</span>' + cycBtn('🧭 防全知:' + narrTag(cfg.know), narrTag(cfg.know), cfg.know !== 'off') + '</div>' +
+    '<div class="ar6-mline"><span>去媚</span>' + cycBtn('💄 去媚:' + narrTag(cfg.charm), narrTag(cfg.charm), cfg.charm !== 'off') + '</div>' +
+    '</div>';
+
+  /* ===== 6. 卡 4：反 OOC（右侧开关） ===== */
+  html += '<button class="ar6-mk' + (oocOn ? ' on' : '') + '" data-ar6="🎭 反OOC:' + (oocOn ? '开' : '关') + '">' +
+    '<span class="ar6-mk-t">反 OOC<i class="ar6-sw" data-on="' + (oocOn ? '1' : '0') + '"></i></span>' +
+    '<span class="ar6-mk-d">' + (oocOn
+      ? esc(oocStatusLine())
+      : '点名 · 反模板 · 变更门槛 · 口吻一致，关着时不干预') + '</span>' +
+    '</button>';
+
+  /* ===== 7. 更多（展开态落在 MORE_OPEN，重绘不会自己收回去） ===== */
+  if (MORE_OPEN) html += moreHTML();
+
+  html += '</div>';   /* .ar6-body */
+
+  /* ===== 8. 底部：主按钮 60% + 次按钮 40% ===== */
+  html += '<div class="ar6-mf">' +
+    '<button class="ar6-mbtn ar6-pri" data-ar6="report">看报告</button>' +
+    '<button class="ar6-mbtn ar6-sec" data-ar6="more">' + (MORE_OPEN ? '收起' : '更多') + '</button>' +
+    '</div>';
+
+  html += '</div>';
 
   var prevFocus = null;
   try { prevFocus = DOC.activeElement; } catch (eF0) {}
-  var wasMin = (LAST_MIN === true);
-  LAST_MIN = minimized;
   var scTop = 0;
   try { var oldBody = r.querySelector('.ar6-body'); if (oldBody) scTop = oldBody.scrollTop || 0; } catch (eSc) {}
+  var first = !PANEL_SHOWN;
+  PANEL_SHOWN = true;
   r.innerHTML = html;
+  try {
+    if (!first) { var b0 = r.querySelector('.ar6-p'); if (b0) b0.setAttribute('data-in', '1'); }
+  } catch (eIn0) {}
   try {
     if (scTop > 0) { var nb = r.querySelector('.ar6-body'); if (nb) nb.scrollTop = scTop; }
   } catch (eSc2) {}
-  /* v8.0.3：还原焦点（重绘会换掉 DOM） */
+  /* 还原焦点（重绘会换掉 DOM）：沿用 data-ar6 作为锚点，输入框不会因为点一下「更多」就丢焦点 */
   try {
     if (prevFocus && prevFocus.getAttribute) {
       var fkey = prevFocus.getAttribute('data-ar6');
@@ -814,27 +770,21 @@ function mountAll() {
       }
     }
   } catch (eFr) {}
-  /* 内联定位兜底：某些容器/CSP 会让 style 失效，这里再写一次关键属性 */
   var panelEl = r.firstChild;
-  /* v8.0.3：只在「从收起变展开」时播一次入场动画 */
-  try { if (panelEl && !minimized && wasMin && panelEl.classList) panelEl.classList.add('ar6-anim'); } catch (eAn) {}
-  try {
-    if (panelEl && panelEl.className && panelEl.className.indexOf('ar6-pill') >= 0) {
-      panelEl.style.cursor = 'pointer';
-    }
-  } catch (e) {}
-
-  if (!minimized) { try { fitPanel(r); } catch (eFP) {} }
-  if (!minimized && panelEl) { try { installRootDrag(r, 'panel'); } catch (eRD) {} }
-  if (minimized) {
-    try { if (!PAD_OPEN) bindFloatGestures(r); installRootDrag(r, PAD_OPEN ? 'pad' : 'ball'); floatApplyPosition(r, true); } catch (eF) {}
-  } else {
-    try { installFloatSettings(r); } catch (eFS) {}
+  /* 只在「第一次打开」播入场：transform translateY(8px) scale(.985) -> none，0.2s */
+  if (first && panelEl && panelEl.setAttribute) {
+    try {
+      var raf = HOST.requestAnimationFrame || function (fn) { return HOST.setTimeout(fn, 16); };
+      (function (bx) {
+        raf(function () { try { if (!DISPOSED && bx.parentNode) bx.setAttribute('data-in', '1'); } catch (eDI) {} });
+      })(panelEl);
+    } catch (eRA) {}
   }
+
+  try { fitPanel(r); } catch (eFP) {}
 
   if (!r.__ar6bound) {
     r.__ar6bound = true;
-    /* 只用逐元素直绑（下方 bindDirect），避免委托与直绑同一手势触发两次 */
     r.addEventListener('input', onPanelInput);
     r.addEventListener('change', onPanelChange);
   }
@@ -843,7 +793,6 @@ function mountAll() {
   return true;
 }
 
-/* 逐个按钮直绑：某些扩展会拦截冒泡或吞掉 click，委托会失效 */
 function bindDirect(r) {
   try {
     var nodes = r.querySelectorAll('[data-ar6]');
@@ -852,7 +801,6 @@ function bindDirect(r) {
         if (n.__ar6direct) return;
         var tag = (n.tagName || '').toUpperCase();
         if (tag === 'INPUT') return;          /* 输入框走 input 事件 */
-        if (n.getAttribute('data-ar6') === 'expand') return;  /* v8.1：交给 bindFloatGestures 的 tap 分支，避免 pointerdown 抢走拖动 */
         n.__ar6direct = true;
         /* 只监听一种激活事件：两种都挂时，pointerdown 改状态并重绘，
            随后的 click 落到新节点、旧闭包的去重时间戳失效，等于又切回去。 */
@@ -894,24 +842,19 @@ function bindDirect(r) {
 
 function verifyVisible() {
   try {
+    if (minimized) return;   /* 关闭态不检查：0×0 是正常的 */
     var el = DOC && DOC.getElementById(ROOT_ID);
     if (!el) return;
     var b = el.getBoundingClientRect();
-    /* v8.1：阈值 12（原 40 会把 28~38px 的合法悬浮球判成异常，重建后成 0×0） */
+    /* 0×0 / 被挪到屏幕外：重建整条 style（弹窗没有位置记忆，重建就是复位） */
     if (!b || b.width < 12 || b.height < 12 || b.top < -5000 || b.left < -5000) {
       var mode = uiMode();
-      el.setAttribute('style', panelStyle(mode, minimized));
+      el.setAttribute('style', panelStyle(mode, false));
       el.style.zIndex = '2147483000';
-      try { if (minimized) floatApplyPosition(el, true); } catch (eA) {}
       if (el.parentNode !== DOC.body) DOC.body.appendChild(el);
       if (HOST.console) HOST.console.warn('[AR6] 面板位置异常，已复位');
     }
-    /* v8.30：底边掉出视口（手机地址栏伸缩、键盘弹起后最常见）单独判一次。
-       只补高度和 top，不动整条 style，避免又一次把 fitPanel 的结果抹掉。 */
-    var vv = (HOST.visualViewport && HOST.visualViewport.height) || HOST.innerHeight || 720;
-    if (!minimized && b && b.height >= 12 && b.bottom > vv + 2) {
-      try { fitPanel(el); } catch (eFB) {}
-    }
+    try { fitPanel(el); } catch (eFB) {}
   } catch (e) {}
 }
 
@@ -1259,78 +1202,23 @@ function onPanelClick(e) {
   var act = t.getAttribute('data-ar6');
   if (!act) return;
 
-  if (act === 'verify') {
-    banner('🔭 正在验证渠道（幽灵别名探针）…', 'gray');
-    runChannelVerify().then(function (r) {
-      if (r.why === 'echo') { banner('⚠️ 渠道不读 model（回显）：身份无法验证，判定降级为「回显」', 'warn'); return; }
-      if (r.why === 'rejected') { banner('✅ 渠道可验：幽灵名被拒（HTTP ' + r.status + '），model 字段可作证据', 'ok'); return; }
-      banner('❔ ' + (r.note || '无法判断'), 'warn');
-    })['catch'](function (e) { banner('验证出错：' + String(e && e.message || e), 'bad'); });
-    return;
-  }
-  if (act === 'alias') {
-    banner('🏷 正在扫描别名（5 个候选，各 16 token）…', 'gray');
-    runAliasSweep().then(function (r) {
-      if (!r.ok) { banner('扫描失败：' + (r.msg || '未知'), 'bad'); return; }
-      var ok = 0;
-      for (var i = 0; i < r.rows.length; i++) if (r.rows[i].ok) ok++;
-      banner('🏷 别名扫描完成：' + ok + '/' + r.rows.length + ' 可用，详见面板', ok ? 'ok' : 'warn');
-    })['catch'](function (e) { banner('扫描出错：' + String(e && e.message || e), 'bad'); });
-    return;
-  }
-  if (act === 'level') {
-    banner('🧠 正在对比 HIGH / minimal 两档…', 'gray');
-    runLevelCheck().then(function (r) {
-      if (!r.ok) { banner('档位检查失败：' + (r.msg || '未知'), 'bad'); return; }
-      if (r.verdict === 'honored') banner('✅ ' + r.note, 'ok');
-      else if (r.verdict === 'ignored') banner('⚠️ ' + r.note, 'warn');
-      else banner(r.note, 'gray');
-    })['catch'](function (e) { banner('档位检查出错：' + String(e && e.message || e), 'bad'); });
-    return;
-  }
-  if (act === 'slim') {
-    var raw = '';
-    try { raw = (lastReq && (lastReq.raw || JSON.stringify(lastReq.body || {}))) || ''; } catch (eR) { raw = ''; }
-    var rep0 = slimReport(raw);
-    if (!rep0) { banner('🪶 先跑一轮对话，再来瘦身检查', 'gray'); return; }
-    banner('🪶 ' + rep0.advice, Number(rep0.chars) > 12000 ? 'warn' : 'ok');
-    return;
-  }
-  if (act === 'idprobe') {
-    if (ID.running) { banner('身份筛选正在跑，稍等…', 'gray'); return; }
-    banner('正在跑身份筛选（8 条坏 token，一次小请求）…', 'gray');
-    runIdentityProbe().then(function (r) {
-      if (!r.ok) { banner('身份筛选失败：' + (r.msg || '未知'), 'bad'); return; }
-      if (r.verdict === 'fail') banner('⚠️ ' + r.label + '：' + r.note, 'bad');
-      else if (r.verdict === 'pass') banner('✅ ' + r.label + '：' + r.note, 'ok');
-      else banner(r.label + '：' + r.note, 'gray');
-    })['catch'](function (e) { banner('身份筛选出错：' + String(e && e.message || e), 'bad'); });
-    return;
-  }
-  if (act === 'card') { openCard(null, 'engine'); return; }
   if (act === 'help') { openHelp('how'); return; }
   if (act === 'report') { openCard(null, 'human'); return; }
-  if (act === 'expand') { PAD_OPEN = false; minimized = false; syncMin(); render(); return; }
-  if (act === 'min') { PAD_OPEN = false; minimized = true; syncMin(); render(); return; }
-  if (act === 'padclose') { closePad(); return; }
-  if (act === 'padpanel') { PAD_OPEN = false; minimized = false; syncMin(); render(); return; }
-  if (act === 'tuck') {
-    PAD_OPEN = false;
-    cfg.floatMode = 'tuck';
-    cfg.fEdge = ((isFinite(Number(cfg.fxN)) ? Number(cfg.fxN) : 1) < 0.5) ? 'l' : 'r';
-    minimized = true; syncMin(); render();
-    banner('已贴边收起：屏幕边缘还留一条把手，点它就能回来', 'gray');
+  if (act === 'close') {
+    minimized = true;
+    MORE_OPEN = false;
+    syncMin();
+    render();
     return;
   }
-  if (act === 'hide') {
-    /* 老版本入口：不再隐藏，改成贴边（hidden 是单向门） */
-    cfg.floatMode = 'tuck';
-    cfg.fEdge = ((isFinite(Number(cfg.fxN)) ? Number(cfg.fxN) : 1) < 0.5) ? 'l' : 'r';
-    minimized = true; syncMin(); render();
-    banner('已贴边收起（点边缘把手回来）', 'gray');
+  if (act === 'more') {
+    MORE_OPEN = !MORE_OPEN;
+    render();
+    if (MORE_OPEN) {
+      try { var mb = DOC.querySelector('#' + ROOT_ID + ' .ar6-body'); if (mb) mb.scrollTop = mb.scrollHeight; } catch (eMb) {}
+    }
     return;
   }
-
   if (act === '🩺 安全:开' || act === '🩺 安全:关') {
     cfg.safe = !cfg.safe;
     saveCfg();
@@ -1463,7 +1351,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.0 只查 Gemini：默认开。关掉就回到「什么都查」 */
+  /* v1.1 只查 Gemini：默认开。关掉就回到「什么都查」 */
   if (act.indexOf('🟦 只查 Gemini') === 0) {
     cfg.onlyGemini = (cfg.onlyGemini === false);
     saveCfg(); render();
@@ -1474,7 +1362,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.0 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
+  /* v1.1 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
   if (act.indexOf('⬆ 检查更新') === 0) {
     banner('⬆ 正在看有没有新版…', 'gray');
     updQuick().then(function (r) {
@@ -1492,7 +1380,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.0 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
+  /* v1.1 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
   if (act.indexOf('⬇ 装新版') === 0) {
     banner('⬇ 正在取新版…', 'gray');
     updInstall().then(function (r) {
@@ -1514,7 +1402,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.0 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
+  /* v1.1 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
      否则用户得等下次开面板才知道有没有新版 */
   if (act.indexOf('⟳ 开面板自动查') === 0) {
     cfg.upd = (String(cfg.upd || 'off') === 'check') ? 'off' : 'check';
@@ -1552,19 +1440,7 @@ function onPanelClick(e) {
     return;
   }
 
-  if (act === 'native') { runNativeProbe(); return; }
-  if (act === 'dual') { runDualProbe(); return; }
-  if (act === 'fp') { banner(fpCard().replace(/\n/g, ' ｜ '), 'gray'); return; }
   if (act === 'exportlog') { copyTo(exportText(), '📤 导出记录'); return; }
-  if (act === 'abtest') {
-    if (AB_STATE.running) { banner('⚖️ 正在跑对照，稍等…', 'gray'); return; }
-    banner('⚖️ 正在跑 A/B 对照（裸 / 带配置各 2 次）…', 'gray');
-    abProbe().then(function (r) {
-      banner(r.ok ? ('⚖️ ' + r.note) : ('⚖️ 对照失败：' + (r.msg || '未知')), r.ok ? 'gray' : 'bad');
-    })['catch'](function (e) { banner('⚖️ 出错：' + String((e && e.message) || e), 'bad'); });
-    return;
-  }
-  if (act === 'self') { runSelfTestUI(); return; }
   /* 清空：账本 + 基线一起清。只清账本的话，基线还是老的，
      用户以为「重新开始」，实际还在拿旧参照下结论。 */
   if (act === 'clear') {
@@ -1603,12 +1479,6 @@ function onPanelClick(e) {
     banner('已保存 Base/Key', 'ok');
     return;
   }
-  if (act === 'copy') {
-    var lr = lastReq;
-    var txt = lr ? ('model=' + lr.model + '\nbase=' + lr.base + '\n\n' + String(lr.raw || '').slice(0, 4000)) : '（还没有捕获到请求）';
-    copyTo(txt, '最近请求');   /* 不接 promise 就是假成功：复制失败也得说失败 */
-    return;
-  }
   if (act === 'selftoggle') {
     var box = DOC.getElementById('ar6-selftest');
     if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
@@ -1617,107 +1487,28 @@ function onPanelClick(e) {
 }
 
 function onPanelInput(e) {
-  var t0 = e && e.target;
-  if (t0 && t0.getAttribute && t0.getAttribute('data-ar6-pad')) {
-    var ax = t0.getAttribute('data-ar6-pad');
-    var v = Math.max(0, Math.min(100, Number(t0.value) || 0)) / 100;
-    if (ax === 'x') { cfg.fxN = v; cfg.fEdge = v < 0.5 ? 'l' : 'r'; }
-    else cfg.fyN = v;
-    try { floatApplyPosition(root(), true); } catch (eP) {}
-    return;
-  }
-  var t = e.target;
+  var t = e && e.target;
   if (!t || !t.getAttribute) return;
-  var act = t.getAttribute('data-ar6');
-  var pos = t.getAttribute('data-ar6-pos');
-  if (pos) {
-    var v = Math.max(0, Math.min(1, (Number(t.value) || 0) / 100));
-    if (pos === 'x') {
-      cfg.fxN = v;
-      cfg.fEdge = v <= 0.02 ? 'l' : (v >= 0.98 ? 'r' : '');
-    } else {
-      cfg.fyN = v;
-    }
-    try {
-      var rr = DOC.getElementById(ROOT_ID);
-      if (rr && minimized) {
-        /* v8.3：展开态只改坐标，不动盒子尺寸（否则整块面板被压成球） */
-        floatApplyPosition(rr, true);
-        var lab = t.parentNode && t.parentNode.querySelector('b');
-        if (lab) lab.textContent = Math.round(v * 100) + '%';
-      }
-    } catch (eP) {}
-    return;   /* 位置只预览：不 render、不落库 */
-  }
-  if (act === 'base') cfg.dualBase = String(t.value || '');
-  if (act === 'key') cfg.dualKey = String(t.value || '');
-  if (act === 'updurl') cfg.updUrl = String(t.value || '');
-  if (act === 'base' || act === 'key' || act === 'updurl') saveCfg();
+  var k = t.getAttribute('data-ar6');
+  if (!k) return;
+  if (k === 'base') { cfg.dualBase = String(t.value || '').trim(); try { saveCfg(); } catch (e1) {} return; }
+  if (k === 'key') { cfg.dualKey = String(t.value || '').trim(); try { saveCfg(); } catch (e2) {} return; }
+  if (k === 'updurl') { cfg.updUrl = String(t.value || '').trim(); try { saveCfg(); } catch (e3) {} return; }
+  if (k === 'scope') { cfg.scopeList = String(t.value || ''); try { saveCfg(); } catch (e4) {} }
 }
 
-/* v8.1：滑块松手才落库 */
 function onPanelChange(e) {
-  var t = e.target;
+  var t = e && e.target;
   if (!t || !t.getAttribute) return;
-  if (t.getAttribute('data-ar6-pad')) { try { saveCfg(); } catch (e) {} return; }
-  if (t.getAttribute('data-ar6-pos')) { try { saveCfg(); } catch (e) {} }
+  try { saveCfg(); } catch (e) {}
 }
 
 /* ---------------- 渲染入口 ---------------- */
 
-function installFloatDrag(el, box) {
-  try {
-    if (!el || !box || el.__ar6drag) return;
-    var head = el.querySelector(".ar6-h");
-    if (!head) return;
-    el.__ar6drag = true;
-    head.style.touchAction = "none";
-    head.style.cursor = "move";
-    var sx = 0, sy = 0, ox = 0, oy = 0, moving = false;
-    head.addEventListener("pointerdown", function (e) {
-      try {
-        if (e.target && e.target.closest && e.target.closest("button")) return;
-        var r = box.getBoundingClientRect();
-        box.style.left = Math.round(r.left) + "px";
-        box.style.top = Math.round(r.top) + "px";
-        box.style.right = "auto";
-        box.style.bottom = "auto";
-        sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top; moving = true;
-        if (head.setPointerCapture) head.setPointerCapture(e.pointerId);
-        if (e.preventDefault) e.preventDefault();
-      } catch (e1) {}
-    }, { passive: false });
-    head.addEventListener("pointermove", function (e) {
-      if (!moving) return;
-      try {
-        var w = box.offsetWidth || 300, h = box.offsetHeight || 200;
-        var vw = HOST.innerWidth || 360, vh = HOST.innerHeight || 640;
-        var nx = Math.max(6, Math.min(vw - w - 6, ox + (e.clientX - sx)));
-        var ny = Math.max(6, Math.min(vh - Math.max(h, 60) - 6, oy + (e.clientY - sy)));
-        box.style.left = Math.round(nx) + "px";
-        box.style.top = Math.round(ny) + "px";
-      } catch (e2) {}
-    });
-    var up = function () {
-      if (!moving) return;
-      moving = false;
-      try {
-        var r2 = box.getBoundingClientRect();
-        cfg.mx = Math.round(r2.left);
-        cfg.my = Math.round(r2.top);
-        saveCfg();
-      } catch (e3) {}
-    };
-    head.addEventListener("pointerup", up);
-    head.addEventListener("pointercancel", up);
-  } catch (e) {}
-}
-
-/* v8.31：工具栏只留一个入口，进面板。展开逻辑与魔法棒那条路一致，
-   只是不做「贴右下角」的锚点重算 —— 用户从宿主按钮进来，位置沿用上一次。 */
+/* v1.1：工具栏只留一个入口，进弹窗。弹窗固定居中，不再记位置、不再拖动。 */
 function openPanel() {
   minimized = false;
-  try { PAD_OPEN = false; } catch (eO0) {}
+  MORE_OPEN = false;
   try { cfg.min = false; if (typeof saveCfg === 'function') saveCfg(); } catch (eO1) {}
   try { closeCard(); } catch (eO2) {}
   render();
@@ -1728,31 +1519,11 @@ function openPanel() {
 
 function openPanelFromWand() {
   minimized = false;
-  try { PAD_OPEN = false; } catch (eP0) {}
+  MORE_OPEN = false;
   try { cfg.min = false; if (typeof saveCfg === 'function') saveCfg(); } catch (eP1) {}
   try { closeCard(); } catch (eP2) {}
   render();
-  try {
-    var r = root();
-    if (r) {
-      /* v8.30：这里原先把整条 inline style 覆盖成 panelStyle(...) 的结果，
-         会抹掉 mountAll→fitPanel 刚写好的 height/maxHeight/overflow:hidden，
-         手机点魔法棒重开时面板就退回固定百分比高度 + 外层滚动——「只有上半截」的直接原因。
-         现在只清掉拖动残留的 transform，几何全部交给 fitPanel 一处写。 */
-      try { r.style.transform = ''; r.style.transition = ''; } catch (eT0) {}
-      var vw = (HOST.visualViewport && HOST.visualViewport.width) || HOST.innerWidth || 390;
-      var w = uiMode() === 'mobile' ? Math.min(vw * 0.92, 380) : 440;
-      cfg.mx = Math.max(8, Math.round(vw - w - 12));
-      cfg.my = Math.max(72, Math.round(((HOST.visualViewport && HOST.visualViewport.height) || HOST.innerHeight || 700) * 0.18));
-      saveCfg();
-      r.style.left = cfg.mx + 'px';
-      r.style.top = cfg.my + 'px';
-      r.style.right = 'auto';
-      r.style.bottom = 'auto';
-      try { fitPanel(r); } catch (eFP2) {}
-      try { verifyVisible(); } catch (eVV) {}
-    }
-  } catch (eP3) {}
+  try { var r = root(); if (r) { fitPanel(r); verifyVisible(); } } catch (eP3) {}
   return true;
 }
 
@@ -1991,7 +1762,7 @@ function boot() {
     return;
   }
   booted = true;
-  step('配置', function () { cfg = readCfg(); minimized = !!cfg.min; });
+  step('配置', function () { cfg = readCfg(); minimized = true; MORE_OPEN = false; });
   step('宿主', function () { if (!HOST || !DOC) throw new Error('宿主文档不可用'); });
   step('样式', function () { ensureStyle(DOC); });
   step('钩子', function () { ensureHooks(); });
@@ -2005,10 +1776,10 @@ function boot() {
   step('说明提示', function () {
     if (!localStorage.getItem('ar6.helpSeen')) {
       localStorage.setItem('ar6.helpSeen', '1');
-      setTimeout(function () { try { banner('第一次用？点面板右上角的「说明」，或长按悬浮球', 'gray'); } catch (eH) {} }, 2600);
+      setTimeout(function () { try { banner('第一次用？面板底部点「更多 → 说明」有完整用法；点右上角 ✕ 关掉', 'gray'); } catch (eH) {} }, 2600);
     }
   });
-  /* v1.0 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
+  /* v1.1 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
      关着闸或查不到时 updBoot 自己保持沉默 */
   step('版本检查', function () { updBoot(); });
   step('按钮', function () { bindScriptButtons(); });
@@ -2093,35 +1864,20 @@ try {
     try { ensureHooks(); } catch (e2) {}
     try {
       if (!DISPOSED && DOC && !DOC.getElementById(ROOT_ID)) render();
-      else {
-        var el = DOC && DOC.getElementById(ROOT_ID);
-        if (el && minimized) floatApplyPosition(el, true);
-      }
     } catch (e3) {}
   });
   /* v8.1：窗口缩放 / 转屏 / 键盘弹起 —— 重新夹取位置 */
+  /* v1.1：转屏 / 地址栏伸缩 / 键盘弹起 —— 只重算弹窗高度上限 */
   var reflowTimer = null;
   function scheduleReflow() {
     if (reflowTimer) { try { HOST.clearTimeout(reflowTimer); } catch (e) {} }
     reflowTimer = HOST.setTimeout(function () {
       reflowTimer = null;
       try {
-        if (DISPOSED) return;
+        if (DISPOSED || minimized) return;
         var el = DOC && DOC.getElementById(ROOT_ID);
         if (!el) return;
-        if (minimized) floatApplyPosition(el, true);
-        else {
-          /* v8.30：转屏/地址栏伸缩/键盘弹起都会改可视高度，必须重算面板高度，
-             只夹 left/top 会让底边落到屏幕外 */
-          try { fitPanel(el); } catch (eRF) {}
-          var b = el.getBoundingClientRect();
-          var c = floatClampPx(b.left, b.top, b.width || 320, b.height || 240);
-          el.style.left = c.x + 'px';
-          el.style.top = c.y + 'px';
-          el.style.right = 'auto';
-          el.style.bottom = 'auto';
-          cfg.mx = c.x; cfg.my = c.y;
-        }
+        try { fitPanel(el); } catch (eRF) {}
       } catch (e4) {}
     }, 150);
   }

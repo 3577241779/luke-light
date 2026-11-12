@@ -99,9 +99,22 @@ group('D. 老退役名仍按退役处理');
 v = verdict('gemini-1.5-pro', 'gemini-1.5-flash', 'msg');
 ok('1.5-pro 的聊天标签仍被丢弃（判不出来）', v.code !== 'diff', '不是 diff', v.code);
 
+group('D2. 请求名与响应名不一致时不该漏查');
+
+v = verdict('gpt-4o', 'gemini-3-flash', 'body');
+ok('请求名 gpt-4o、响应体 gemini → 不跳过（按被换查）', v.code !== 'skip', '不是 skip', v.code);
+ok('而且给出跨家族结论', v.code === 'diff', 'diff', v.code);
+
+v = verdict('gpt-4o', 'gpt-4o', 'body');
+ok('请求名与响应体都不是 gemini → 跳过', v.code === 'skip', 'skip', v.code);
+ok('跳过时说明里带上请求名', String(v.note || '').indexOf('gpt-4o') >= 0, '含 gpt-4o', v.note);
+
+v = verdict('gemini-3-flash', 'gemini-3-flash', 'body');
+ok('纯 gemini 请求照常判', v.code === 'same', 'same', v.code);
+
 group('E. 版本');
 
-ok("VERSION 是 0.91 或更高", api.VERSION === '0.95' || api.VERSION === '0.95', '0.9x', api.VERSION);
+ok("VERSION 是 0.91 或更高", api.VERSION === '1.1' || api.VERSION === '1.1', '0.9x', api.VERSION);
 
 console.log('\n通过 ' + pass + ' 条，失败 ' + fail + ' 条');
 if (fail > 0) process.exit(1);

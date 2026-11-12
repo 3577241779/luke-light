@@ -76,7 +76,8 @@ function boot() {
 const m = boot();
 const A = m.api;
 A.setCfg('jail', 'safe');
-A.render();
+/* v1.1：启动时 minimized=true，render() 是关闭态；必须 openPanel() 才有首屏 */
+A.openPanel();
 const html = m.win.document.body.children.map((c) => String(c.innerHTML || '')).join('');
 
 /* ---------------- [一] 图标表 ---------------- */
@@ -114,7 +115,9 @@ ok('act key 仍带原 emoji（破甲）', html.indexOf('data-ar6="🩹 破甲:')
 ok('act key 仍带原 emoji（防全知）', html.indexOf('data-ar6="🧭 防全知:') >= 0);
 ok('jailnow 按钮还在', html.indexOf('data-ar6="jailnow"') >= 0);
 ok('report 按钮还在', html.indexOf('data-ar6="report"') >= 0);
-ok('按钮里真的画了 svg', (html.match(/class="ar6-i"/g) || []).length >= 8, '>=8', (html.match(/class="ar6-i"/g) || []).length);
+/* v1.1：首屏只剩 logo + 卡2/卡3/卡4 四个图标按钮，其余图标按钮（说明/清空/重建基线/导出记录）在「更多」里 */
+ok('按钮里真的画了 svg', (html.match(/class="ar6-i"/g) || []).length >= 5, '>=5', (html.match(/class="ar6-i"/g) || []).length);
+ok('每个图标都是内联 svg（不是 emoji）', (html.match(/<svg[^>]*class="ar6-i"/g) || []).length === (html.match(/class="ar6-i"/g) || []).length, 'svg 数 === ar6-i 数', '');
 ok('chip 文字剥掉了 emoji', html.indexOf('>破甲:') >= 0 || html.indexOf('破甲:关</span>') >= 0, '有「破甲:…」', '');
 ok('btnIco 已定义', SRC.indexOf('function btnIco(') >= 0);
 
@@ -130,7 +133,7 @@ ok('banner 剥离前导 emoji', SRC.indexOf(".replace(/^[^\\u4e00-\\u9fa5A-Za-z0
 
 /* ---------------- [七] 版本 ---------------- */
 group('[七] 版本');
-ok('VERSION = 0.7', A.VERSION === '0.95', '0.95', A.VERSION);
+ok('VERSION = 0.7', A.VERSION === '1.1', '1.1', A.VERSION);
 ok('配置结构版本没动', A.getCfg().v === 831, 831, A.getCfg().v);
 ok('源码里只有一个版本号', (SRC.match(/var VERSION = '[^']+'/g) || []).length === 1, 1, (SRC.match(/var VERSION = '[^']+'/g) || []).length);
 

@@ -29,7 +29,7 @@ function isGenerateUrl(u) {
 /* 已下线的 Gemini 型号：这类名字只可能是「请求标签」或网关回显，不能当身份证据 */
 /* 只匹配「真的退役/不可用」的旧名（1.0 / 1.5 时代 + pro-vision + 早期 -001/-002 快照）。
    2.0 / 2.5 现在是主力在役模型，不能当退役处理——那会让「只有聊天标签」的降档判成 unknown。 */
-var RETIRED_MODEL_RE = /gemini[\s._-]?(?:1\.0|1\.5)[\s._-]?(?:pro|flash|ultra)|gemini-pro-vision|(?:pro|flash)-00[12]/i;
+var RETIRED_MODEL_RE = /gemini[\s._-]?(?:1\.1|1\.5)[\s._-]?(?:pro|flash|ultra)|gemini-pro-vision|(?:pro|flash)-00[12]/i;
 
 var PEEK_SEQ = 0;
 var PEEKS = {};
@@ -153,7 +153,7 @@ function verdictOf(ev) {
 
   /* v0.13：到这里才看范围——空回/错误/拦截属于「回复没了」，跟哪个模型无关，先判；
      「有没有被换」才是模型相关的，模型不在范围内就只留一条灰记录 */
-  /* v1.0 修 D3：旧的范围（scope/scopeList）只看请求名，会把「请求名写 deepseek、
+  /* v1.1 修 D3：旧的范围（scope/scopeList）只看请求名，会把「请求名写 deepseek、
      实际后端是 gemini」的轮次直接否决掉，导致 onlyGemini 的证据扩宽永远跑不到。
      onlyGemini 打开时，范围完全交给下面的 scopeHitGemini（请求名 + 证据）；关掉时才用它。 */
   /* 显式「跳过列表」仍然算数（那是用户手动点名不要查的）；只有「只查某几个」
@@ -164,8 +164,8 @@ function verdictOf(ev) {
       return { code: 'skip', note: '不在检测范围（' + scopeLabel() + '）', conf: 'C' };
     }
   }
-  /* v1.0 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了）。
-     v1.0 修：原来只看「请求名」。反代常给同一个渠道换名字（比如请求名写 gpt-4o、
+  /* v1.1 只查 Gemini：范围外的请求不判定，只留一行灰记录（空回/错误已经在上面判过了）。
+     v1.1 修：原来只看「请求名」。反代常给同一个渠道换名字（比如请求名写 gpt-4o、
      实际后端是 gemini），只按请求名判会把真 Gemini 也拦在门外。现在请求名和
      响应体/标签里认到的名字，任何一个像 Gemini 就查。 */
   try {
@@ -301,7 +301,7 @@ function finish(ev, meta) {
   /* 聊天记录没提交（或提交慢了）时，别急着说"没有正文"：
      响应体里明明有文本就先等它落地，再用它兜底。 */
   /* v0.12：内部请求不取体，也就没有 PEEKS 可等——以前这里会空转 6 秒才落记录 */
-  /* v1.0 修 D2：只查 Gemini 时，范围判定要靠响应体证据。正文已经出了、但 peek 还没读完时，
+  /* v1.1 修 D2：只查 Gemini 时，范围判定要靠响应体证据。正文已经出了、但 peek 还没读完时，
      如果现在按「请求名不是 google」收尾，就会把真 Gemini（反代换了名字）判成 skip，
      而且 peek 晚到的证据不会再触发重判。这里让这种情况下也等 peek。 */
   var needScopePeek = false;
@@ -330,7 +330,7 @@ function finish(ev, meta) {
       ev.emptyConfirmed = true;
     }
   }
-  /* v1.0 检查范围：默认只查 Gemini。别的家族照常发、照常回，
+  /* v1.1 检查范围：默认只查 Gemini。别的家族照常发、照常回，
      不判定（verdictOf 里直接返回 skip）、不建基线，但破甲 / 抗截断 / 反 OOC 不受影响。 */
   var v = verdictOf(ev);
   /* v0.6 抗截断：先判「这一轮为什么停」，判定结果跟着记录走（关档时连看都不看） */

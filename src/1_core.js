@@ -4,7 +4,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '1.0';
+var VERSION = '1.1';
 var TAG = '[AR6]';
 var CFG_KEY = 'ar6.cfg';
 var LOG_KEY = 'ar6.log';
@@ -48,7 +48,7 @@ var CFG_DEFAULT = {
   observe: true,          // 零锁观察器
   dualBase: '',           // 双通道指纹：base url
   dualKey: '',            // 双通道指纹：key
-  min: false,             // 面板是否收成小球
+  min: false,             // 面板是否收起（关闭态）
   xhr: false,             // 是否挂钩 XMLHttpRequest（默认关；只用 fetch 更稳）
   safe: false,            // 安全模式：完全不挂钩，只留面板与横幅（排查用）
   mx: null,               // 移动端悬浮窗 left（px，null=默认右下）
@@ -58,10 +58,6 @@ var CFG_DEFAULT = {
   refractMode: 'stable',  /* stable=同会话固定变形（保前缀缓存）| random=每轮随机（实验） */
   refractSeed: '',        /* 用户盐：改一下，变形结果就换一套 */
   saltWin: 30,            /* 窗口盐：同一聊天在 N 分钟内保持同一套变形（0=关） */
-  floatMode: 'dock',      /* dock=吸边半隐藏 | float=常驻 | tuck=贴边把手 */
-  floatSize: 44, floatShape: 'circle', floatOpacity: 45, floatDock: 40,
-  floatIcon: '', floatBg: '#ffffff', floatBorder: true, floatShadow: true,
-  floatX: null, floatY: null, fxN: 1, fyN: 0.82, fEdge: '',
   /* v7.1 破甲：off | safe（只事后补救，不改请求）| strong（改请求 + 事后补救） */
   jail: 'off',
   jailConfirm: true,      /* 补之前先问一句（关掉=自动补） */
@@ -86,10 +82,10 @@ var CFG_DEFAULT = {
   base: 'on',
   /* v0.84 结构指纹：on | off（只提示；关闸时不写也不判，不进被换率） */
   shape: 'on',
-  /* v1.0 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
+  /* v1.1 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
      （注意：和上面 v0.13 的 scope/scopeList 不是一回事，那组是「按列表过滤」） */
   onlyGemini: true,
-  /* v1.0 自动更新：off | check（只查「有没有新版」，不自动下载、不自动替换）
+  /* v1.1 自动更新：off | check（只查「有没有新版」，不自动下载、不自动替换）
      updUrl 指向一个纯文本或 JSON 的版本文件；留空则只显示「未配置」 */
   upd: 'off',
   updUrl: '',
@@ -132,23 +128,9 @@ function ar6Pick(v, list, def) {
   return def;
 }
 
-/* 浮球族字段消毒：NaN 会写出 left:NaNpx，hidden 是单向门 */
+/* 面板位置记忆消毒：NaN 会写出 left:NaNpx */
 function sanitizeFloat(d) {
   if (!d || typeof d !== 'object') return;
-  if (String(d.floatMode) === 'hidden') d.floatMode = 'tuck';
-  d.floatMode = ar6Pick(d.floatMode, ['dock', 'float', 'tuck'], 'dock');
-  d.floatSize = Math.round(ar6Num(d.floatSize, 44, 28, 80));
-  d.floatOpacity = Math.round(ar6Num(d.floatOpacity, 45, 10, 100));
-  d.floatDock = Math.round(ar6Num(d.floatDock, 45, 20, 80));
-  d.floatShape = ar6Pick(d.floatShape, ['circle', 'square'], 'circle');
-  if (!/^#[0-9a-fA-F]{6}$/.test(String(d.floatBg))) d.floatBg = '#0d1117';
-  var ico = String(d.floatIcon || '');
-  d.floatIcon = (ico.length <= 4096 && /^(https?:\/\/|data:image\/(png|jpeg|webp|gif);base64,)/i.test(ico)) ? ico : '';
-  d.floatBorder = d.floatBorder !== false;
-  d.floatShadow = d.floatShadow !== false;
-  d.fxN = ar6Num(d.fxN, 1, 0, 1);
-  d.fyN = ar6Num(d.fyN, 0.82, 0, 1);
-  d.fEdge = ar6Pick(d.fEdge, ['l', 'r'], d.fxN < 0.5 ? 'l' : 'r');
   if (typeof d.mx !== 'number' || !isFinite(d.mx)) d.mx = null;
   if (typeof d.my !== 'number' || !isFinite(d.my)) d.my = null;
   d.fx = ar6Pick(d.fx, ['full', 'calm', 'off'], 'full');
@@ -175,7 +157,6 @@ function readCfg() {
         if (!('cardAuto' in s)) d.cardAuto = true;
         if (!('alias' in s)) d.alias = '';
         if (!('refractMode' in s)) d.refractMode = 'stable';
-        if (!('floatMode' in s)) d.floatMode = 'dock';
         if (!('jail' in s)) d.jail = 'off';
         if (!('jailConfirm' in s)) d.jailConfirm = true;
         if (!('jailMax' in s)) d.jailMax = 2;
@@ -184,7 +165,6 @@ function readCfg() {
         if (!('jailPre' in s)) d.jailPre = false;
         if (!('jailText' in s)) d.jailText = false;
         if (!('saltWin' in s)) d.saltWin = 30;
-        if (!('fxN' in s)) { d.fxN = 1; d.fyN = 0.82; d.fEdge = ''; }
         if (!('know' in s)) d.know = 'off';
         if (!('charm' in s)) d.charm = 'off';
         if (!('helpX' in s)) d.helpX = null;
@@ -366,9 +346,9 @@ function familyOf(s) {
   return '';
 }
 
-/* v1.0 检查范围：默认只查 Gemini 家族。
+/* v1.1 检查范围：默认只查 Gemini 家族。
    scope=all 或认不出族（''）时放行——认不出的名字宁可不管，也别乱判。 */
-/* v1.0：只查 Gemini 时，「算不算 Gemini」不能只看请求名。
+/* v1.1：只查 Gemini 时，「算不算 Gemini」不能只看请求名。
    反代经常把同一个渠道换个名字（请求名写 gpt-4o，后端其实是 gemini），
    只按请求名判会把真 Gemini 也拦掉。规则：
      1) 关掉这个开关 → 什么都查；

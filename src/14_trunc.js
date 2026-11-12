@@ -35,7 +35,7 @@ var TR = { code: '', note: '', at: 0, try: 0 };
 /* ---------------- 注入块：tag / 白名单 / 上限 ---------------- */
 
 var TRUNC_TAG = 'AR-TRUNC';
-var TRUNC_VER = '1.0';
+var TRUNC_VER = '1.0'; /* 这是注入块的版本，不是产品版本；别跟着产品号一起改，否则老块剥不掉 */
 var TRUNC_OPEN = '〔AR-TRUNC ' + TRUNC_VER + '〕';
 var TRUNC_CLOSE = '〔/AR-TRUNC〕';
 var TRUNC_PAD_OPEN = '〔AR-PAD 1.0〕';

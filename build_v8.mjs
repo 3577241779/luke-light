@@ -8,7 +8,7 @@ const OUT = 'C:/Users/23548/Documents/deepseek-harness/default-workspace/_antiro
 const DESKTOP = 'C:/Users/23548/Desktop/卢克之光';
 const BRAND = '卢克之光';
 
-const PARTS = ['1_core.js', '2_refract.js', '12_narr.js', '15_ooc.js', '5_route.js', '13_stats.js', '6_float.js', '7_jail.js', '14_trunc.js', '8_probe.js', '16_base.js', '17_shape.js', '18_upd.js', '3_net.js',
+const PARTS = ['1_core.js', '2_refract.js', '12_narr.js', '15_ooc.js', '5_route.js', '13_stats.js', '7_jail.js', '14_trunc.js', '8_probe.js', '16_base.js', '17_shape.js', '18_upd.js', '3_net.js',
   '9_card.js', '10_help.js', '11_wand.js', '4_ui.js'];
 
 const EXPORT_BLOCK = `
@@ -24,13 +24,6 @@ var AR6_API = {
   openCard: openCard,
   closeCard: closeCard,
   cardText: cardText,
-  getSafeBox: getSafeBox,
-  floatClampPx: floatClampPx,
-  floatLayoutPx: floatLayoutPx,
-  floatSaveFromPx: floatSaveFromPx,
-  installRootDrag: installRootDrag,
-  bindFloatGestures: bindFloatGestures,
-  floatApplyPosition: floatApplyPosition,
   cardHTML: cardHTML,
   cardHumanHTML: cardHumanHTML,
   cardEngineHTML: cardEngineHTML,
@@ -50,6 +43,7 @@ var AR6_API = {
   isInternalRequest: isInternalRequest,
   familyOf: familyOf,
   inScopeModel: inScopeModel,
+  scopeHitGemini: scopeHitGemini,
   pushObs: pushObs,
   newEvidence: newEvidence,
   getCfg: function () { return cfg; },
@@ -150,12 +144,8 @@ var AR6_API = {
   setMinimized: function (v) { minimized = !!v; render(); },
   isMinimized: function () { return !!minimized; },
   sanitizeFloat: function (o) { return sanitizeFloat(o); },
-  floatBoxSize: function () { return floatBoxSize(); },
   banner: function (m, k) { return banner(m, k); },
   btnSummary: function () { return btnSummary(); },
-  isPadOpen: function () { return !!PAD_OPEN; },
-  openPad: function () { return openPad(); },
-  closePad: function () { return closePad(); },
   isButtonsBound: function () { return !!bound; },
   bindScriptButtons: bindScriptButtons,
   btnSummary: btnSummary,
@@ -178,10 +168,6 @@ var AR6_API = {
   chState: chState,
   setChState: setChState,
   runLevelCheck: runLevelCheck,
-  floatStyle: floatStyle,
-  floatIconMarkup: floatIconMarkup,
-  floatSizePx: floatSizePx,
-  floatSettingsHTML: floatSettingsHTML,
   /* ---- v7.1 破甲 ---- */
   jailLabel: jailLabel,
   jailNext: jailNext,
@@ -229,7 +215,7 @@ var AR6_API = {
   TRUNC_FIX: TRUNC_FIX,
   getTR: function () { return TR; },
   resetTR: function () { TR.code = ''; TR.note = ''; TR.at = 0; TR.try = 0; },
-  /* ---- v0.96 新版本检查与一键安装 ---- */
+  /* ---- v1.1 新版本检查与一键安装 ---- */
   updOn: updOn,
   updUrlOk: updUrlOk,
   updParse: updParse,

@@ -71,7 +71,7 @@ function wandRow() {
     ev.preventDefault(); ev.stopPropagation();
     if (DISPOSED) return;
     try { openPanelFromWand(); } catch (e) {}
-    try { banner('面板已打开 · 关掉后悬浮球一起消失', 'ok'); } catch (e2) {}
+    try { banner('面板已打开 · 点 ✕ 或按 Esc 关掉', 'ok'); } catch (e2) {}
     wandCloseMenu();
   });
   b.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); }, true);
