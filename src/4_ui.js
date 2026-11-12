@@ -615,16 +615,6 @@ function moreHTML() {
     btnIco('rebuild', 'refresh', '重建基线') +
     '</div>';
 
-  h += '<div class="ar6-mmore-h">地址与凭据</div>';
-  h += '<div class="ar6-input"><input data-ar6="updurl" placeholder="' +
-    (updUrlIsDefault() ? '版本文件地址：已内置，留空即可' : esc('自定义地址：' + updUrl())) +
-    '" value="' + esc(cfg.updUrl) + '"></div>';
-  h += '<div class="ar6-input">' +
-    '<input data-ar6="base" placeholder="反代 Base（如 https://x/v1）" value="' + esc(cfg.dualBase) + '">' +
-    '<input data-ar6="key" type="password" autocomplete="off" spellcheck="false" placeholder="API Key（可留空）" value="' + esc(cfg.dualKey) + '">' +
-    '<button class="ar6-b" data-ar6="save">存</button>' +
-    '</div>';
-
   /* 自检卡与身份筛选卡：V1.1 起入口已删，这两块永远只会显示「未跑」，一并从面板撤掉
      （runSelfTest / runIdentityProbe 仍保留导出，需要时可在控制台调用） */
   var lg = readLog() || [];
@@ -1468,17 +1458,6 @@ function onPanelClick(e) {
     render();
     return;
   }
-  if (act === 'save') {
-    var b = DOC.querySelector('[data-ar6="base"]');
-    var k = DOC.querySelector('[data-ar6="key"]');
-    var uu = DOC.querySelector('[data-ar6="updurl"]');
-    if (b) cfg.dualBase = String(b.value || '').trim();
-    if (k) cfg.dualKey = String(k.value || '').trim();
-    if (uu) cfg.updUrl = String(uu.value || '').trim();
-    saveCfg();
-    banner('已保存 Base/Key', 'ok');
-    return;
-  }
   if (act === 'selftoggle') {
     var box = DOC.getElementById('ar6-selftest');
     if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
@@ -1491,9 +1470,6 @@ function onPanelInput(e) {
   if (!t || !t.getAttribute) return;
   var k = t.getAttribute('data-ar6');
   if (!k) return;
-  if (k === 'base') { cfg.dualBase = String(t.value || '').trim(); try { saveCfg(); } catch (e1) {} return; }
-  if (k === 'key') { cfg.dualKey = String(t.value || '').trim(); try { saveCfg(); } catch (e2) {} return; }
-  if (k === 'updurl') { cfg.updUrl = String(t.value || '').trim(); try { saveCfg(); } catch (e3) {} return; }
   if (k === 'scope') { cfg.scopeList = String(t.value || ''); try { saveCfg(); } catch (e4) {} }
 }
 

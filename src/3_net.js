@@ -37,6 +37,12 @@ var PEEKS = {};
 /* 内部请求：数据库/填表等插件用自带标记发起的生成请求，不写聊天产物 */
 var INTERNAL_FETCH_KEY = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('acu.internal-generation-fetch') : null;
 
+function lastReqBase() {
+  /* 面板上不再让用户填反代地址：直接用最近一次真实生成请求里带的 base。
+     只在内存里读，不落盘。 */
+  try { return (lastReq && lastReq.base) || ''; } catch (e) { return ''; }
+}
+
 function isInternalRequest(init, bodyObj) {
   try {
     if (init && INTERNAL_FETCH_KEY && init[INTERNAL_FETCH_KEY] === true) return true;

@@ -42,6 +42,7 @@ var AR6_API = {
   absorbPeek: absorbPeek,
   isInternalRequest: isInternalRequest,
   familyOf: familyOf,
+  lastReqBase: lastReqBase,
   inScopeModel: inScopeModel,
   scopeHitGemini: scopeHitGemini,
   pushObs: pushObs,

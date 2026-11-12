@@ -62,7 +62,7 @@ for (const v of VAR) {
   ok(v.mode + ' 按钮名是入口', back.button.buttons[0].name === '🛡 防路由');
   ok(v.mode + ' 含魔法棒挂载', c.indexOf('function mountWandEntry') >= 0 && c.indexOf('#extensionsMenu') >= 0);
   ok(v.mode + ' 含魔法棒打开面板', c.indexOf('data-ar6-wand-open') >= 0 && c.indexOf('openPanelFromWand') >= 0);
-  ok(v.mode + ' key 输入是 password', c.indexOf('data-ar6="key" type="password"') >= 0);
+  ok(v.mode + ' 不再收 API Key 输入框', c.indexOf('data-ar6="key"') < 0);
   ok(v.mode + ' 语法可解析', (() => { try { new Function(c); return true; } catch (e) { return false; } })());
   ok(v.mode + ' 体积在区间内', src.length > 230000 && src.length < 400000, String(src.length));
   ok(v.mode + ' 移动包名带 TT', v.mode !== 'mobile' || v.name.indexOf('TT酒馆适配') > 0);

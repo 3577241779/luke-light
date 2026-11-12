@@ -15,7 +15,7 @@ function chKeyOf(base, key) {
 
 /* 当前渠道基址：优先面板里填的，其次用上一轮请求实际发往的 base */
 function curBase() {
-  var b = String(cfg.dualBase || '').replace(/\/+$/, '');
+  var b = String(cfg.dualBase || lastReqBase() || '').replace(/\/+$/, '');
   if (b) return b;
   try { if (lastReq && lastReq.base) return String(lastReq.base).replace(/\/+$/, ''); } catch (e) {}
   return '';
@@ -129,8 +129,8 @@ function probeOnce(url, bodyObj, ms) {
 
 /* 幽灵名探针：4xx ⇒ 按名分发（可验）；200 ⇒ 不读名字（回显） */
 function runChannelVerify() {
-  var base = String(cfg.dualBase || '').replace(/\/+$/, '');
-  if (!base) return Promise.resolve({ ok: false, msg: '先填反代 Base' });
+  var base = String(cfg.dualBase || lastReqBase() || '').replace(/\/+$/, '');
+  if (!base) return Promise.resolve({ ok: false, msg: '还没拿到渠道地址：先正常聊一轮，再来点这个' });
   var real = String(cfg.alias || (lastReq && lastReq.model) || 'gemini-4-argon');
   var ghost = real + '-zzz-nonexistent';
   var url = openAIUrl(base);
@@ -205,7 +205,7 @@ function aliasCandidates() {
 }
 
 function runAliasSweep() {
-  var base = String(cfg.dualBase || '').replace(/\/+$/, '');
+  var base = String(cfg.dualBase || lastReqBase() || '').replace(/\/+$/, '');
   if (!base) return Promise.resolve({ ok: false, msg: '先填反代 Base' });
   var url = openAIUrl(base);
   var cands = aliasCandidates();
@@ -299,7 +299,7 @@ function kpi() {
 var LEVEL_TEST = { running: false, result: null };
 
 function levelProbe(levelLabel, effort) {
-  var base = String(cfg.dualBase || '').replace(/\/+$/, '');
+  var base = String(cfg.dualBase || lastReqBase() || '').replace(/\/+$/, '');
   var url = openAIUrl(base);
   var body = {
     model: cfg.alias || (lastReq && lastReq.model) || 'gemini-4-argon',
@@ -321,7 +321,7 @@ function levelProbe(levelLabel, effort) {
 
 function runLevelCheck() {
   if (LEVEL_TEST.running) return Promise.resolve({ ok: false, msg: '正在跑' });
-  var base = String(cfg.dualBase || '').replace(/\/+$/, '');
+  var base = String(cfg.dualBase || lastReqBase() || '').replace(/\/+$/, '');
   if (!base) return Promise.resolve({ ok: false, msg: '先填反代 Base' });
   LEVEL_TEST.running = true;
   render();
