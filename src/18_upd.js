@@ -143,7 +143,8 @@ function updMirror(u) {
   try {
     var t = String(u);
     var m = t.match(/^https:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)$/);
-    if (m) return 'https://cdn.jsdelivr.net/gh/' + m[1] + '/' + m[2] + '@' + m[3] + '/' + m[4];
+    // jsDelivr 会缓存旧文件（实测刚发版时还返回上一版的 version.json），加个时间戳绕开
+    if (m) return 'https://cdn.jsdelivr.net/gh/' + m[1] + '/' + m[2] + '@' + m[3] + '/' + m[4] + '?t=' + (+new Date());
     m = t.match(/^https:\/\/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^\/]+)@([^\/]+)\/(.+)$/);
     if (m) return 'https://raw.githubusercontent.com/' + m[1] + '/' + m[2] + '/' + m[3] + '/' + m[4];
   } catch (eM) {}
