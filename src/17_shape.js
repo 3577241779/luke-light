@@ -167,7 +167,7 @@ function shapePush(rec) {
   try {
     if (!rec || !shapeOn()) return null;
     if (rec.internal) return null;
-    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip') return null;
+    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip' || rec.code === 'aux') return null;
     var sig = shapeSig(rec);
     if (!sig) return null;
     var k = shapeId(rec);

@@ -150,7 +150,7 @@ function basePush(req, rec) {
     if (!rec) { rec = req; req = null; }
     if (!rec || !baseOn()) return null;
     if (rec.internal) return null;
-    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip') return null;
+    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip' || rec.code === 'aux') return null;
     var row = baseRow(rec);
     if (!row) return null;
     var k = baseId(rec);

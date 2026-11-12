@@ -248,8 +248,9 @@ function helpCopyFallback(txt) {
  }
 }
 
-/* v0.4：说明页在 TT 的 iframe 里 vh 并不等于可视高度（手机上面板 580px、说明页却只有 300px）。
- 所以尺寸一律用「像素」算，并允许拖动 / 铺满。桌面端走原先的 vh 布局，不改。 */
+/* v1.2：说明页从主面板里独立出来，是一个 position:fixed 的浮窗（#ar6-help）。
+   尺寸由 CSS 兜底，JS 只在每次打开时算一次位置：有 cfg.helpX/helpY 就复原，没有就居中。
+   头部可拖；页签条只负责横向滚动，不参与拖窗。 */
 function helpVH() {
  var vv = (HOST.visualViewport && HOST.visualViewport.height) || HOST.innerHeight || 0;
  return Math.round(vv || 640);
@@ -258,20 +259,25 @@ function helpVW() {
  var vv = (HOST.visualViewport && HOST.visualViewport.width) || HOST.innerWidth || 0;
  return Math.round(vv || 390);
 }
+function helpIsMob() {
+ try { return (typeof uiMode === 'function' && uiMode() === 'mobile'); } catch (e) { return false; }
+}
 function helpGeom(big, px, py) {
- var vw = helpVW(), vh = helpVH(), m = 6;
+ var vw = helpVW(), vh = helpVH(), m = 8;
  var w, h;
+ var mob = helpIsMob();
  if (big) {
- w = Math.max(240, vw - m * 2);
- h = Math.max(260, vh - m * 2);
+  w = Math.max(240, vw - m * 2);
+  h = Math.max(260, vh - m * 2);
+ } else if (mob) {
+  w = Math.max(240, vw - 16);
+  h = Math.max(260, Math.round(vh * 0.86));
  } else {
- w = Math.min(Math.round(vw * 0.94), 460);
- h = Math.round(vh * 0.88);
- if (h > 760) h = 760;
- if (h > vh - m * 2) h = vh - m * 2;
- if (h < 280) h = Math.max(200, vh - m * 2);
+  w = Math.min(430, Math.max(240, vw - 20));
+  h = Math.min(620, Math.round(vh * 0.86));
  }
  if (w > vw - m * 2) w = Math.max(200, vw - m * 2);
+ if (h > vh - m * 2) h = Math.max(200, vh - m * 2);
  var x = (typeof px === 'number' && isFinite(px)) ? Math.round(px) : Math.round((vw - w) / 2);
  var y = (typeof py === 'number' && isFinite(py)) ? Math.round(py) : Math.round((vh - h) / 2);
  if (x < m) x = m;
@@ -280,329 +286,476 @@ function helpGeom(big, px, py) {
  if (y > vh - h - m) y = Math.max(m, vh - h - m);
  return { x: x, y: y, w: w, h: h, vw: vw, vh: vh };
 }
-function helpApplyGeom(node, keep) {
+/* 只在「本次打开」时套一次几何；之后由拖动改 left/top，render 不再重算。 */
+function helpApplyGeom(node) {
  if (!node) return null;
- var wrap = node.querySelector('.ar6h-wrap');
- if (!wrap) return null;
- var g = helpGeom(!!cfg.helpBig, keep ? cfg.helpX : cfg.helpX, keep ? cfg.helpY : cfg.helpY);
- wrap.style.position = 'fixed';
- wrap.style.margin = '0';
- wrap.style.maxWidth = 'none';
- wrap.style.maxHeight = 'none';
- wrap.style.minHeight = '0';
- wrap.style.left = g.x + 'px';
- wrap.style.top = g.y + 'px';
- wrap.style.width = g.w + 'px';
- wrap.style.height = g.h + 'px';
- wrap.setAttribute('data-ar6-hg', g.x + ',' + g.y + ',' + g.w + ',' + g.h);
+ if (node.getAttribute && node.getAttribute('data-ar6-geom') === '1') return null;
+ var px = null, py = null;
+ try {
+  if (cfg) {
+   if (typeof cfg.helpX === 'number' && isFinite(cfg.helpX)) px = cfg.helpX;
+   if (typeof cfg.helpY === 'number' && isFinite(cfg.helpY)) py = cfg.helpY;
+  }
+ } catch (e0) {}
+ var g = helpGeom(!!(cfg && cfg.helpBig), null, null);
+ var x = g.x, y = g.y;
+ try {
+  node.style.position = 'fixed';
+  node.style.margin = '0';
+  node.style.maxWidth = 'none';
+  node.style.maxHeight = 'none';
+  node.style.minHeight = '0';
+  node.style.width = g.w + 'px';
+  node.style.height = g.h + 'px';
+  if (px !== null || py !== null) {
+   var p = helpClampPos(node, px === null ? g.x : px, py === null ? g.y : py);
+   x = p.x;
+   y = p.y;
+  }
+  node.style.left = x + 'px';
+  node.style.top = y + 'px';
+  node.setAttribute('data-ar6-hg', x + ',' + y + ',' + g.w + ',' + g.h);
+  node.setAttribute('data-ar6-geom', '1');
+  g.x = x;
+  g.y = y;
+ } catch (e1) {}
  return g;
 }
-
+/* 拖窗边界：至少留 40px 在视口里；纵向保证 44px 的头部还够得着。 */
+function helpClampPos(node, x, y) {
+ var vw = helpVW(), vh = helpVH();
+ var w = 0, h = 0;
+ try { w = node.offsetWidth || 0; h = node.offsetHeight || 0; } catch (e0) {}
+ if (!(w > 0)) w = parseInt(node.style && node.style.width, 10) || 320;
+ if (!(h > 0)) h = parseInt(node.style && node.style.height, 10) || 240;
+ var keep = 40;
+ var minX = keep - w;
+ var maxX = vw - keep;
+ if (maxX < minX) maxX = minX;
+ var minY = 0;
+ var maxY = vh - 44;
+ if (maxY < 0) maxY = 0;
+ if (x < minX) x = minX;
+ if (x > maxX) x = maxX;
+ if (y < minY) y = minY;
+ if (y > maxY) y = maxY;
+ return { x: Math.round(x), y: Math.round(y) };
+}
 function helpHTML(tab) {
  var k = 'how';
  for (var i = 0; i < HELP_TABS.length; i++) if (HELP_TABS[i].k === tab) k = tab;
+ var mob = helpIsMob();
+ var big = !!(cfg && cfg.helpBig);
  var h = '';
-
+ h += '<div id="ar6-help" role="dialog" aria-label="说明" data-ar6-extra="1" data-ar6-help="1" data-ar6-mob="' + (mob ? '1' : '0') + '">';
  h += '<style>' +
- '#ar6-card{--hbg:#0d1117;--hcd:#161b22;--hln:#30363d;--hfg:#e6edf3;--hdim:#8b949e;--hdim2:#6e7681;' +
- '--ha:#58a6ff;--hg:#3fb950;--hy:#d29922;--hr:#f85149}' +
- '#ar6-card,#ar6-card *{box-sizing:border-box;min-width:0}' +
- '#ar6-card .ar6h-wrap{width:402px;max-width:calc(100vw - 20px);height:86vh;max-height:720px;min-height:300px;' +
- 'display:flex;flex-direction:column;background:var(--hbg);color:var(--hfg);border:1px solid var(--hln);' +
- 'border-radius:16px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.6)}' +
- '#ar6-card .ar6h-top{flex:0 0 auto;border-bottom:1px solid var(--hln);background:linear-gradient(180deg,#10161d,#0d1117)}' +
- '#ar6-card .ar6h-tabs{display:flex;gap:4px;padding:10px 10px 2px;overflow-x:auto;scrollbar-width:none;' +
- '-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}' +
- '#ar6-card .ar6h-tabs::-webkit-scrollbar{display:none}' +
- '#ar6-card .ar6h-tab{flex:0 0 auto;padding:6px 9px;border-radius:999px;border:1px solid var(--hln);' +
- 'background:var(--hcd);color:#c9d1d9;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap}' +
- '#ar6-card .ar6h-tab.on{background:#1f6feb;border-color:#1f6feb;color:#fff}' +
- '#ar6-card .ar6h-find{display:flex;gap:6px;align-items:center;padding:7px 12px 9px}' +
- '#ar6-card .ar6h-in{flex:1 1 auto;padding:7px 10px;border-radius:9px;border:1px solid var(--hln);' +
- 'background:#0b0f14;color:var(--hfg);font-size:12.5px;outline:none;font-family:inherit}' +
- '#ar6-card .ar6h-in:focus{border-color:#1f6feb}' +
- '#ar6-card .ar6h-body{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;' +
- 'overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 14px 10px;touch-action:pan-y}' +
- '#ar6-card .ar6h-sec{margin:0 0 16px;padding-left:9px;border-left:3px solid #21262d}' +
- '#ar6-card .ar6h-h{display:flex;gap:7px;align-items:baseline;font-size:13.5px;font-weight:700;color:var(--hfg);margin-bottom:7px}' +
- '#ar6-card .ar6h-h b{color:var(--hdim2);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}' +
- '#ar6-card .ar6h-l{display:flex;gap:7px;font-size:12.8px;line-height:1.72;color:#c9d1d9;margin:2px 0}' +
- '#ar6-card .ar6h-l span{flex:1 1 auto;word-break:break-word;white-space:pre-wrap}' +
- '#ar6-card .ar6h-i{flex:0 0 6px;height:6px;margin-top:8px;border-radius:50%;background:#21262d}' +
- '#ar6-card .ar6h-l.a .ar6h-i{background:var(--ha)}' +
- '#ar6-card .ar6h-l.g .ar6h-i{background:var(--hg)}' +
- '#ar6-card .ar6h-l.y .ar6h-i{background:var(--hy)}' +
- '#ar6-card .ar6h-kv{display:grid;grid-template-columns:.9fr 1.3fr;gap:6px;background:var(--hcd);' +
- 'border:1px solid var(--hln);border-radius:9px;padding:7px 9px;margin:5px 0}' +
- '#ar6-card .ar6h-k{font-size:12px;line-height:1.6;color:var(--hdim);word-break:break-word;padding-right:8px;border-right:1px solid rgba(255,255,255,.07)}' +
- '#ar6-card .ar6h-v{font-size:12px;line-height:1.6;color:var(--hfg);word-break:break-word}' +
- '#ar6-card .ar6h-q{display:flex;gap:7px;align-items:baseline;font-size:13px;font-weight:700;color:var(--ha);margin-bottom:5px}' +
- '#ar6-card .ar6h-qm{flex:0 0 auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;' +
- 'background:rgba(88,166,255,.15);color:var(--ha)}' +
- '#ar6-card .ar6h-none{font-size:12.5px;color:var(--hdim);padding:10px 2px}' +
- '#ar6-card .ar6h-foot{flex:0 0 auto;border-top:1px solid var(--hln);background:#0b0f14;padding:9px 14px 10px}' +
- '#ar6-card .ar6h-ver{font-size:10.5px;color:var(--hdim2);margin-bottom:8px}' +
- '#ar6-card .ar6h-btns{display:flex;gap:8px}' +
- '#ar6-card .ar6h-b1,#ar6-card .ar6h-b2{flex:1;padding:10px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer}' +
- '#ar6-card .ar6h-b1{border:0;background:#238636;color:#fff}' +
- '#ar6-card .ar6h-b2{border:1px solid var(--hln);background:#21262d;color:#c9d1d9;font-weight:400}' +
- '#ar6-card .ar6h-b3{border:1px solid var(--hln);background:#21262d;color:#c9d1d9;font-weight:400;' +
- 'flex:0 0 auto;padding:10px 12px;border-radius:9px;font-size:13px;cursor:pointer}' +
- '#ar6-card .ar6h-grab{display:none;height:14px;margin:2px 10px 0;border-radius:7px;background:rgba(255,255,255,.07);cursor:grab;touch-action:none}' +
- '#ar6-card .ar6h-wrap[data-ar6-mob="1"] .ar6h-grab{display:block}' +
- '#ar6-card .ar6h-wrap[data-ar6-mob="1"] .ar6h-tabs{touch-action:pan-x}' +
- '#ar6-card .ar6h-hbar{display:none;height:12px;margin:6px 10px 0;border-radius:6px;' +
- 'background:rgba(255,255,255,.07);position:relative;touch-action:none;cursor:pointer}' +
- '#ar6-card .ar6h-wrap[data-ar6-mob="1"] .ar6h-hbar{display:block}' +
- /* data-none 用了两条选择器：第一条 (0,1,2,0) 低于上面 display:block 的 (0,1,3,0)，单靠它手机端藏不掉；
-    真正生效的是第二条 (0,1,4,0)，桌面/手机都靠这条兜底。 */
- '#ar6-card .ar6h-hbar[data-none="1"],#ar6-card .ar6h-wrap[data-ar6-mob="1"] .ar6h-hbar[data-none="1"]{display:none}' +
- '#ar6-card .ar6h-hthumb{position:absolute;top:2px;left:0;height:8px;border-radius:4px;' +
- 'background:rgba(255,255,255,.36);min-width:28px}' +
- '#ar6-card .ar6h-hbar[data-drag="1"] .ar6h-hthumb{background:rgba(255,255,255,.6)}' +
- '#ar6-card .ar6h-wrap[data-ar6-drag="1"] .ar6h-grab{cursor:grabbing}' +
- '</style>';
-
- var mob = false;
- try { mob = (typeof uiMode === 'function' && uiMode() === 'mobile'); } catch (eMob) {}
- h += '<div id="ar6-card" style="position:fixed;inset:0;z-index:2147483600;background:rgba(1,4,9,' + (mob ? '.55' : '.93') + ');' +
- (mob ? '' : 'display:flex;align-items:center;justify-content:center;padding:12px;') +
- 'font-family:system-ui,-apple-system,\'Segoe UI\',\'Segoe UI Emoji\',\'Noto Color Emoji\',sans-serif">';
- h += '<div class="ar6h-wrap" data-ar6-mob="' + (mob ? '1' : '0') + '">';
-
- /* 顶部：页签 + 搜索 */
- h += '<div class="ar6h-top"><div class="ar6h-grab"></div><div class="ar6h-tabs">';
- for (var i2 = 0; i2 < HELP_TABS.length; i2++) {
- var on = HELP_TABS[i2].k === k;
- h += '<button class="ar6h-tab' + (on ? ' on' : '') + '" data-ar6-card="tab" data-tab="' + HELP_TABS[i2].k + '">' +
- esc(HELP_TABS[i2].t) + '</button>';
+  '#ar6-help{--hbg:#0d1117;--hcd:#161b22;--hln:#30363d;--hfg:#e6edf3;--hdim:#8b949e;--hdim2:#6e7681;--ha:#58a6ff;--hg:#3fb950;--hy:#d29922;--hr:#f85149;' +
+  'position:fixed;left:0;top:0;z-index:2147483100;' +
+  'width:min(430px,calc(100vw - 20px));height:min(620px,86vh);' +
+  'display:flex;flex-direction:column;background:var(--hbg);color:var(--hfg);' +
+  'border:1px solid var(--hln);border-radius:16px;overflow:hidden;' +
+  'box-shadow:0 12px 48px rgba(0,0,0,.6);' +
+  'font-family:system-ui,-apple-system,Segoe UI,Noto Color Emoji,sans-serif}' +
+  '#ar6-help,#ar6-help *{box-sizing:border-box;min-width:0}' +
+  '#ar6-help button,#ar6-help input{font-family:inherit}' +
+  '#ar6-help[data-ar6-mob="1"]{width:calc(100vw - 16px);height:86vh}' +
+  '#ar6-help .ar6h-wrap{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden}' +
+  '#ar6-help .ar6h-head{flex:0 0 auto;height:44px;display:flex;align-items:center;padding:0 2px 0 14px;' +
+  'border-bottom:1px solid var(--hln);background:linear-gradient(180deg,#10161d,var(--hbg));' +
+  'cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}' +
+  '#ar6-help .ar6h-head[data-ar6-drag="1"]{cursor:grabbing}' +
+  '#ar6-help .ar6h-title{flex:1 1 auto;font-size:14px;font-weight:700;letter-spacing:.02em}' +
+  '#ar6-help .ar6h-x{flex:0 0 44px;width:44px;height:44px;padding:0;border:0;background:transparent;' +
+  'color:var(--hdim);font-size:18px;line-height:44px;text-align:center;cursor:pointer;border-radius:8px}' +
+  '#ar6-help .ar6h-x:hover{background:rgba(255,255,255,.06);color:var(--hfg)}' +
+  '#ar6-help .ar6h-top{flex:0 0 auto}' +
+  '#ar6-help .ar6h-tabs{display:flex;gap:4px;padding:8px 10px 6px;overflow-x:auto;overflow-y:hidden;' +
+  '-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;' +
+  'scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent}' +
+  '#ar6-help .ar6h-tabs::-webkit-scrollbar{height:4px}' +
+  '#ar6-help .ar6h-tabs::-webkit-scrollbar-track{background:transparent}' +
+  '#ar6-help .ar6h-tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.28);border-radius:2px}' +
+  '#ar6-help .ar6h-tab{flex:0 0 auto;padding:6px 9px;border-radius:999px;border:1px solid var(--hln);' +
+  'background:var(--hcd);color:#c9d1d9;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap}' +
+  '#ar6-help .ar6h-tab.on{background:#1f6feb;border-color:#1f6feb;color:#fff}' +
+  '#ar6-help .ar6h-hbar{display:none;height:12px;margin:0 10px 2px;border-radius:6px;' +
+  'background:rgba(255,255,255,.07);position:relative;touch-action:none;cursor:pointer;flex:0 0 auto}' +
+  '#ar6-help .ar6h-hbar[data-none="0"]{display:block}' +
+  '#ar6-help .ar6h-hbar[data-none="1"]{display:none}' +
+  '#ar6-help .ar6h-hthumb{position:absolute;top:2px;left:0;height:8px;border-radius:4px;' +
+  'background:rgba(255,255,255,.36);min-width:28px}' +
+  '#ar6-help .ar6h-hbar[data-drag="1"] .ar6h-hthumb{background:rgba(255,255,255,.6)}' +
+  '#ar6-help .ar6h-find{display:flex;gap:6px;align-items:center;padding:7px 12px 9px}' +
+  '#ar6-help .ar6h-in{flex:1 1 auto;padding:7px 10px;border-radius:9px;border:1px solid var(--hln);' +
+  'background:#0b0f14;color:var(--hfg);font-size:12.5px;outline:none;font-family:inherit}' +
+  '#ar6-help .ar6h-in:focus{border-color:#1f6feb}' +
+  '#ar6-help[data-ar6-mob="1"] .ar6h-in{font-size:16px}' +
+  '#ar6-help .ar6h-body{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;' +
+  'overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 14px 10px;' +
+  'touch-action:pan-y;font-size:13px;line-height:1.75;' +
+  'scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}' +
+  '#ar6-help .ar6h-body::-webkit-scrollbar{width:6px}' +
+  '#ar6-help .ar6h-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:3px}' +
+  '#ar6-help .ar6h-sec{margin:0 0 16px;padding-left:9px;border-left:3px solid #21262d}' +
+  '#ar6-help .ar6h-h{display:flex;gap:7px;align-items:baseline;font-size:13.5px;font-weight:700;' +
+  'color:var(--hfg);margin:14px 0 7px}' +
+  '#ar6-help .ar6h-h b{color:var(--hdim2);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}' +
+  '#ar6-help .ar6h-l{display:flex;gap:7px;font-size:13px;line-height:1.75;color:#c9d1d9;margin:2px 0}' +
+  '#ar6-help .ar6h-l span{flex:1 1 auto;word-break:break-word;white-space:pre-wrap}' +
+  '#ar6-help .ar6h-i{flex:0 0 6px;height:6px;margin-top:9px;border-radius:50%;background:#21262d}' +
+  '#ar6-help .ar6h-l.a .ar6h-i{background:var(--ha)}' +
+  '#ar6-help .ar6h-l.g .ar6h-i{background:var(--hg)}' +
+  '#ar6-help .ar6h-l.y .ar6h-i{background:var(--hy)}' +
+  '#ar6-help .ar6h-kv{display:grid;grid-template-columns:.9fr 1.3fr;gap:6px;background:var(--hcd);' +
+  'border:1px solid var(--hln);border-radius:9px;padding:7px 9px;margin:5px 0}' +
+  '#ar6-help .ar6h-k{font-size:12.5px;line-height:1.7;color:var(--hdim);word-break:break-word;' +
+  'padding-right:8px;border-right:1px solid rgba(255,255,255,.07)}' +
+  '#ar6-help .ar6h-v{font-size:12.5px;line-height:1.7;color:var(--hfg);word-break:break-word}' +
+  '#ar6-help .ar6h-q{display:flex;gap:7px;align-items:baseline;font-size:13px;font-weight:700;' +
+  'color:var(--ha);margin-bottom:5px}' +
+  '#ar6-help .ar6h-qm{flex:0 0 auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;' +
+  'background:rgba(88,166,255,.15);color:var(--ha)}' +
+  '#ar6-help .ar6h-none{font-size:12.5px;color:var(--hdim);padding:10px 2px}' +
+  '#ar6-help .ar6h-foot{flex:0 0 auto;border-top:1px solid var(--hln);background:#0b0f14;padding:9px 14px 10px}' +
+  '#ar6-help .ar6h-ver{font-size:10.5px;color:var(--hdim2);margin-bottom:8px}' +
+  '#ar6-help .ar6h-btns{display:flex;gap:8px}' +
+  '#ar6-help .ar6h-b1,#ar6-help .ar6h-b2,#ar6-help .ar6h-b3{flex:1 1 0;height:40px;border-radius:9px;' +
+  'font-size:13.5px;font-weight:700;cursor:pointer;padding:0 12px}' +
+  '#ar6-help .ar6h-b1{border:0;background:#238636;color:#fff}' +
+  '#ar6-help .ar6h-b2{border:1px solid var(--hln);background:var(--hcd);color:#c9d1d9;font-weight:400}' +
+  '#ar6-help .ar6h-b3{border:1px solid var(--hln);background:var(--hcd);color:#c9d1d9;font-weight:400}' +
+  '</style>';
+ h += '<div class="ar6h-wrap">';
+ h += '<div class="ar6h-head" data-ar6-helphead="1">' +
+  '<span class="ar6h-title">说明</span>' +
+  '<button type="button" class="ar6h-x" data-ar6-card="close" title="关闭" aria-label="关闭">✕</button>' +
+  '</div>';
+ h += '<div class="ar6h-top"><div class="ar6h-tabs">';
+ for (var j = 0; j < HELP_TABS.length; j++) {
+  var on = HELP_TABS[j].k === k;
+  h += '<button type="button" class="ar6h-tab' + (on ? ' on' : '') + '" data-ar6-card="tab" data-tab="' +
+   HELP_TABS[j].k + '">' + esc(HELP_TABS[j].t) + '</button>';
  }
  h += '</div>';
  h += '<div class="ar6h-hbar"><div class="ar6h-hthumb"></div></div>';
  h += '<div class="ar6h-find"><input class="ar6h-in" id="ar6h-find" placeholder="在本页里搜……（标题和正文都算）" ' +
- 'autocomplete="off" spellcheck="false"></div></div>';
-
- /* 正文 */
+  'autocomplete="off" spellcheck="false"></div></div>';
  h += '<div class="ar6h-body" id="ar6h-body">' + helpPageHTML(k) + '</div>';
-
- /* 底部 */
  h += '<div class="ar6h-foot"><div class="ar6h-ver">卢克之光 V' + esc(VERSION) + ' · 说明页 · 离线可用</div>' +
- '<div class="ar6h-btns">' +
- (mob ? '<button class="ar6h-b3" data-ar6-card="big">' + (cfg.helpBig ? '还原' : '铺满') + '</button>' : '') +
- '<button class="ar6h-b1" data-ar6-card="copy">复制这段</button>' +
- '<button class="ar6h-b2" data-ar6-card="close">关闭</button>' +
- '</div></div>';
-
+  '<div class="ar6h-btns">' +
+  '<button type="button" class="ar6h-b1" data-ar6-card="copy">复制这段</button>' +
+  (mob ? '<button type="button" class="ar6h-b3" data-ar6-card="big">' + (big ? '还原' : '铺满') + '</button>' : '') +
+  '<button type="button" class="ar6h-b2" data-ar6-card="close">关闭</button>' +
+  '</div></div>';
  h += '</div></div>';
  return h;
 }
-
 function helpFilter(node) {
  try {
- var inp = node.querySelector('#ar6h-find');
- if (!inp) return;
- var q = String(inp.value || '').toLowerCase().replace(/^\s+|\s+$/g, '');
- var secs = node.querySelectorAll('.ar6h-sec');
- var hit = 0;
- for (var i = 0; i < secs.length; i++) {
- var txt = secs[i].getAttribute('data-txt') || '';
- var show = (!q || txt.indexOf(q) >= 0);
- secs[i].style.display = show ? '' : 'none';
- if (show) hit++;
- }
- var none = node.querySelector('#ar6h-none');
- if (none) none.style.display = (q && !hit) ? '' : 'none';
+  var inp = node.querySelector('#ar6h-find');
+  if (!inp) return;
+  var q = String(inp.value || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+  var secs = node.querySelectorAll('.ar6h-sec');
+  var hit = 0;
+  for (var i = 0; i < secs.length; i++) {
+   var txt = secs[i].getAttribute('data-txt') || '';
+   var show = (!q || txt.indexOf(q) >= 0);
+   secs[i].style.display = show ? '' : 'none';
+   if (show) hit++;
+  }
+  var none = node.querySelector('#ar6h-none');
+  if (none) none.style.display = (q && !hit) ? '' : 'none';
  } catch (e) {}
 }
-
-/* 拖动把手是页签条上方的抓条；页签条本身负责横向滚动 */
+var HELP_NODE = null;
+function helpMount(html) {
+ var holder = null;
+ try { holder = DOC.createElement('div'); } catch (e0) { holder = null; }
+ if (!holder) return null;
+ try { holder.innerHTML = html; } catch (e1) { return null; }
+ var body = DOC.body;
+ if (!body) return null;
+ var node = null;
+ var guard = 0;
+ while (holder.firstChild && guard++ < 20) {
+  var c = holder.firstChild;
+  try { holder.removeChild(c); } catch (e2) { break; }
+  if (c && c.id === 'ar6-help') node = c;
+  try { body.appendChild(c); } catch (e3) {}
+ }
+ if (!node) {
+  try { node = DOC.getElementById('ar6-help'); } catch (e4) { node = null; }
+ }
+ return node;
+}
+function closeHelp() {
+ var node = HELP_NODE;
+ HELP_NODE = null;
+ try { if (CARD) { CARD.open = false; CARD.help = ''; } } catch (e0) {}
+ if (!node) return;
+ try { if (typeof node.__ar6HelpDragEnd === 'function') node.__ar6HelpDragEnd(); } catch (e1) {}
+ try { if (typeof node.__ar6HBarCleanup === 'function') node.__ar6HBarCleanup(); } catch (e2) {}
+ try { if (typeof node.__ar6HelpNodeCleanup === 'function') node.__ar6HelpNodeCleanup(); } catch (e4) {}
+ try { if (node.parentNode) node.parentNode.removeChild(node); } catch (e3) {}
+}
+/* 打开时把当前页签滚进可视区中间（try/catch 包住，老 WebView 里静默失败）。 */
+function helpScrollTab(node) {
+ try {
+  if (!node || !node.parentNode) return;
+  var tabs = node.querySelector('.ar6h-tabs');
+  if (!tabs) return;
+  var on = tabs.querySelector('.ar6h-tab.on');
+  if (!on) return;
+  try {
+   if (on.scrollIntoView) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+  } catch (e0) {
+   try {
+    var tr = tabs.getBoundingClientRect();
+    var br = on.getBoundingClientRect();
+    tabs.scrollLeft += (br.left - tr.left) - (tr.width - br.width) / 2;
+   } catch (e1) {}
+  }
+  try { if (node.__ar6HBarSync) node.__ar6HBarSync(); } catch (e2) {}
+ } catch (e) {}
+}
+/* 头部拖动：pointerdown 绑在头部（排除 data-ar6-card 的 ✕），move/up 临时挂 window。 */
 function helpBindDrag(node) {
- var wrap = node.querySelector('.ar6h-wrap');
- var bar = node.querySelector('.ar6h-grab');
- if (!wrap || !bar) return;
- var on = false, dx = 0, dy = 0;
- bar.addEventListener('pointerdown', function (e) {
- var t = e && e.target;
- if (t && t.getAttribute && t.getAttribute('data-ar6-card')) return;
- var r = wrap.getBoundingClientRect();
- on = true;
- dx = e.clientX - r.left;
- dy = e.clientY - r.top;
- wrap.setAttribute('data-ar6-drag', '1');
- try { if (bar.setPointerCapture) bar.setPointerCapture(e.pointerId); } catch (eC) {}
- try { if (e.preventDefault) e.preventDefault(); } catch (eP) {}
- });
- bar.addEventListener('pointermove', function (e) {
- if (!on) return;
- var g = helpGeom(!!cfg.helpBig, e.clientX - dx, e.clientY - dy);
- wrap.style.left = g.x + 'px';
- wrap.style.top = g.y + 'px';
- wrap.setAttribute('data-ar6-hg', g.x + ',' + g.y + ',' + g.w + ',' + g.h);
- cfg.helpX = g.x;
- cfg.helpY = g.y;
- try { if (e.preventDefault) e.preventDefault(); } catch (eP2) {}
- });
+ if (!node || node.__ar6HelpDragBound) return;
+ var head = node.querySelector('.ar6h-head');
+ if (!head) return;
+ node.__ar6HelpDragBound = 1;
+ var on = false, sx = 0, sy = 0, ox = 0, oy = 0, prevCursor = '';
+ function down(e) {
+  if (!e || on) return;
+  if (typeof e.button === 'number' && e.button !== 0) return;
+  var t = e.target;
+  if (t && t.getAttribute && t.getAttribute('data-ar6-card')) return;
+  var el = t, guard = 0;
+  while (el && el !== head && guard++ < 8) {
+   if (el.getAttribute && el.getAttribute('data-ar6-card')) return;
+   el = el.parentNode;
+  }
+  var r = null;
+  try { r = node.getBoundingClientRect ? node.getBoundingClientRect() : null; } catch (e0) {}
+  on = true;
+  sx = e.clientX || 0;
+  sy = e.clientY || 0;
+  ox = (r && typeof r.left === 'number') ? r.left : (parseInt(node.style.left, 10) || 0);
+  oy = (r && typeof r.top === 'number') ? r.top : (parseInt(node.style.top, 10) || 0);
+  try { node.setAttribute('data-ar6-drag', '1'); } catch (e1) {}
+  try { head.setAttribute('data-ar6-drag', '1'); } catch (e2) {}
+  try {
+   if (DOC.body && DOC.body.style) {
+    prevCursor = DOC.body.style.cursor || '';
+    DOC.body.style.cursor = 'grabbing';
+   }
+  } catch (e3) {}
+  try {
+   HOST.addEventListener('pointermove', move);
+   HOST.addEventListener('pointerup', fin);
+   HOST.addEventListener('pointercancel', fin);
+  } catch (e4) {}
+  try { if (e.preventDefault) e.preventDefault(); } catch (e5) {}
+ }
+ function move(e) {
+  if (!on) return;
+  var g = helpClampPos(node, ox + ((e.clientX || 0) - sx), oy + ((e.clientY || 0) - sy));
+  try { node.style.left = g.x + 'px'; node.style.top = g.y + 'px'; } catch (e0) {}
+  try { node.setAttribute('data-ar6-hg', g.x + ',' + g.y + ',' + (node.offsetWidth || 0) + ',' + (node.offsetHeight || 0)); } catch (e1) {}
+  try { if (cfg) { cfg.helpX = g.x; cfg.helpY = g.y; } } catch (e2) {}
+  try { if (e.preventDefault) e.preventDefault(); } catch (e3) {}
+ }
  function fin() {
- if (!on) return;
- on = false;
- wrap.removeAttribute('data-ar6-drag');
- try { saveCfg(); } catch (e) {}
+  if (!on) return;
+  on = false;
+  try { saveCfg(); } catch (e0) {}
+  try { HOST.removeEventListener('pointermove', move); } catch (e1) {}
+  try { HOST.removeEventListener('pointerup', fin); } catch (e2) {}
+  try { HOST.removeEventListener('pointercancel', fin); } catch (e3) {}
+  try { node.removeAttribute('data-ar6-drag'); } catch (e4) {}
+  try { head.removeAttribute('data-ar6-drag'); } catch (e5) {}
+  try { if (DOC.body && DOC.body.style) DOC.body.style.cursor = prevCursor; } catch (e6) {}
  }
- bar.addEventListener('pointerup', fin);
- bar.addEventListener('pointercancel', fin);
+ head.addEventListener('pointerdown', down);
+ node.__ar6HelpDragEnd = fin;
 }
-
-/* 页签超出宽度时，给一条始终可见的横向滑块（轨道 + 可拖滑块）：
- 页签再多也一定滑得到底，不用靠猜「还能往右滑」。纵向滚动与拖窗把手完全不受影响。 */
-/* resize 全局只挂一个监听：每次绑定改指向当前节点，节点脱离文档后主动摘掉，反复开面板/切页签不累积 */
-var HBAR_NODE = null, HBAR_LISTEN = false;
-function hbarResize() {
- var n = HBAR_NODE;
- if (!n || n.isConnected === false) {
-  HBAR_NODE = null;
-  if (HBAR_LISTEN) { HBAR_LISTEN = false; try { HOST.removeEventListener('resize', hbarResize); } catch (eR) {} }
-  return;
- }
- try { if (n.__ar6HBarSync) n.__ar6HBarSync(); } catch (eS) {}
-}
-function hbarArm(n) {
- HBAR_NODE = n;
- if (HBAR_LISTEN) return;
- HBAR_LISTEN = true;
- try { HOST.addEventListener('resize', hbarResize); } catch (eA) { HBAR_LISTEN = false; }
-}
+/* 页签横向滚动条：内容不溢出时隐藏；拖拇指 / 点轨道都能滚页签条。 */
 function helpBindHBar(node) {
  var wrap = node && node.querySelector('.ar6h-wrap');
  var tabs = node && node.querySelector('.ar6h-tabs');
  var bar = node && node.querySelector('.ar6h-hbar');
  var th = node && node.querySelector('.ar6h-hthumb');
  if (!wrap || !tabs || !bar || !th) return;
- /* 同一节点被重复绑定（切页签/重开）时只重算一次，监听不重复挂 */
  if (node.__ar6HBarBound) {
-  try { if (node.__ar6HBarSync) node.__ar6HBarSync(); } catch (e0) {}
-  hbarArm(node);
+  try { if (node.__ar6HBarSync) node.__ar6HBarSync(); } catch (eB) {}
   return;
  }
  node.__ar6HBarBound = 1;
-
+ var on = false, sx = 0, start = 0, ov0 = 0, tw0 = 0, ww0 = 0;
+ var ro = null, gone = false;
  function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
- function over() { return tabs.scrollWidth - tabs.clientWidth; }
-
- /* 把滑块尺寸/位置对到页签条当前状态；页签放得下、或滑块已几乎满格没有行程时，整条藏掉 */
+ function over() { return (tabs.scrollWidth || 0) - (tabs.clientWidth || 0); }
+ function hideBar() { try { bar.setAttribute('data-none', '1'); } catch (e0) {} }
+ function showBar() { try { bar.setAttribute('data-none', '0'); } catch (e1) {} }
  function sync() {
   try {
-   if (!bar.parentNode || !tabs.parentNode) return;
+   if (!node.parentNode || !tabs.parentNode || !bar.parentNode) return;
    var ov = over();
-   if (ov <= 1) { bar.setAttribute('data-none', '1'); return; }
-   var tw = bar.clientWidth;
-   var sw = tabs.clientWidth;
-   var cw = tabs.scrollWidth;
+   if (ov <= 1) { hideBar(); return; }
+   showBar();
+   var tw = bar.clientWidth || 0;
+   var sw = tabs.clientWidth || 0;
+   var cw = tabs.scrollWidth || 0;
    if (!(tw > 0) || !(sw > 0) || !(cw > 0)) return;
    var w = Math.max(28, tw * sw / cw);
    if (w > tw) w = tw;
    var travel = tw - w;
-   /* 轨道与滑块几乎等宽时只剩 1~3px 可拖，换算会 1px 跳满程，不如直接不显示 */
-   if (travel < 4) { bar.setAttribute('data-none', '1'); return; }
-   bar.removeAttribute('data-none');
+   if (travel < 4) { hideBar(); return; }
    th.style.width = w + 'px';
    th.style.left = (travel * (tabs.scrollLeft / ov)) + 'px';
-  } catch (eS) {}
+  } catch (e2) {}
  }
-
- /* 拖滑块：位移换算成页签条的 scrollLeft */
- var on = false, sx = 0, start = 0, ov0 = 0, tw0 = 0, ww0 = 0;
- th.addEventListener('pointerdown', function (e) {
+ function thDown(e) {
   try {
-   tw0 = bar.clientWidth;
+   tw0 = bar.clientWidth || 0;
    ww0 = th.offsetWidth || 28;
-   if (tw0 - ww0 < 4) return; /* 行程不足 4px 时不接拖动，避免一碰就跳满 */
+   if (tw0 - ww0 < 4) return;
    on = true;
-   sx = e.clientX;
-   start = tabs.scrollLeft;
+   sx = e.clientX || 0;
+   start = tabs.scrollLeft || 0;
    ov0 = over();
    bar.setAttribute('data-drag', '1');
-   if (th.setPointerCapture) th.setPointerCapture(e.pointerId);
+   if (th.setPointerCapture && e.pointerId != null) th.setPointerCapture(e.pointerId);
    if (e.preventDefault) e.preventDefault();
-  } catch (eD) {}
- });
- th.addEventListener('pointermove', function (e) {
+  } catch (e3) {}
+ }
+ function thMove(e) {
   if (!on) return;
   try {
-   tabs.scrollLeft = start + (e.clientX - sx) * ov0 / Math.max(4, tw0 - ww0);
+   tabs.scrollLeft = start + ((e.clientX || 0) - sx) * ov0 / Math.max(4, tw0 - ww0);
    if (e.preventDefault) e.preventDefault();
-  } catch (eM) {}
- });
- function fin() {
+  } catch (e4) {}
+ }
+ function thUp() {
   if (!on) return;
   on = false;
-  try { bar.removeAttribute('data-drag'); } catch (eF) {}
+  try { bar.removeAttribute('data-drag'); } catch (e5) {}
  }
- th.addEventListener('pointerup', fin);
- th.addEventListener('pointercancel', fin);
-
- /* 点轨道空白：把滑块中心挪到手指处 */
- bar.addEventListener('pointerdown', function (e) {
+ function barDown(e) {
   if (!e || e.target === th) return;
   try {
    var ov = over();
    if (ov <= 1) return;
-   var tw = bar.clientWidth;
+   var tw = bar.clientWidth || 0;
    var ww = th.offsetWidth || 28;
    if (tw - ww < 4) return;
-   var r = bar.getBoundingClientRect();
-   var ratio = clamp01((e.clientX - r.left - ww / 2) / Math.max(4, tw - ww));
+   var r = bar.getBoundingClientRect ? bar.getBoundingClientRect() : null;
+   if (!r) return;
+   var ratio = clamp01(((e.clientX || 0) - r.left - ww / 2) / Math.max(4, tw - ww));
    var left = ratio * ov;
    if (tabs.scrollTo) tabs.scrollTo({ left: left, behavior: 'smooth' });
    else tabs.scrollLeft = left;
    if (e.preventDefault) e.preventDefault();
-  } catch (eB) {}
- });
-
- tabs.addEventListener('scroll', sync, { passive: true });
-
- /* 切页签后重算；resize 走全局单监听（hbarResize），不在这里逐个节点挂 */
- tabs.addEventListener('click', function () { try { setTimeout(sync, 0); } catch (eC) {} });
+  } catch (e6) {}
+ }
+ function onScroll() { sync(); }
+ function onResize() {
+  if (gone) return;
+  if (!node.parentNode) { cleanup(); return; }
+  sync();
+ }
+ function cleanup() {
+  if (gone) return;
+  gone = true;
+  try { if (ro && ro.disconnect) ro.disconnect(); } catch (e7) {}
+  ro = null;
+  try { tabs.removeEventListener('scroll', onScroll); } catch (e8) {}
+  try { th.removeEventListener('pointerdown', thDown); } catch (e9) {}
+  try { th.removeEventListener('pointermove', thMove); } catch (e10) {}
+  try { th.removeEventListener('pointerup', thUp); } catch (e11) {}
+  try { th.removeEventListener('pointercancel', thUp); } catch (e12) {}
+  try { th.removeEventListener('lostpointercapture', thUp); } catch (e13) {}
+  try { bar.removeEventListener('pointerdown', barDown); } catch (e14) {}
+  try { HOST.removeEventListener('resize', onResize); } catch (e15) {}
+ }
+ th.addEventListener('pointerdown', thDown);
+ th.addEventListener('pointermove', thMove);
+ th.addEventListener('pointerup', thUp);
+ th.addEventListener('pointercancel', thUp);
+ th.addEventListener('lostpointercapture', thUp);
+ bar.addEventListener('pointerdown', barDown);
+ tabs.addEventListener('scroll', onScroll, false);
+ try {
+  if (HOST.ResizeObserver) {
+   ro = new HOST.ResizeObserver(function () {
+    if (!node.parentNode) { cleanup(); return; }
+    sync();
+   });
+   ro.observe(tabs);
+   ro.observe(wrap);
+  } else {
+   HOST.addEventListener('resize', onResize);
+  }
+ } catch (e16) {
+  try { HOST.addEventListener('resize', onResize); } catch (e17) {}
+ }
  node.__ar6HBarSync = sync;
- hbarArm(node);
-
+ node.__ar6HBarCleanup = cleanup;
  sync();
- try { setTimeout(sync, 0); } catch (eT) {}
+ try { setTimeout(function () { if (node.parentNode) sync(); }, 0); } catch (e18) {}
 }
-
 function openHelp(tab) {
  try {
- var k = tab || 'how';
- var mob = false;
- try { mob = (typeof uiMode === 'function' && uiMode() === 'mobile'); } catch (eM2) {}
- closeCard();
- var node = mountHTML(helpHTML(k));
- if (!node) throw new Error('mount failed');
- CARD.open = true;
- CARD.rid = -1;
- CARD.help = k;
- if (mob) {
- try { helpApplyGeom(node); } catch (eG) {}
- try { helpBindDrag(node); } catch (eD) {}
- }
- try { helpBindHBar(node); } catch (eH) {}
- node.addEventListener('input', function () { helpFilter(node); });
- node.addEventListener('click', function (ev) {
- var t = ev.target;
- var act = t && t.getAttribute && (t.getAttribute('data-ar6-card') || '');
- if (act === 'tab') { openHelp(t.getAttribute('data-tab')); return; }
- if (act === 'copy') { helpCopy(k); return; }
- if (act === 'big') {
- cfg.helpBig = !cfg.helpBig;
- cfg.helpX = null;
- cfg.helpY = null;
- try { saveCfg(); } catch (eB) {}
- openHelp(CARD.help || k);
- return;
- }
- if (act === 'close' || t === node) closeCard();
- return;
- });
+  var k = tab || 'how';
+  closeHelp();
+  try { closeCard(); } catch (e0) {}
+  var node = helpMount(helpHTML(k));
+  if (!node) throw new Error('mount failed');
+  HELP_NODE = node;
+  try { if (CARD) { CARD.open = true; CARD.rid = -1; CARD.help = k; } } catch (e1) {}
+  try { helpApplyGeom(node); } catch (e2) {}
+  try { helpBindDrag(node); } catch (e3) {}
+  try { helpBindHBar(node); } catch (e4) {}
+  var onInput = function () { helpFilter(node); };
+  var onCardClick = function (ev) {
+   var t = ev && ev.target;
+   var el = t, act = '', guard = 0;
+   while (el && el !== node && guard++ < 8) {
+    if (el.getAttribute) {
+     var a = el.getAttribute('data-ar6-card');
+     if (a) { act = a; break; }
+    }
+    el = el.parentNode;
+   }
+   if (!act) return;
+   if (act === 'tab') { openHelp(el.getAttribute('data-tab')); return; }
+   if (act === 'copy') {
+    helpCopy(k);
+    try {
+     var orig = el.getAttribute('data-ar6-label');
+     if (!orig) { orig = el.textContent || '复制这段'; el.setAttribute('data-ar6-label', orig); }
+     el.textContent = '已复制';
+     setTimeout(function () {
+      try { el.textContent = orig; } catch (eT) {}
+     }, 1200);
+    } catch (eC) {}
+    return;
+   }
+   if (act === 'big') {
+    try { cfg.helpBig = !cfg.helpBig; cfg.helpX = null; cfg.helpY = null; saveCfg(); } catch (eB) {}
+    openHelp((CARD && CARD.help) || k);
+    return;
+   }
+   if (act === 'close') closeHelp();
+  };
+  node.addEventListener('input', onInput);
+  node.addEventListener('click', onCardClick);
+  node.__ar6HelpNodeCleanup = function () {
+   try { node.removeEventListener('input', onInput); } catch (eN0) {}
+   try { node.removeEventListener('click', onCardClick); } catch (eN1) {}
+  };
+  try { setTimeout(function () { helpScrollTab(node); }, 0); } catch (e5) {}
  } catch (e) {
- try { banner('说明页渲染失败：' + String(e && e.message || e), 'bad'); } catch (e2) {}
+  try { banner('说明页渲染失败：' + String((e && e.message) || e), 'bad'); } catch (e2) {}
  }
 }

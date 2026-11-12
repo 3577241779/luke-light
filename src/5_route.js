@@ -286,6 +286,7 @@ function kpi() {
     var conf = r.conf || 'C';
     if (conf !== 'A' && conf !== 'B') continue;
     if (r.code === 'skip') continue;   /* 不在检测范围的不进路由率 */
+    if (r.code === 'aux') continue;    /* 辅助请求不是正文，不进分母 */
     if (r.code === 'unknown' || r.code === 'empty' || r.code === 'error') continue;
     eff++;
     if (r.code === 'diff' || r.code === 'thin' || r.code === 'echo') bad++;

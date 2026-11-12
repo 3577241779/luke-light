@@ -263,7 +263,7 @@ function updBoot() {
 }
 
 /* ==========================================================================
- * 一键更新（v1.1）
+ * 一键更新（v1.2）
  *
  * 上一版只能「告诉你有没有新版」。这一版再往下走一步：把新包取回来，
  * 直接写进酒馆助手的脚本表，然后让你刷新一下。
@@ -342,7 +342,7 @@ function updSelfIndex(list) {
       var nm = String(it.name || '');
       var hasVer = it.content.indexOf('var VERSION') >= 0;
       var byName = UPD_SELF_NAME_RE.test(nm) && hasVer;
-      /* v1.1：手动粘贴进来的那条，名字可能是「新脚本」「未命名」，但正文里
+      /* v1.2：手动粘贴进来的那条，名字可能是「新脚本」「未命名」，但正文里
          一定带我们自己的版本行和存储键前缀。名字认不出时也能当候选。 */
       var byBody = !byName && hasVer &&
         (it.content.indexOf('AR6') >= 0 || it.content.indexOf('ar6.') >= 0);
@@ -456,10 +456,10 @@ function updInstall() {
           }
 
           /* saveSettings 是 async：不 await 就等于「发出去就算成功」 */
-          /* v1.1 修 D4：不要再跑 updSelfIndex 来自证——它按「等于运行版本」加分，
+          /* v1.2 修 D4：不要再跑 updSelfIndex 来自证——它按「等于运行版本」加分，
              刚写进去的那条拿不到这 4 分，双包/副本会超过它甚至平局，于是误判 nosave。
              改成「表里到底有没有出现这个版本」。 */
-          /* v1.1 修 D1：防抖保存是「先返回、1 秒后才落盘」。立刻回读只能看到内存里
+          /* v1.2 修 D1：防抖保存是「先返回、1 秒后才落盘」。立刻回读只能看到内存里
              同一个活对象，证明不了任何事。防抖模式下等过防抖窗口再看。 */
           function hasNewVersion(list2) {
             try {
@@ -579,7 +579,7 @@ function updErrText(code, r) {
     nourl: '没填版本文件地址',
     net: (r && r.timeout) ? '等太久了，没收到回音（网络慢或被拦）' : (r && r.cross ? '被浏览器拦了跨域请求（地址没有跨域头）' : '连不上更新地址（网络不通，或浏览器拦了跨域）'),
     http: '更新地址打不开' + (r && r.status ? '（HTTP ' + r.status + '）' : '') + '——多半是版本文件路径变了',
-    parse: '版本文件看不懂（应该是 0.96 或 {"version":"1.1"}）',
+    parse: '版本文件看不懂（应该是 0.96 或 {"version":"1.2"}）',
     nopkg: '版本文件里没给新包地址（要加一个 url 字段）',
     nohost: '找不到酒馆的设置，这个入口在当前形态下用不了',
     noself: '脚本表里没找到「卢克之光」——先把脚本导进酒馆助手，再来点更新',

@@ -392,6 +392,8 @@ function cardHTML(rec, tab) {
 
 function closeCard() {
  CARD.open = false;
+ /* v1.2：说明浮窗现在是独立窗口，它自己的拖动/滚动监听要有人收尾 */
+ try { if (typeof closeHelp === 'function') closeHelp(); } catch (eH) {}
  try {
  var el = DOC.getElementById('ar6-card');
  if (el && el.parentNode) el.parentNode.removeChild(el);

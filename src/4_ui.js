@@ -198,7 +198,7 @@ function ensureStyle(d) {
 
 var V82_CSS = [
   '#ar6-root{--bg-1:#161b22;--bg-2:#0d1117;--ln-1:#30363d;--ln-2:#21262d;--acc:#58a6ff;}',
-  '#ar6-bn2{position:fixed;left:50%;transform:translateX(-50%) translateY(-8px);z-index:2147483002;',
+  '#ar6-bn2{position:fixed;left:50%;transform:translateX(-50%) translateY(-8px);z-index:2147483200;',
   'display:flex;align-items:flex-start;gap:9px;max-width:min(560px,92vw);padding:9px 11px 9px 12px;border-radius:12px;',
   'background:rgba(22,27,34,.94);border:1px solid #30363d;border-left-width:3px;',
   'box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.02) inset;',
@@ -221,7 +221,7 @@ var V82_CSS = [
   '#ar6-root .ar6-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:thin;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));}',
   '#ar6-root .ar6-body::-webkit-scrollbar{width:9px;height:9px;}',
   '#ar6-root .ar6-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border:2px solid transparent;background-clip:content-box;border-radius:6px;}',
-  '#ar6-root .ar6-p{display:flex;flex-direction:column;width:min(520px,calc(100vw - 24px));max-width:100%;height:auto;max-height:min(740px,92vh);min-height:0;overflow:hidden;border-radius:18px;transform:translateY(8px) scale(.985);opacity:0;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}',
+  '#ar6-root .ar6-p{display:flex;flex-direction:column;width:min(520px,calc(100vw - 24px));max-width:100%;min-width:0;height:auto;max-height:min(740px,92vh);min-height:0;overflow:hidden;border-radius:18px;transform:translateY(8px) scale(.985);opacity:0;transition:transform .2s cubic-bezier(.2,.8,.2,1),opacity .2s;}',
   '#ar6-root .ar6-p[data-in="1"]{transform:none;opacity:1;}',
   '#ar6-root .ar6-h{flex:0 0 auto;position:relative;z-index:3;}',
   '#ar6-root .ar6-p>.ar6-h{position:sticky;top:0}',
@@ -234,26 +234,26 @@ var V82_CSS = [
   '.ar6-mt{display:block;font-size:15px;font-weight:680;letter-spacing:.4px;color:#f0f6fc;line-height:1.25;}',
   '.ar6-ms{display:block;font-size:11px;color:var(--ar-mut);line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
   '.ar6-mx{margin-left:auto;flex:0 0 auto;}',
-  '.ar6-mk{display:flex;flex-direction:column;align-items:stretch;width:auto;margin:10px 12px 0;padding:11px 12px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.035);color:#e6edf3;font:inherit;text-align:left;cursor:pointer;transition:background .14s,border-color .14s;}',
+  '.ar6-mk{min-width:0;display:flex;flex-direction:column;align-items:stretch;width:auto;margin:10px 12px 0;padding:11px 12px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.035);color:#e6edf3;font:inherit;text-align:left;cursor:pointer;transition:background .14s,border-color .14s;}',
   '.ar6-mk.on{background:linear-gradient(135deg,rgba(63,185,80,.20),rgba(31,111,235,.10));border-color:rgba(63,185,80,.45);}',
   '.ar6-mkc{cursor:default;}',
   '.ar6-mk-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:640;color:#f0f6fc;}',
   '.ar6-mk-d{display:block;margin-top:3px;font-size:11.5px;color:var(--ar-mut);line-height:1.45;}',
   '.ar6-mt2{font-size:13px;font-weight:640;color:#f0f6fc;}',
   '#ar6-root .ar6-mk-t{display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;}',
-  '#ar6-root .ar6-mk{align-items:stretch;}',
-  '#ar6-root .ar6-mk{position:relative;display:flex;flex-direction:column;width:calc(100% - 24px);box-sizing:border-box;}',
+  '#ar6-root .ar6-mk{min-width:0;align-items:stretch;}',
+  '#ar6-root .ar6-mk{min-width:0;position:relative;display:flex;flex-direction:column;width:calc(100% - 24px);box-sizing:border-box;}',
   '#ar6-root .ar6-mk>.ar6-mk-t{padding-right:46px;}',
   '#ar6-root .ar6-mk .ar6-sw{position:absolute;right:12px;top:12px;margin:0;}',
   '.ar6-sw{z-index:2;width:34px;height:19px;border-radius:999px;margin-left:auto;flex:0 0 34px;position:relative;background:rgba(210,153,34,.42);transition:background .16s;}',
   '.ar6-sw::after{content:"";position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#e3b341;transition:transform .16s,background .16s;}',
   '.ar6-sw[data-on="1"]{background:rgba(46,160,67,.55);}',
   '.ar6-sw[data-on="1"]::after{transform:translateX(15px);background:#7ee787;}',
-  '.ar6-nums{display:flex;gap:8px;padding:12px 12px 0;}',
-  '.ar6-hint{margin:12px 12px 0;padding:10px 11px;border-radius:11px;font-size:11.5px;line-height:1.55;color:#9fb0c6;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.18);}',
-  '.ar6-n{flex:1 1 0;min-width:0;text-align:center;padding:9px 4px;border-radius:11px;background:rgba(255,255,255,.028);border:1px solid var(--ar-line);}',
-  '.ar6-n b{display:block;font-size:18px;font-weight:680;color:#f0f6fc;font-variant-numeric:tabular-nums;line-height:1.2;}',
-  '.ar6-n span{display:block;font-size:10.5px;color:var(--ar-mut);margin-top:2px;}',
+  '.ar6-nums{display:flex;gap:8px;padding:13px 12px 0;min-width:0;}',
+  '.ar6-hint{margin:12px 12px 0;padding:9px 11px;border-radius:11px;font-size:11.5px;line-height:1.6;color:#9fb0c6;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.18);}',
+  '.ar6-n{flex:1 1 0;min-width:0;text-align:center;padding:11px 4px 9px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));border:1px solid var(--ar-line);}',
+  '.ar6-n b{display:block;font-size:21px;font-weight:700;color:#f0f6fc;font-variant-numeric:tabular-nums;line-height:1.15;letter-spacing:-.01em;}',
+  '.ar6-n span{display:block;font-size:10.5px;color:var(--ar-mut);margin-top:3px;letter-spacing:.02em;}',
   '.ar6-mr{display:flex;align-items:center;gap:10px;margin:10px 12px 0;padding:11px 12px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.03);}',
   '.ar6-mc{flex:1 1 auto;min-width:0;}',
   '.ar6-cyc{flex:0 0 auto;min-width:58px;padding:7px 12px;border-radius:9px;border:1px solid var(--ar-line);background:rgba(255,255,255,.05);color:#c9d1d9;font:inherit;font-size:12px;font-weight:640;cursor:pointer;}',
@@ -264,10 +264,10 @@ var V82_CSS = [
   '.ar6-mline{display:flex;align-items:center;gap:10px;padding:8px 0 0;margin-top:8px;border-top:1px solid rgba(255,255,255,.07);}',
   '.ar6-mline span{flex:1 1 auto;font-size:12.5px;color:#c9d1d9;}',
   '.ar6-mf{flex:0 0 auto;display:flex;gap:8px;padding:11px 12px calc(11px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--ar-line);background:rgba(0,0,0,.18);}',
-  '.ar6-mbtn{flex:1 1 0;height:40px;border-radius:11px;border:1px solid var(--ar-line);background:rgba(255,255,255,.05);color:#e6edf3;font:inherit;font-size:13px;font-weight:650;cursor:pointer;}',
+  '.ar6-mbtn{flex:1 1 0;height:42px;border-radius:12px;border:1px solid var(--ar-line);background:rgba(255,255,255,.05);color:#e6edf3;font:inherit;font-size:13px;font-weight:650;cursor:pointer;}',
   '.ar6-mbtn.ar6-pri{flex:0 0 60%;background:linear-gradient(135deg,#2da44e,#1f883d);border-color:rgba(63,185,80,.55);box-shadow:0 6px 18px rgba(35,134,54,.28);}',
   '.ar6-mbtn.ar6-sec{flex:1 1 0;}',
-  '.ar6-more{margin:12px 12px 0;padding-top:2px;border-top:1px dashed rgba(255,255,255,.10);}',
+  '.ar6-more{margin:14px 12px 0;padding-top:2px;border-top:1px dashed rgba(255,255,255,.10);}',
   '.ar6-mmore-h{font-size:10.5px;letter-spacing:.9px;color:var(--ar-mut);text-transform:uppercase;padding:10px 0 2px;}'
 ].join('');
 
@@ -357,8 +357,8 @@ function counts() {
 }
 
 function panelStyle(mode, mini) {
-  /* v1.1：根节点是全屏遮罩，弹窗盒子居中；位置不再记忆，也不再拖动 */
-  var base = 'position:fixed;left:0;top:0;right:auto;bottom:auto;width:100vw;' +
+  /* v1.2：根节点是全屏遮罩，弹窗盒子居中；位置不再记忆，也不再拖动 */
+  var base = 'position:fixed;left:0;top:0;right:auto;bottom:auto;width:100vw;box-sizing:border-box;' +
     'height:var(--TH-viewport-height,100vh);z-index:2147483000;display:flex;justify-content:center;' +
     'background:rgba(1,4,9,.62);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow:hidden;';
   if (mode === 'mobile') {
@@ -511,7 +511,7 @@ function bindOutsideDismiss() {
       if (minimized) return;
       var el = DOC.getElementById(ROOT_ID);
       if (!el) return;
-      /* v1.1：根节点本身就是遮罩（el.contains 恒真），只能以弹窗盒子为界 */
+      /* v1.2：根节点本身就是遮罩（el.contains 恒真），只能以弹窗盒子为界 */
       var box = el.querySelector ? el.querySelector('.ar6-p') : null;
       if (box && t && box.contains && box.contains(t)) return;
       minimized = true;
@@ -571,6 +571,7 @@ function moreHTML() {
   h += '<div class="ar6-mrow">' +
     chip('⟳ 开面板自动查:' + (updOn() ? '开' : '关'), updOn()) +
     chip('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), cfg.onlyGemini !== false) +
+    chip('📄 只算正文:' + (cfg.contentOnly === 'off' ? '关' : '开'), cfg.contentOnly !== 'off') +
     '</div>';
   var updTxt = updLine();
   if (updTxt) h += '<div class="ar6-dline">' + esc(updTxt) + '</div>';
@@ -615,7 +616,7 @@ function moreHTML() {
     btnIco('rebuild', 'refresh', '重建基线') +
     '</div>';
 
-  /* 自检卡与身份筛选卡：V1.1 起入口已删，这两块永远只会显示「未跑」，一并从面板撤掉
+  /* 自检卡与身份筛选卡：V1.2 起入口已删，这两块永远只会显示「未跑」，一并从面板撤掉
      （runSelfTest / runIdentityProbe 仍保留导出，需要时可在控制台调用） */
   var lg = readLog() || [];
   h += '<div class="ar6-dline">v' + esc(VERSION) + ' · ' + (hooked ? '钩子已挂' : '钩子未挂') +
@@ -1341,7 +1342,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.1 只查 Gemini：默认开。关掉就回到「什么都查」 */
+  /* v1.2 只查 Gemini：默认开。关掉就回到「什么都查」 */
   if (act.indexOf('🟦 只查 Gemini') === 0) {
     cfg.onlyGemini = (cfg.onlyGemini === false);
     saveCfg(); render();
@@ -1352,7 +1353,18 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.1 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
+  /* v1.2 只算正文：默认开。摘要 / 自动标题 / 替玩家写 / quiet 生成不进被换率 */
+  if (act.indexOf('📄 只算正文') === 0) {
+    cfg.contentOnly = (cfg.contentOnly === 'off') ? 'on' : 'off';
+    saveCfg(); render();
+    banner(cfg.contentOnly === 'off'
+      ? '📄 所有请求都算（辅助请求也会进账本）'
+      : '📄 只算正文（辅助请求照记，但不进被换率）',
+      cfg.contentOnly === 'off' ? 'gray' : 'ok');
+    return;
+  }
+
+  /* v1.2 一键：查 + 装。不要求先打开开关，也不要求先填地址 */
   if (act.indexOf('⬆ 检查更新') === 0) {
     banner('⬆ 正在看有没有新版…', 'gray');
     updQuick().then(function (r) {
@@ -1370,7 +1382,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.1 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
+  /* v1.2 一键装新版：装完不自动刷新，让用户自己点，也留着「撤销」 */
   if (act.indexOf('⬇ 装新版') === 0) {
     banner('⬇ 正在取新版…', 'gray');
     updInstall().then(function (r) {
@@ -1392,7 +1404,7 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.1 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
+  /* v1.2 新版本检查：默认关，用户自己打开才查。打开时顺手查一次，
      否则用户得等下次开面板才知道有没有新版 */
   if (act.indexOf('⟳ 开面板自动查') === 0) {
     cfg.upd = (String(cfg.upd || 'off') === 'check') ? 'off' : 'check';
@@ -1481,7 +1493,7 @@ function onPanelChange(e) {
 
 /* ---------------- 渲染入口 ---------------- */
 
-/* v1.1：工具栏只留一个入口，进弹窗。弹窗固定居中，不再记位置、不再拖动。 */
+/* v1.2：工具栏只留一个入口，进弹窗。弹窗固定居中，不再记位置、不再拖动。 */
 function openPanel() {
   minimized = false;
   MORE_OPEN = false;
@@ -1755,7 +1767,7 @@ function boot() {
       setTimeout(function () { try { banner('第一次用？面板底部点「更多 → 说明」有完整用法；点右上角 ✕ 关掉', 'gray'); } catch (eH) {} }, 2600);
     }
   });
-  /* v1.1 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
+  /* v1.2 新版本检查：放在就绪横幅之后，免得两句话抢同一条横幅；
      关着闸或查不到时 updBoot 自己保持沉默 */
   step('版本检查', function () { updBoot(); });
   step('按钮', function () { bindScriptButtons(); });
@@ -1843,7 +1855,7 @@ try {
     } catch (e3) {}
   });
   /* v8.1：窗口缩放 / 转屏 / 键盘弹起 —— 重新夹取位置 */
-  /* v1.1：转屏 / 地址栏伸缩 / 键盘弹起 —— 只重算弹窗高度上限 */
+  /* v1.2：转屏 / 地址栏伸缩 / 键盘弹起 —— 只重算弹窗高度上限 */
   var reflowTimer = null;
   function scheduleReflow() {
     if (reflowTimer) { try { HOST.clearTimeout(reflowTimer); } catch (e) {} }
