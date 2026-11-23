@@ -196,14 +196,15 @@ function buildAll() {
   const coreSrc = fs.readFileSync(path.join(SRC_MOD, '01_1_core.js'), 'utf8');
   const verMatch = coreSrc.match(/var VERSION\s*=\s*'([^']+)'/);
   const version = verMatch ? verMatch[1] : '5.5';
+  const pkgBase = `https://cdn.jsdelivr.net/gh/3577241779/luke-light@v${version}/dist`;
   const manifest = {
     version,
     releasedAt: new Date().toISOString(),
     changelog: CHANGELOG_LATEST,
     packages: {
-      st: `${REPO_RAW_CDN}/luke-light-st.json`,
-      tt: `${REPO_RAW_CDN}/luke-light-tt.json`,
-      desktop: `${REPO_RAW_CDN}/luke-light-desktop.json`,
+      st: `${pkgBase}/luke-light-st.json`,
+      tt: `${pkgBase}/luke-light-tt.json`,
+      desktop: `${pkgBase}/luke-light-desktop.json`,
     },
   };
   fs.writeFileSync(path.join(DIST_DIR, 'version.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');

@@ -1,10 +1,10 @@
 {
   "version": "5.61",
-  "releasedAt": "2026-11-23T11:14:46.711Z",
+  "releasedAt": "2026-11-23T11:18:37.511Z",
   "changelog": "修复初次触发神光棒变身及 90Hz/120Hz/144Hz 高刷屏下 3D 迪迦与侧边计时器圆章同时消失的问题：改为时间增量粒子与动画帧持续驱动、加入彗星抵达墙钟兜底与 3.5 秒硬看门狗保护、修复层叠序号与圆章自愈防失联、强化离线抠图防空白保护。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.61/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.61/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.61/dist/luke-light-desktop.json"
   }
 }
