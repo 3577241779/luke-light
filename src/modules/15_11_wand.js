@@ -217,10 +217,20 @@ function petIsDocked() {
   AR6_PET_STATE = p;
   return !!(p.show && p.docked);
 }
+function petViewport(w, d) {
+  var vw = 0, vh = 0;
+  try {
+    vw = (w && w.visualViewport && w.visualViewport.width) || (w && w.innerWidth) || (d && d.documentElement && d.documentElement.clientWidth) || (HOST && HOST.innerWidth) || 360;
+    vh = (w && w.visualViewport && w.visualViewport.height) || (w && w.innerHeight) || (d && d.documentElement && d.documentElement.clientHeight) || (HOST && HOST.innerHeight) || 720;
+  } catch (eV) {}
+  return { w: Math.max(240, Math.round(vw || 360)), h: Math.max(320, Math.round(vh || 720)) };
+}
 function petSummonFromPill() {
   var p = AR6_PET_STATE || petRead();
-  var w = (DOC && DOC.defaultView) || HOST;
-  var vw = (w && w.innerWidth) || 360, vh = (w && w.innerHeight) || 720;
+  var d = wandDoc();
+  var w = (d && d.defaultView) || HOST;
+  var vp = petViewport(w, d);
+  var vw = vp.w, vh = vp.h;
   var ww = 128 * p.size, hh = 212 * p.size;
   var side = (cfg && cfg.pillSide === 'left') ? 'left' : 'right';
   var ry = ar6Num(cfg && cfg.pillY, 0.62, 0.08, 0.88);
@@ -325,7 +335,7 @@ function petAction(act) {
   }
   try { if (typeof syncPill === 'function') syncPill(); } catch (eP) {}
   if (launchSummon && p.show && !p.docked && typeof triggerSparklenceSummon === 'function') {
-    try { triggerSparklenceSummon(); } catch (eSp) {}
+    try { triggerSparklenceSummon({ minimizeOnFire: act === 'pet-reset' }); } catch (eSp) {}
   }
 }
 
@@ -457,9 +467,10 @@ function avatarMount() {
 
   var ww = Math.round(128 * p.size), hh = Math.round(212 * p.size);
   var imgBoxH = Math.max(80, hh - 36);
+  var initVp = petViewport(w, d);
   var state = {
-    x: Number.isFinite(p.x) ? p.x : Math.max(8, (w.innerWidth || 360) - ww - 14),
-    y: Number.isFinite(p.y) ? p.y : Math.max(40, (w.innerHeight || 720) - hh - 28),
+    x: Number.isFinite(p.x) ? p.x : Math.max(8, initVp.w - ww - 14),
+    y: Number.isFinite(p.y) ? p.y : Math.max(40, initVp.h - hh - 28),
     side: p.side,
     paused: p.paused,
     form: petCurrentForm(),
@@ -468,6 +479,7 @@ function avatarMount() {
   };
   var drag = null, down = null, timers = [], last = 0, recent = [];
   var lastTapAt = 0;
+  var visSeq = 0;
 
   function later(fn, ms) {
     var id = w.setTimeout(function () {
@@ -512,9 +524,14 @@ function avatarMount() {
   }
 
   function layout() {
-    var vw = w.innerWidth || 360, vh = w.innerHeight || 720;
+    var vp = petViewport(w, d);
+    var vw = vp.w, vh = vp.h;
     state.x = Math.max(0, Math.min(Math.max(0, vw - ww), state.x));
     state.y = Math.max(0, Math.min(Math.max(0, vh - hh), state.y));
+    var sparkOn = !!(typeof AR6_SPARK_RUN !== 'undefined' && AR6_SPARK_RUN && AR6_SPARK_RUN.active);
+    if (!sparkOn && state.visualMode !== 'landed' && state.visualMode !== 'edge-materialize') {
+      state.visualMode = 'landed';
+    }
     if (state.visualMode !== 'landed') return;
     b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;padding:0!important;right:auto!important;bottom:auto!important;z-index:2147482999!important;pointer-events:none;touch-action:none;user-select:none;opacity:' + p.opacity + ';visibility:visible;transform:none;transition:none;';
     b.setAttribute('data-paused', String(p.paused));
@@ -549,6 +566,10 @@ function avatarMount() {
   }
 
   function syncForm(animate) {
+    var sparkOn = !!(typeof AR6_SPARK_RUN !== 'undefined' && AR6_SPARK_RUN && AR6_SPARK_RUN.active);
+    if (!sparkOn && state.visualMode !== 'landed' && state.visualMode !== 'edge-materialize') {
+      setVisualState('landed');
+    }
     var nextForm = petCurrentForm();
     var alertNow = !!(cfg && cfg.enabled && typeof pillHasAlert === 'function' && pillHasAlert());
     var liveNow = !!(typeof LIVE !== 'undefined' && LIVE && LIVE.on);
@@ -595,19 +616,20 @@ function avatarMount() {
   }
 
   function setVisualState(mode) {
+    var mySeq = ++visSeq;
     state.visualMode = mode || 'landed';
-    var vw = w.innerWidth || 360, vh = w.innerHeight || 720;
+    var vp = petViewport(w, d);
+    var vw = vp.w, vh = vp.h;
     var prof = AR6_PET_FORMS[state.form] || AR6_PET_FORMS.multi;
     if (mode === 'hidden-for-summon') {
-      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(.6)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;z-index:2147483648!important;';
+      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(.6)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;z-index:2147483642!important;';
       return;
     }
     if (mode === 'center-rise') {
-      var cw = Math.round(ww * 1.25), ch = Math.round(hh * 1.25);
-      b.style.cssText = 'position:fixed!important;left:50%!important;top:64%!important;width:' + cw + 'px!important;height:' + ch + 'px!important;transform:translate(-50%,-50%) scale(.66)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147483648!important;transition:none!important;';
+      b.style.cssText = 'position:fixed!important;left:50%!important;top:64%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(.82)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:none!important;';
       if (simg) simg.style.filter = 'brightness(5.2) contrast(1.3) drop-shadow(0 0 32px #fff)';
       try { void b.offsetWidth; } catch (eO1) {}
-      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + cw + 'px!important;height:' + ch + 'px!important;transform:translate(-50%,-50%) scale(1.04)!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;z-index:2147483648!important;transition:top .54s cubic-bezier(.16,1,.3,1),transform .54s cubic-bezier(.16,1,.3,1),opacity .24s ease!important;';
+      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(1.26)!important;opacity:1!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:top .54s cubic-bezier(.16,1,.3,1),transform .54s cubic-bezier(.16,1,.3,1),opacity .24s ease!important;';
       if (tcRing) {
         tcRing.className = 'tc-ring';
         tcRing.style.background = 'linear-gradient(90deg,transparent,#7dd3fc,#fff,#fde68a,transparent)';
@@ -616,30 +638,34 @@ function avatarMount() {
         tcRing.className = 'tc-ring up';
       }
       later(function () {
+        if (mySeq !== visSeq) return;
         if (simg) simg.style.filter = prof.filter;
         say('open', '光，已回应你的呼唤。');
       }, 220);
       return;
     }
     if (mode === 'dissolve-to-orb') {
-      var cw2 = Math.round(ww * 1.25), ch2 = Math.round(hh * 1.25);
       if (simg) simg.style.filter = 'brightness(5) drop-shadow(0 0 32px #fff)';
-      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + cw2 + 'px!important;height:' + ch2 + 'px!important;transform:translate(-50%,-50%) scale(.16)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147483648!important;transition:transform .22s ease-in,opacity .2s ease-in!important;';
+      b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(.16)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:transform .22s ease-in,opacity .2s ease-in!important;';
       return;
     }
     if (mode === 'edge-materialize') {
       state.x = Math.max(0, Math.min(Math.max(0, vw - ww), state.x));
       state.y = Math.max(0, Math.min(Math.max(0, vh - hh), state.y));
-      b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:scale(.45)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147482999!important;transition:none!important;';
+      b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:scale(.45)!important;opacity:0!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:none!important;';
       if (simg) simg.style.filter = 'brightness(4.5) drop-shadow(0 0 26px #fff)';
       try { void b.offsetWidth; } catch (eO3) {}
-      b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:scale(1)!important;opacity:' + p.opacity + '!important;visibility:visible!important;pointer-events:none!important;z-index:2147482999!important;transition:transform .36s cubic-bezier(.16,1,.3,1),opacity .22s ease!important;';
+      b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:scale(1)!important;opacity:' + p.opacity + '!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:transform .36s cubic-bezier(.16,1,.3,1),opacity .22s ease!important;';
       later(function () {
-        state.visualMode = 'landed';
-        layout();
+        if (mySeq !== visSeq) return;
         if (simg) simg.style.filter = prof.filter;
         say('open', '抵达边缘阵位 · 光之守护已就绪！');
-      }, 240);
+      }, 220);
+      later(function () {
+        if (mySeq !== visSeq) return;
+        state.visualMode = 'landed';
+        layout();
+      }, 460);
       return;
     }
     state.visualMode = 'landed';
@@ -648,14 +674,16 @@ function avatarMount() {
   }
 
   function edgeTarget() {
-    var vw = w.innerWidth || 360, vh = w.innerHeight || 720;
+    var vp = petViewport(w, d);
+    var vw = vp.w, vh = vp.h;
     var tx = Math.max(0, Math.min(Math.max(0, vw - ww), state.x));
     var ty = Math.max(0, Math.min(Math.max(0, vh - hh), state.y));
     return { x: tx + ww / 2, y: ty + hh / 2 };
   }
 
   function dockToPill() {
-    var vw = w.innerWidth || 360, vh = w.innerHeight || 720;
+    var vp = petViewport(w, d);
+    var vw = vp.w, vh = vp.h;
     state.side = (state.x + ww / 2 < vw / 2) ? 'left' : 'right';
     p.docked = true;
     p.side = state.side;
@@ -705,7 +733,7 @@ function avatarMount() {
     down = null;
     portrait.style.transform = '';
     if (moved) {
-      var vw = w.innerWidth || 360;
+      var vw = petViewport(w, d).w;
       if (p.autoDock && (state.x <= 18 || state.x + ww >= vw - 18)) {
         dockToPill();
         return;
@@ -749,7 +777,7 @@ function avatarMount() {
   layout();
   visibility();
   syncForm(false);
-  AR6_PET_CTRL = { syncForm: syncForm, setVisualState: setVisualState, edgeTarget: edgeTarget, say: say };
+  AR6_PET_CTRL = { syncForm: syncForm, setVisualState: setVisualState, edgeTarget: edgeTarget, say: say, getVisualMode: function () { return state.visualMode; } };
   try { if (typeof syncPill === 'function') syncPill(); } catch (eSP2) {}
   avatarCleanup = function () {
     AR6_PET_CTRL = null;

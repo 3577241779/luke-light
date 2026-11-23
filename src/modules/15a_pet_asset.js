@@ -82,6 +82,8 @@ function ar6MatteSprite(key, cb) {
           var cx = cur % w, cy = (cur / w) | 0;
           push(cx + 1, cy); push(cx - 1, cy); push(cx, cy + 1); push(cx, cy - 1);
         }
+        /* 防指纹保护/未解码画布回读全黑误抠：若透明占比 >=96% 则回退原图，杜绝立绘整张透明消失 */
+        if (tail >= total * 0.96) { done(item.raw); return; }
         for (var p2 = 0; p2 < total; p2++) {
           if (bg[p2]) { d[p2 * 4 + 3] = 0; continue; }
           var xx = p2 % w, yy = (p2 / w) | 0;
@@ -94,7 +96,8 @@ function ar6MatteSprite(key, cb) {
           }
         }
         ctx.putImageData(id, 0, 0);
-        done(cv.toDataURL('image/png'));
+        var outUrl = cv.toDataURL('image/png');
+        done((outUrl && outUrl.indexOf('data:image/png;base64,') === 0 && outUrl.length > 64) ? outUrl : item.raw);
       } catch (eMat) { done(item.raw); }
     };
     img.onerror = function () { done(item.raw); };

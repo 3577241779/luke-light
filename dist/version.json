@@ -1,7 +1,7 @@
 {
-  "version": "5.6",
-  "releasedAt": "2026-11-23T10:52:39.043Z",
-  "changelog": "全面重制 3D CG 雕像风迪迦桌宠、可点击 3D 金属神光棒化光变身演出（白光剪影破柱凝实 → 圣光彗星流光飞掠 → 边缘再现）、诺亚动态铂银圣翼与凝视深渊黑曜红形态联动、胸口精准红灯告警及 0KB 纯合成 1996 迪迦特摄音效。",
+  "version": "5.61",
+  "releasedAt": "2026-11-23T11:14:46.711Z",
+  "changelog": "修复初次触发神光棒变身及 90Hz/120Hz/144Hz 高刷屏下 3D 迪迦与侧边计时器圆章同时消失的问题：改为时间增量粒子与动画帧持续驱动、加入彗星抵达墙钟兜底与 3.5 秒硬看门狗保护、修复层叠序号与圆章自愈防失联、强化离线抠图防空白保护。",
   "packages": {
     "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-st.json",
     "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-tt.json",

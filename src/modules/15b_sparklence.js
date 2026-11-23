@@ -319,7 +319,7 @@ function ensureSparkStyle(d) {
     var s = d.createElement('style');
     s.id = AR6_SPARK_STYLE_ID;
     s.textContent = [
-      '#' + AR6_SPARK_ID + '{position:fixed!important;inset:0!important;z-index:2147483648!important;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,rgba(14,32,68,.84),rgba(3,7,18,.94));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;transition:opacity .26s ease;touch-action:manipulation;user-select:none;}',
+      '#' + AR6_SPARK_ID + '{position:fixed!important;inset:0!important;z-index:2147483644!important;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,rgba(14,32,68,.84),rgba(3,7,18,.94));backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;transition:opacity .26s ease;touch-action:manipulation;user-select:none;}',
       '#' + AR6_SPARK_ID + '.show{opacity:1;}',
       '#' + AR6_SPARK_ID + ' .ar6-sp-stage{position:relative;display:flex;align-items:center;justify-content:center;}',
       '#' + AR6_SPARK_ID + ' .ar6-sp-ring{position:absolute;width:156px;height:156px;border-radius:9999px;border:2px solid rgba(252,211,77,.78);pointer-events:none;animation:ar6SpPulse 1.5s ease-out infinite;}',
@@ -334,7 +334,7 @@ function ensureSparkStyle(d) {
       '#' + AR6_SPARK_ID + ' .ar6-sp-wand.open .ar6-sp-rw{transform:rotate(16deg) translateX(4px);filter:drop-shadow(0 0 20px rgba(254,240,138,.95));}',
       '#' + AR6_SPARK_ID + ' .ar6-sp-tip{margin-top:14px;padding:7px 18px;border-radius:9999px;font:700 12.5px/1.3 system-ui,sans-serif;letter-spacing:.12em;color:#FEF3C7;background:rgba(217,119,6,.28);border:1px solid rgba(252,211,77,.68);box-shadow:0 0 18px rgba(251,191,36,.28);transition:opacity .2s ease;}',
       '#' + AR6_SPARK_ID + ' .ar6-sp-skip{margin-top:12px;padding:6px 14px;border:0;background:transparent;color:rgba(148,163,184,.88);font:500 12px/1.2 system-ui,sans-serif;text-decoration:underline;cursor:pointer;}',
-      '#ar6-sp-flash{position:fixed!important;inset:0!important;z-index:2147483649!important;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s ease;}',
+      '#ar6-sp-flash{position:fixed!important;inset:0!important;z-index:2147483646!important;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s ease;}',
       '@keyframes ar6SpFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-7px) scale(1.02)}}',
       '@keyframes ar6SpPulse{0%{transform:scale(.8);opacity:.92}100%{transform:scale(1.56);opacity:0}}'
     ].join('\n');
@@ -363,8 +363,19 @@ function closeSparklence(restorePet) {
         if (n && n.parentNode) n.parentNode.removeChild(n);
       }
     }
-    if (restorePet && typeof avatarSetVisualState === 'function') {
-      try { avatarSetVisualState('landed'); } catch (e2) {}
+    if (restorePet) {
+      try {
+        var ps = AR6_PET_STATE || (typeof petRead === 'function' ? petRead() : null);
+        if (ps && ps.show && !ps.docked && d && !d.getElementById(AR6_AVATAR_ID) && typeof avatarMount === 'function') {
+          avatarMount();
+        }
+      } catch (eRm) {}
+      if (typeof avatarSetVisualState === 'function') {
+        try { avatarSetVisualState('landed'); } catch (e2) {}
+      }
+      if (typeof syncPill === 'function') {
+        try { syncPill(); } catch (e3) {}
+      }
     }
   } catch (e) {}
 }
@@ -457,11 +468,30 @@ function triggerSparklenceSummon(opts) {
     if (tipEl) tipEl.style.opacity = '0';
     if (skipBtn) skipBtn.style.opacity = '0';
 
+    /* 「神光棒变身 · 召唤/复位」触发变身时顺势收起主面板，让全屏四幕化光与边缘现身无遮挡呈现 */
+    if (opts && opts.minimizeOnFire) {
+      try {
+        if (typeof minimized !== 'undefined' && !minimized) {
+          minimized = true;
+          if (cfg) cfg.docked = false;
+          if (typeof MORE_OPEN !== 'undefined') MORE_OPEN = false;
+          if (typeof syncMin === 'function') syncMin();
+          if (typeof render === 'function') render();
+        }
+      } catch (eMinF) {}
+    }
+
     /* 播放所选 1996 拟真特摄音效（默认静音，开启音效后生效） */
     ar6SfxPlay(ar6SfxPreset(), false);
 
-    /* 启动 60fps 全屏演出画布 */
-    var vw = (w && w.innerWidth) || 360, vh = (w && w.innerHeight) || 720;
+    /* 硬性总兜底看门狗：无论高刷屏/后台切屏/低电量 RAF 降频，3.5s 后强制确保落位且绝不隐身 */
+    ar6SparkDelay(w, function () {
+      if (AR6_SPARK_RUN.active) closeSparklence(true);
+    }, 3500);
+
+    /* 启动时间增量驱动（60/90/120/144Hz 统一速率）全屏演出画布 */
+    var vpBox = (typeof petViewport === 'function') ? petViewport(w, d) : { w: (w && w.innerWidth) || 360, h: (w && w.innerHeight) || 720 };
+    var vw = vpBox.w, vh = vpBox.h;
     var cx = vw / 2, cy = vh / 2;
     var cv = null, ctx = null;
     try {
@@ -470,7 +500,7 @@ function triggerSparklenceSummon(opts) {
       var dpr = Math.min(2, (w && w.devicePixelRatio) || 1);
       cv.width = Math.max(1, Math.floor(vw * dpr));
       cv.height = Math.max(1, Math.floor(vh * dpr));
-      cv.style.cssText = 'position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;pointer-events:none!important;';
+      cv.style.cssText = 'position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483640!important;pointer-events:none!important;';
       d.body.appendChild(cv);
       ctx = cv.getContext && cv.getContext('2d');
       if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -485,6 +515,9 @@ function triggerSparklenceSummon(opts) {
     var vortex = { start: nowFn(), dur: 940 };
     var pillar = null;
     var comet = null;
+    var cometLaunched = false;
+    var cometDone = false;
+    var lastFrameAt = nowFn();
     var curTier = (typeof petCurrentForm === 'function') ? petCurrentForm() : 'multi';
     var palMap = {
       multi: ['#38bdf8', '#e0f2fe', '#fde68a', '#ffffff'],
@@ -495,6 +528,14 @@ function triggerSparklenceSummon(opts) {
     };
     var pal = palMap[curTier] || palMap.multi;
 
+    function ensureLoop() {
+      if (!AR6_SPARK_RUN.active || DISPOSED || AR6_SPARK_RUN.raf) return;
+      if (ctx && w && typeof w.requestAnimationFrame === 'function') {
+        lastFrameAt = nowFn();
+        AR6_SPARK_RUN.raf = w.requestAnimationFrame(drawFrame);
+      }
+    }
+
     function burst(bx, by, n) {
       for (var i = 0; i < n; i++) {
         var ang = Math.random() * Math.PI * 2;
@@ -503,16 +544,40 @@ function triggerSparklenceSummon(opts) {
           x: bx, y: by,
           vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
           r: 1.8 + Math.random() * 3.4,
-          life: 0, max: 32 + Math.random() * 28,
+          life: 0, max: 520 + Math.random() * 440,
           col: pal[Math.floor(Math.random() * pal.length)]
         });
       }
+      ensureLoop();
     }
-    burst(cx, cy, 78);
+
+    function finishComet(tgtPos) {
+      if (cometDone || !AR6_SPARK_RUN.active || DISPOSED) return;
+      cometDone = true;
+      comet = null;
+      pillar = { x: tgtPos.x, start: nowFn(), dur: 520, w: 72 };
+      burst(tgtPos.x, tgtPos.y, 44);
+      ensureLoop();
+      if (typeof avatarSetVisualState === 'function') {
+        avatarSetVisualState('edge-materialize');
+      }
+      ar6SparkDelay(w, function () {
+        closeSparklence(true);
+        try {
+          if (typeof minimized !== 'undefined' && !minimized && typeof banner === 'function') {
+            banner('✦ 3D 迪迦已变身落位边缘阵位（收起面板即可自由拖动，双击立绘随时唤起主面板）', 'ok');
+          }
+        } catch (eBnLand) {}
+      }, 620);
+    }
 
     function drawFrame() {
+      AR6_SPARK_RUN.raf = 0;
       if (!AR6_SPARK_RUN.active || DISPOSED) return;
       var tNow = nowFn();
+      var dt = Math.max(4, Math.min(50, tNow - lastFrameAt));
+      lastFrameAt = tNow;
+      var dtScale = dt / 16.6667;
       if (ctx) {
         ctx.clearRect(0, 0, vw, vh);
         if (vortex) {
@@ -568,7 +633,7 @@ function triggerSparklenceSummon(opts) {
           }
         }
         if (comet) {
-          var ct = Math.min(1, (tNow - comet.start) / comet.dur);
+          var ct = Math.min(1, Math.max(0, (tNow - comet.start) / comet.dur));
           var ce = ct < 0.5 ? 2 * ct * ct : 1 - Math.pow(-2 * ct + 2, 2) / 2;
           var u = 1 - ce;
           var x = u*u*u*comet.sx + 3*u*u*ce*comet.c1x + 3*u*ce*ce*comet.c2x + ce*ce*ce*comet.ex;
@@ -579,7 +644,7 @@ function triggerSparklenceSummon(opts) {
             parts.push({
               x: x + (Math.random() - 0.5) * 14, y: y + (Math.random() - 0.5) * 14,
               vx: (Math.random() - 0.5) * 1.8, vy: (Math.random() - 0.5) * 1.8,
-              r: 1.6 + Math.random() * 2.6, life: 0, max: 22,
+              r: 1.6 + Math.random() * 2.6, life: 0, max: 360,
               col: sk === 0 ? '#ffffff' : pal[0]
             });
           }
@@ -616,9 +681,9 @@ function triggerSparklenceSummon(opts) {
         }
         for (var pi = parts.length - 1; pi >= 0; pi--) {
           var pt = parts[pi];
-          pt.life++;
+          pt.life += dt;
           if (pt.life >= pt.max) { parts.splice(pi, 1); continue; }
-          pt.x += pt.vx; pt.y += pt.vy;
+          pt.x += pt.vx * dtScale; pt.y += pt.vy * dtScale;
           ctx.globalAlpha = Math.sin((pt.life / pt.max) * Math.PI) * 0.88;
           ctx.fillStyle = pt.col;
           ctx.beginPath();
@@ -627,17 +692,13 @@ function triggerSparklenceSummon(opts) {
         }
         ctx.globalAlpha = 1;
       }
-      if (vortex || pillar || comet || parts.length > 0) {
-        if (w && typeof w.requestAnimationFrame === 'function') {
-          AR6_SPARK_RUN.raf = w.requestAnimationFrame(drawFrame);
-        }
-      } else {
-        AR6_SPARK_RUN.raf = 0;
+      if (AR6_SPARK_RUN.active && (!cometLaunched || vortex || pillar || comet || parts.length > 0)) {
+        ensureLoop();
       }
     }
-    if (ctx && w && typeof w.requestAnimationFrame === 'function') {
-      AR6_SPARK_RUN.raf = w.requestAnimationFrame(drawFrame);
-    }
+
+    burst(cx, cy, 78);
+    ensureLoop();
 
     /* 400ms 白光过曝瞬间 */
     ar6SparkDelay(w, function () { if (flash) flash.style.opacity = '0.9'; }, 400);
@@ -648,6 +709,7 @@ function triggerSparklenceSummon(opts) {
       if (flash) flash.style.opacity = '0';
       pillar = { x: cx, start: nowFn(), dur: 760, w: 120 };
       burst(cx, cy, 42);
+      ensureLoop();
       if (typeof avatarSetVisualState === 'function') {
         avatarSetVisualState('center-rise');
       }
@@ -659,9 +721,17 @@ function triggerSparklenceSummon(opts) {
         avatarSetVisualState('dissolve-to-orb');
       }
       burst(cx, cy, 36);
+      ensureLoop();
       ar6SparkDelay(w, function () {
+        if (!AR6_SPARK_RUN.active || DISPOSED) return;
+        cometLaunched = true;
         ar6SfxPlay('whoosh', false);
         var tgt = (typeof avatarEdgeTarget === 'function') ? avatarEdgeTarget() : { x: vw - 80, y: vh * 0.56 };
+        if (!ctx || !w || typeof w.requestAnimationFrame !== 'function') {
+          /* 无 Canvas 或无 RAF 环境（如沙箱/低配 WebView）直接触发边缘现身并安全落位 */
+          ar6SparkDelay(w, function () { finishComet(tgt); }, 60);
+          return;
+        }
         comet = {
           start: nowFn(),
           dur: 460,
@@ -670,22 +740,11 @@ function triggerSparklenceSummon(opts) {
           c2x: cx + (tgt.x - cx) * 0.85, c2y: Math.max(40, tgt.y - 80),
           ex: tgt.x, ey: tgt.y,
           trail: [],
-          onDone: function () {
-            pillar = { x: tgt.x, start: nowFn(), dur: 520, w: 72 };
-            burst(tgt.x, tgt.y, 44);
-            if (typeof avatarSetVisualState === 'function') {
-              avatarSetVisualState('edge-materialize');
-            }
-            ar6SparkDelay(w, function () {
-              closeSparklence(true);
-            }, 620);
-          }
+          onDone: function () { finishComet(tgt); }
         };
-        if (!ctx) {
-          /* 无 Canvas 环境（如测试沙箱）直接瞬时完成落位 */
-          comet = null;
-          closeSparklence(true);
-        }
+        ensureLoop();
+        /* 彗星抵达墙钟兜底：即使 RAF 被节流/挂起，超时依然 100% 完成边缘现身与落位 */
+        ar6SparkDelay(w, function () { finishComet(tgt); }, comet.dur + 220);
       }, 200);
     }, 1500);
   }
@@ -700,6 +759,7 @@ function triggerSparklenceSummon(opts) {
     skipBtn.addEventListener('click', doSkip);
   }
   ov.addEventListener('click', function (ev) {
+    if (fired) return;
     if (ev && ev.target === ov) doSkip(ev);
   });
 
@@ -720,7 +780,8 @@ function ar6PlayTypeChangeFx(cx, cy, formKey) {
     if (old && old.parentNode) old.parentNode.removeChild(old);
     if (AR6_TC_RAF && w.cancelAnimationFrame) { w.cancelAnimationFrame(AR6_TC_RAF); AR6_TC_RAF = 0; }
 
-    var vw = w.innerWidth || 360, vh = w.innerHeight || 720;
+    var vpTc = (typeof petViewport === 'function') ? petViewport(w, d) : { w: w.innerWidth || 360, h: w.innerHeight || 720 };
+    var vw = vpTc.w, vh = vpTc.h;
     var cv = d.createElement('canvas');
     cv.id = 'ar6-tcfx';
     var dpr = Math.min(2, w.devicePixelRatio || 1);
@@ -743,7 +804,7 @@ function ar6PlayTypeChangeFx(cx, cy, formKey) {
     var parts = [];
     for (var i = 0; i < 42; i++) {
       var a = Math.random() * Math.PI * 2, s = 1.6 + Math.random() * 6.4;
-      parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 1.5 + Math.random() * 2.8, life: 0, max: 30 + Math.random() * 18, col: pal[Math.floor(Math.random() * pal.length)] });
+      parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: 1.5 + Math.random() * 2.8, life: 0, max: 460 + Math.random() * 260, col: pal[Math.floor(Math.random() * pal.length)] });
     }
     var bolts = [];
     if (formKey === 'abyss') {
@@ -759,12 +820,25 @@ function ar6PlayTypeChangeFx(cx, cy, formKey) {
       }
     }
     var start = (w.performance && w.performance.now) ? w.performance.now() : Date.now();
+    var lastAt = start;
     var dur = 680;
+    var tcDone = false;
+    function endTc() {
+      if (tcDone) return;
+      tcDone = true;
+      if (AR6_TC_RAF && w.cancelAnimationFrame) { try { w.cancelAnimationFrame(AR6_TC_RAF); } catch (eC) {} }
+      AR6_TC_RAF = 0;
+      try { if (cv && cv.parentNode) cv.parentNode.removeChild(cv); } catch (eR) {}
+    }
+    try { (w.setTimeout || setTimeout)(endTc, dur + 260); } catch (eT) {}
     function step() {
-      if (DISPOSED) { cv.remove(); return; }
+      if (tcDone || DISPOSED) { endTc(); return; }
       var now = (w.performance && w.performance.now) ? w.performance.now() : Date.now();
+      var dt = Math.max(4, Math.min(50, now - lastAt));
+      lastAt = now;
+      var dtScale = dt / 16.6667;
       var p = (now - start) / dur;
-      if (p >= 1) { cv.remove(); AR6_TC_RAF = 0; return; }
+      if (p >= 1) { endTc(); return; }
       ctx.clearRect(0, 0, vw, vh);
       if (formKey === 'noa') {
         var sa = Math.sin(p * Math.PI), sl = 155 * Math.sin(p * Math.PI * 0.72);
@@ -792,9 +866,9 @@ function ar6PlayTypeChangeFx(cx, cy, formKey) {
         ctx.restore();
       }
       for (var j = parts.length - 1; j >= 0; j--) {
-        var pt = parts[j]; pt.life++;
+        var pt = parts[j]; pt.life += dt;
         if (pt.life >= pt.max) { parts.splice(j, 1); continue; }
-        pt.x += pt.vx; pt.y += pt.vy;
+        pt.x += pt.vx * dtScale; pt.y += pt.vy * dtScale;
         ctx.globalAlpha = Math.sin((pt.life / pt.max) * Math.PI) * 0.88;
         ctx.fillStyle = pt.col;
         ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();

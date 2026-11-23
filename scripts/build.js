@@ -5,9 +5,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
-const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || DIST_DIR;
+const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = '全面重制 3D CG 雕像风迪迦桌宠、可点击 3D 金属神光棒化光变身演出（白光剪影破柱凝实 → 圣光彗星流光飞掠 → 边缘再现）、诺亚动态铂银圣翼与凝视深渊黑曜红形态联动、胸口精准红灯告警及 0KB 纯合成 1996 迪迦特摄音效。';
+const CHANGELOG_LATEST = '修复初次触发神光棒变身及 90Hz/120Hz/144Hz 高刷屏下 3D 迪迦与侧边计时器圆章同时消失的问题：改为时间增量粒子与动画帧持续驱动、加入彗星抵达墙钟兜底与 3.5 秒硬看门狗保护、修复层叠序号与圆章自愈防失联、强化离线抠图防空白保护。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -82,10 +82,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.6·ST酒馆适配.json',
+    fileName: '卢克之光 V5.61·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.6·ST酒馆适配',
-    info: '卢克之光 V5.6「光之守护」· 手机 ST 酒馆适配（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 移动端触控安全区）',
+    name: '卢克之光 V5.61·ST酒馆适配',
+    info: '卢克之光 V5.61「光之守护」· 手机 ST 酒馆适配（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 移动端触控安全区）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -93,10 +93,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.6·TT酒馆适配.json',
+    fileName: '卢克之光 V5.61·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.6·TT酒馆适配',
-    info: '卢克之光 V5.6「光之守护」· TT 酒馆适配（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / TT 防失联双入口）',
+    name: '卢克之光 V5.61·TT酒馆适配',
+    info: '卢克之光 V5.61「光之守护」· TT 酒馆适配（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / TT 防失联双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -104,10 +104,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.6·桌面版.json',
+    fileName: '卢克之光 V5.61·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.6·桌面版',
-    info: '卢克之光 V5.6「光之守护」· 电脑桌面版（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 桌面宽屏自由拖拽）',
+    name: '卢克之光 V5.61·桌面版',
+    info: '卢克之光 V5.61「光之守护」· 电脑桌面版（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 桌面宽屏自由拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },
@@ -153,9 +153,8 @@ function buildContent(target) {
 }
 
 function buildAll() {
-  const sameAsDesktop = path.resolve(ROOT).toLowerCase() === path.resolve(DESKTOP_OUT_DIR).toLowerCase();
-  if (!sameAsDesktop) fs.mkdirSync(DIST_DIR, { recursive: true });
-  fs.mkdirSync(DESKTOP_OUT_DIR, { recursive: true });
+  fs.mkdirSync(DIST_DIR, { recursive: true });
+  if (DESKTOP_OUT_DIR) fs.mkdirSync(DESKTOP_OUT_DIR, { recursive: true });
 
   const built = [];
   for (const t of TARGETS) {
@@ -188,14 +187,11 @@ function buildAll() {
       data: {},
     };
     const serialized = JSON.stringify(jsonObj, null, 2) + '\n';
-    const distPath = sameAsDesktop ? path.join(DESKTOP_OUT_DIR, t.fileName) : path.join(DIST_DIR, t.fileName);
     const canonDistPath = path.join(DIST_DIR, t.distName);
-    const desktopPath = path.join(DESKTOP_OUT_DIR, t.fileName);
-    if (!sameAsDesktop) fs.writeFileSync(distPath, serialized, 'utf8');
     fs.writeFileSync(canonDistPath, serialized, 'utf8');
-    fs.writeFileSync(desktopPath, serialized, 'utf8');
-    built.push({ id: t.id, fileName: t.fileName, distName: t.distName, distPath, canonDistPath, desktopPath, chars: content.length });
-    console.log(`[BUILT] ${t.fileName} (${content.length} JS chars) -> ${desktopPath}`);
+    if (DESKTOP_OUT_DIR) fs.writeFileSync(path.join(DESKTOP_OUT_DIR, t.fileName), serialized, 'utf8');
+    built.push({ id: t.id, fileName: t.fileName, distName: t.distName, canonDistPath, chars: content.length });
+    console.log(`[BUILT] ${t.distName} (${content.length} JS chars) -> ${canonDistPath}`);
   }
   const coreSrc = fs.readFileSync(path.join(SRC_MOD, '01_1_core.js'), 'utf8');
   const verMatch = coreSrc.match(/var VERSION\s*=\s*'([^']+)'/);

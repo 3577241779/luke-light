@@ -1069,8 +1069,8 @@ async function runAsyncPipelineChecks(win, api, raw, fileLabel) {
     api.setCfg('pvp', savedPvp);
     api.setCfg('onlyGemini', savedOnlyGem);
 
-    // (d) V5.4 / V5.5 / V5.6 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
-    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6') {
+    // (d) V5.4 / V5.5 / V5.6 / V5.61 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
+    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61') {
       api.openPanel();
       api.setUITab('jail');
       api.render();
@@ -1125,9 +1125,9 @@ async function testJsonFile(jsonPath) {
       openPanelErr = e.message || String(e);
     }
 
-    // Run async pipeline & UI integration checks on V5.3 / V5.4 / V5.5 / V5.6 builds
+    // Run async pipeline & UI integration checks on V5.3+ builds
     let asyncErrs = [];
-    if (/V5\.[3456]|luke-light-/i.test(path.basename(jsonPath))) {
+    if (/V5\.(?:[3456]|61)|luke-light-/i.test(path.basename(jsonPath))) {
       asyncErrs = await runAsyncPipelineChecks(win, api, raw, path.basename(jsonPath));
     }
 

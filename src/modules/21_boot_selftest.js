@@ -91,12 +91,16 @@ function syncPill() {
     var p = pillHost();
     if (!p) return;
     var petExp = (typeof petIsExpanded === 'function') && petIsExpanded();
+    if (petExp && DOC && !DOC.getElementById('ar6-avatar') && typeof avatarMount === 'function') {
+      try { avatarMount(); } catch (ePetHeal) {}
+    }
+    var hasLivePet = !!(petExp && DOC && DOC.getElementById('ar6-avatar'));
     var petDock = (typeof petIsDocked === 'function') && petIsDocked();
     var allowDbl = !!(p.__ar6AllowDblUntil && Date.now() < p.__ar6AllowDblUntil);
-    /* 全屏最多一个悬浮物：桌宠展开中、用户主动隐藏、或主面板打开时（除双击宽限窗口外）隐藏圆章 */
-    if ((cfg && cfg.pillHide) || petExp || (panelOpen() && !allowDbl)) {
+    /* 全屏最多一个悬浮物：桌宠展开且实际已挂载、用户主动隐藏、或主面板打开时（除双击宽限窗口外）隐藏圆章 */
+    if ((cfg && cfg.pillHide) || hasLivePet || (panelOpen() && !allowDbl)) {
       p.style.display = 'none';
-      if (petExp) { try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (ePSy) {} }
+      if (hasLivePet) { try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (ePSy) {} }
       return;
     }
     var on = !!(cfg && cfg.enabled);
@@ -2037,10 +2041,10 @@ function runSelfTest() {
     }
   });
 
-  T('T110 V5.6 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
+  T('T110 V5.61 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.6') throw new Error('VERSION 应为 5.6，实际 ' + VERSION);
+      if (VERSION !== '5.61') throw new Error('VERSION 应为 5.61，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2818,12 +2822,15 @@ var AR6_API = {
   updErrText: (typeof updErrText === 'function') ? updErrText : null,
   updDoneText: (typeof updDoneText === 'function') ? updDoneText : null,
   UPD_RT: (typeof UPD_RT !== 'undefined') ? UPD_RT : null,
-  /* ---- V5.6 3D 迪迦雕像与神光棒变身 ---- */
+  /* ---- V5.61 3D 迪迦雕像与神光棒变身 ---- */
   triggerSparklenceSummon: (typeof triggerSparklenceSummon === 'function') ? triggerSparklenceSummon : null,
   closeSparklence: (typeof closeSparklence === 'function') ? closeSparklence : null,
   ar6SfxPlay: (typeof ar6SfxPlay === 'function') ? ar6SfxPlay : null,
   avatarSyncForm: (typeof avatarSyncForm === 'function') ? avatarSyncForm : null,
   petCurrentForm: (typeof petCurrentForm === 'function') ? petCurrentForm : null,
+  avatarVisualMode: function () { return (typeof AR6_PET_CTRL !== 'undefined' && AR6_PET_CTRL && AR6_PET_CTRL.getVisualMode) ? AR6_PET_CTRL.getVisualMode() : ''; },
+  AR6_SPARK_RUN: (typeof AR6_SPARK_RUN !== 'undefined') ? AR6_SPARK_RUN : null,
+  ar6MatteSprite: (typeof ar6MatteSprite === 'function') ? ar6MatteSprite : null,
   AR6_PET_ASSETS: (typeof AR6_PET_ASSETS !== 'undefined') ? AR6_PET_ASSETS : null,
   /* ---- 导出表 ---- */
 };

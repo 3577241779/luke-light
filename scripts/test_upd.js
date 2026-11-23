@@ -136,6 +136,8 @@ function makeManifest(ver, changelog = '测试更新说明') {
     U.cfg.updAuto = true;
 
     ok('updCmp("5.6", "5.5") === 1', U.updCmp('5.6', '5.5') === 1);
+    ok('updCmp("5.61", "5.6") === 1（V5.6 平滑追新至 V5.61）', U.updCmp('5.61', '5.6') === 1);
+    ok('updCmp("5.61", "5.5") === 1（V5.5 平滑追新至 V5.61）', U.updCmp('5.61', '5.5') === 1);
     ok('updCmp("5.10", "5.5") === 1（数字分段非字典序）', U.updCmp('5.10', '5.5') === 1);
     ok('updCmp("5.5.0", "5.5") === 0', U.updCmp('5.5.0', '5.5') === 0);
     ok('updCmp("v5.6", "5.5") === 1', U.updCmp('v5.6', '5.5') === 1);
