@@ -275,10 +275,11 @@ var DESENS_RULES = [
   [/(十[一二三四五六七八九])(\s*)(岁|歲|周岁)/g, '$1-$2$3'],
   [/(幼)(稚)/g, '$1¦$2']
 ];
-/* 标签、代码块、{{宏}}、链接整段放过，避免把 markdown/宏改坏 */
-var DESENS_PROTECT = /(<[^>]*>|```[\s\S]*?```|`[^`]*`|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+)/g;
+/* V5.65 结构安全护栏：跳过 XML标签、代码块、行内代码、{{宏}}、URL、Markdown表格行、SQL语句、JSON键名与JSONPatch路径 */
+var DESENS_PROTECT = /(```[\s\S]*?```|`[^`\n]*`|<[^>]*>|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+|^[ \t]*\|[^\n]*\|[ \t]*$|\b(?:CREATE|ALTER|DROP|INSERT\s+(?:OR\s+REPLACE\s+)?INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM|SELECT)\b[^;\n]*;?|"(?:[^"\\]|\\.)*"\s*:|"(?:\/[^"\s\\]+)+")/gm;
 function desensTxt(t) {
   if (typeof t !== 'string' || !t) return { txt: t, n: 0 };
+  DESENS_PROTECT.lastIndex = 0;
   var parts = t.split(DESENS_PROTECT), n = 0;
   for (var i = 0; i < parts.length; i++) {
     if (i % 2 === 1) continue;
@@ -311,6 +312,7 @@ function desensPatchBody(body) {
       var m = arr[i];
       if (!m || typeof m !== 'object') continue;
       if (m.role && m.role !== 'system') continue;   /* 正文一律不碰 */
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) continue;
       if (typeof m.content === 'string') {
         var r = desensTxt(m.content);
         if (r.n) { m.content = r.txt; box.hits += r.n; box.touched = true; }
@@ -383,6 +385,7 @@ function washFixParts(parts, box) {
 function washPatchBody(body) {
   var out = [], box = { hits: 0, touched: false };
   if (!body || typeof body !== 'object') return out;
+  if (typeof presetCompatForce === 'function' && !presetCompatForce() && typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body)) return out;
   var root = (body.request && typeof body.request === 'object') ? body.request : body;
   var arr = root && (root.messages || root.contents);
   if (Array.isArray(arr)) {
@@ -390,6 +393,7 @@ function washPatchBody(body) {
       var m = arr[i];
       if (!m || typeof m !== 'object') continue;
       if (m.role && m.role !== 'system') continue;   /* 正文一律不碰 */
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) continue;
       if (typeof m.content === 'string') { var r = washTxt(m.content); if (r.n) { m.content = r.txt; box.hits += r.n; box.touched = true; } }
       washFixParts(m.parts, box);
     }

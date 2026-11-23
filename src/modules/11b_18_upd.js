@@ -248,20 +248,22 @@ function updGetOnce(u, ttl) {
   });
 }
 
-function updGet(u, ttl) {
+function updGet(u, ttl, validateFn) {
   if (!updUrlOk(u)) return Promise.resolve({ ok: false, err: 'nourl' });
   var list = updMirrorList(u);
   if (!list.length) return Promise.resolve({ ok: false, err: 'nourl' });
   var errs = [];
   function next(idx) {
     if (idx >= list.length) {
-      var bestHttp = null, allCross = true, anyTimeout = false;
+      var bestHttp = null, bestVal = null, allCross = true, anyTimeout = false;
       for (var i = 0; i < errs.length; i++) {
         var er = errs[i] || {};
+        if (er.valErr && !bestVal) bestVal = er;
         if (er.err === 'http' && !bestHttp) bestHttp = er;
         if (!er.cross) allCross = false;
         if (er.timeout) anyTimeout = true;
       }
+      if (bestVal) return Promise.resolve(bestVal);
       return Promise.resolve({
         ok: false,
         err: bestHttp ? 'http' : 'net',
@@ -272,6 +274,14 @@ function updGet(u, ttl) {
     }
     return updGetOnce(list[idx], ttl).then(function (r) {
       if (r && r.ok) {
+        if (typeof validateFn === 'function') {
+          var vr = validateFn(r.text);
+          if (vr && !vr.ok) {
+            vr.valErr = true;
+            errs.push(vr);
+            return next(idx + 1);
+          }
+        }
         if (r.via) UPD_FAST_HOST = r.via;
         return r;
       }
@@ -655,9 +665,30 @@ function updInstall() {
         if (!preHit) { end({ ok: false, err: UPD_NOSELF_WHY === 'tie' ? 'noself2' : 'noself' }); return; }
       }
 
-      updGet(pkgUrl, UPD_PKG_TTL).then(function (rr) {
+      /* V5.65：单条 CDN 镜像遇旧缓存版本号 mismatch / badplat 时自动顺延尝试下一条镜像 */
+      var pkgValidator = function (rawTxt) {
+        if (!rawTxt) return { ok: false, err: 'empty' };
+        if (rawTxt.length > UPD_PKG_MAX) return { ok: false, err: 'big' };
+        var pObj = null;
+        try { pObj = JSON.parse(rawTxt); } catch (eV0) { pObj = null; }
+        var pBody = pObj && typeof pObj.content === 'string' ? pObj.content : '';
+        if (!pBody || pBody.indexOf('var VERSION') < 0) return { ok: false, err: 'badpkg' };
+        var pVer = '', pPlat = '';
+        try { pVer = (pBody.match(/var VERSION\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eV1) {}
+        try { pPlat = (pBody.match(/var PLATFORM\s*=\s*'([^']+)'/) || [])[1] || ''; } catch (eV2) {}
+        if (!pVer || !UPD_VER_RE.test(pVer)) return { ok: false, err: 'badpkg' };
+        if (want && UPD_VER_RE.test(want) && updCmp(pVer, want) !== 0) {
+          return { ok: false, err: 'mismatch', got: pVer, want: want };
+        }
+        if (pPlat && pPlat !== updPlatform()) {
+          return { ok: false, err: 'badplat', got: pPlat, want: updPlatform() };
+        }
+        return { ok: true };
+      };
+
+      updGet(pkgUrl, UPD_PKG_TTL, pkgValidator).then(function (rr) {
         if (!rr || !rr.ok) {
-          end({ ok: false, err: (rr && rr.err) || 'net', status: rr && rr.status, cross: rr && rr.cross, timeout: rr && rr.timeout });
+          end({ ok: false, err: (rr && rr.err) || 'net', got: rr && rr.got, want: rr && rr.want, status: rr && rr.status, cross: rr && rr.cross, timeout: rr && rr.timeout });
           return null;
         }
         return Promise.resolve().then(function () {

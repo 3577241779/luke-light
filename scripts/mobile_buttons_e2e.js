@@ -9,10 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const DESKTOP_OUT_DIR = path.join(__dirname, '..', 'dist');
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
 const MOBILE_TARGETS = [
-  'luke-light-st.json',
-  'luke-light-tt.json',
+  '卢克之光 V5.7·ST酒馆适配.json',
+  '卢克之光 V5.7·TT酒馆适配.json',
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -976,11 +976,11 @@ async function runSuiteForTarget(fileName) {
     check(win.document.lastCopiedText.length > 10, '局域网 HTTP 环境 exportlog 走 textarea+execCommand 成功复制');
     win.document.lastCopiedText = '';
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcopy', true));
-    check(win.document.lastCopiedText.includes('版本 5.61'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
+    check(win.document.lastCopiedText.includes('版本 5.70'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
 
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcheck', true));
     const bnAfterDiag = win.document.getElementById('ar6-bn2');
-    check(!!bnAfterDiag && bnAfterDiag.textContent.includes('109/109'), 'diagcheck 执行全量 109 项自检并弹横幅');
+    check(!!bnAfterDiag && bnAfterDiag.textContent.includes('111/111'), 'diagcheck 执行全量 111 项自检并弹横幅', `got=${bnAfterDiag && bnAfterDiag.textContent}`);
 
     // rebuild 双击确认
     await mobileTouchTap(win, () => findAr6Btn(win, 'rebuild', true));
@@ -1265,13 +1265,23 @@ async function runSuiteForTarget(fileName) {
     await mobileTouchTap(win, () => findAr6Btn(win, 'gm:know:0', true));
     check(api.getCfg().know === 'off', 'gm:know:0 关闭迷雾结界');
 
-    // 3.2 gm:charm
+    // 3.2 gm:charm + V5.7 双子开关（📦 贴脸包裹 & ☠️ 致命后果）零回弹与联动校验
     await mobileTouchTap(win, () => findAr6Btn(win, 'gm:charm:1', true));
-    check(api.getCfg().charm === 'lite', 'gm:charm:1 角色独立作息');
+    check(api.getCfg().charm === 'lite' && api.narrCharmWrapOn() === false, 'gm:charm:1 角色独立作息（auto 默认不自动开贴脸包裹）');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'gm:charm:2', true));
+    check(api.getCfg().charm === 'mid' && api.narrCharmWrapOn() === true, 'gm:charm:2 允许干脆拒绝自动联动开启贴脸包裹');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'charm-wrap', true));
+    check(api.getCfg().charmWrap === 'off' && api.narrCharmWrapOn() === false, '📦 贴脸包裹 中档联动开->关 不回弹');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'charm-wrap', true));
+    check(api.getCfg().charmWrap === 'on' && api.narrCharmWrapOn() === true, '📦 贴脸包裹 关->开 不回弹');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'charm-lethal', true));
+    check(api.getCfg().charmLethal === true && api.narrCharmLethalOn() === true, '☠️ 致命后果 关->开 不回弹');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'charm-lethal', true));
+    check(api.getCfg().charmLethal === false && api.narrCharmLethalOn() === false, '☠️ 致命后果 开->关 不回弹');
     await mobileTouchTap(win, () => findAr6Btn(win, 'gm:charm:3', true));
-    check(api.getCfg().charm === 'full', 'gm:charm:3 世界自主运转');
+    check(api.getCfg().charm === 'full' && api.narrCharmWrapOn() === true, 'gm:charm:3 世界自主运转');
     await mobileTouchTap(win, () => findAr6Btn(win, 'gm:charm:0', true));
-    check(api.getCfg().charm === 'off', 'gm:charm:0 关闭真实引力');
+    check(api.getCfg().charm === 'off' && api.narrCharmWrapOn() === false && api.narrCharmLethalOn() === false, 'gm:charm:0 关闭真实引力并同步待机子开关');
 
     // 3.3 反 OOC 总闸（带预设冲突弹窗）+ 4 子项（含 :听预设 切换不回弹）
     stState.presetPrompts = [
@@ -1367,6 +1377,11 @@ async function runSuiteForTarget(fileName) {
     check(api.getCfg().contentOnly === 'off', '📄 只算正文 开->关 不回弹');
     await mobileTouchTap(win, () => findAr6Btn(win, '📄 只算正文:'));
     check(api.getCfg().contentOnly === 'on', '📄 只算正文 关->开 不回弹');
+
+    await mobileTouchTap(win, () => findAr6Btn(win, 'preset-compat', true));
+    check(api.getCfg().presetCompat === 'off', '⚔️ 预设适配 强权优先->礼让预设 不回弹');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'preset-compat', true));
+    check(api.getCfg().presetCompat === 'on', '⚔️ 预设适配 礼让预设->强权优先 不回弹');
 
     // 4.2 pill-toggle / cardauto-toggle / pill-reset / 迪迦桌宠双击立绘开面板 & 关桌宠防失联
     await mobileTouchTap(win, () => findAr6Btn(win, 'cardauto-toggle', true));

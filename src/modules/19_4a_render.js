@@ -239,7 +239,8 @@ function uiJailHTML() {
   if (dm !== '关') statLine = (statLine ? statLine + ' · ' : '') + '秩序降权 ' + dm;
   try {
     var prn = (typeof lkPresetName === 'function') ? lkPresetName() : '';
-    statLine = (statLine ? statLine + ' · ' : '') + '战术预设 ' + (prn || '自定义');
+    var pModeTxt = (typeof presetCompatForce === 'function' && !presetCompatForce()) ? '礼让预设' : '强权优先';
+    statLine = (statLine ? statLine + ' · ' : '') + '战术预设 ' + (prn || '自定义') + ' · 预设适配 ' + pModeTxt;
   } catch (ePrn) {}
   var jstBlock = (jst || statLine)
     ? ('<div class="ar6-dline" style="margin-top:7px;padding-top:6px;border-top:1px dashed rgba(148,163,184,.18);color:' + (jst && jst.charAt(0) === '⚠' ? '#fda4af' : '#94a3b8') + '">' +
@@ -304,33 +305,64 @@ function uiTruncHTML() {
 
 function knowDesc() {
   var p = narrPick(cfg.know);
-  if (p === 'lite') return '仅知在场事：远处的事仅作背景，角色言行只能依据自己在场亲眼所见（保留正常心理描写）。';
-  if (p === 'mid') return '禁跨场推理：角色信息仅限亲见、亲闻、当面告知与眼前直推，禁止开天眼猜透全局（保留心理描写）。';
-  return '绝对结界生效中：不在场即不知情，且同步禁止描写任何角色心理活动、禁止代写主角言行与决定。';
+  if (p === 'lite') return '仅知在场事：远处仅作背景，角色言行只依据本人亲见、亲闻与当面告知，不代写主角内心。';
+  if (p === 'mid') return '禁跨场推理：来源四要件 + 物理遮挡 + 禁微表情算命 + 禁临时编前文，动笔前自动锁定 1 件角色不可知盲区。';
+  return '绝对结界生效中：动笔前锚定 1~2 条不可知盲区 + 双向隔离（含主视角旁白不透视世界书）+ 时间线三点校验 + 时代认知天花板 + 同见不同解。';
 }
 function charmDesc() {
   var p = narrPick(cfg.charm);
-  if (p === 'lite') return '角色独立作息：NPC 有自己的日程与立场，听到主角说话后自行决定是否回应。';
-  if (p === 'mid') return '允许干脆拒绝：主角的话视为商量而非命令，NPC 可按自身性格合理拒绝。';
-  return '世界自主运转：拒绝就是真拒绝，不写口嫌体正直或强行围着主角变相讨好。';
+  var extra = [];
+  if (typeof narrCharmWrapOn === 'function' && narrCharmWrapOn()) extra.push('近2轮贴脸包裹已启');
+  if (typeof narrCharmLethalOn === 'function' && narrCharmLethalOn()) extra.push('致命后果已启');
+  var tail = extra.length ? ('（' + extra.join(' · ') + '）') : '';
+  if (p === 'lite') return '角色独立作息：戏外与戏内解耦，NPC 各有日程立场，禁止段尾全员停住等主角指令' + tail + '。';
+  if (p === 'mid') return '允许干脆拒绝：RLHF 讨好导流 + 意图降格六维过检 + 拒绝多样性 + 反神化平衡阀' + tail + '。';
+  return '世界自主运转：强制对抗成败结算 + 封死余光/莫名心疼/背地兜底暗媚 + 双向防双标 + 结尾强推局势' + tail + '。';
 }
 
 function uiKnowHTML() {
   var cur = String(cfg.know || 'off');
   var sub = cur !== 'off'
     ? knowDesc()
-    : '防止角色未卜先知或无条件围着主角讨好（注意「绝对结界」会同步禁止心理活动描写与代写主角言行，保留心理描写请选前两档）。';
+    : '防止角色未卜先知、读心或临时编前文（V5.7 全协议支持 OpenAI / Claude / Gemini 原生格式；「绝对结界」含双向隔离与盲区锚定）。';
   var bdg = cur !== 'off' ? narrTag(cur) : '待机';
-  return segBarHTML('迷雾结界 · 防角色读心', sub, MENU_SPEC.know.items, cur, 'gm:know', 'full', bdg, cur === 'full' ? 'gold' : (cur !== 'off' ? 'cyan' : ''));
+  var h = segBarHTML('迷雾结界 · 防角色读心', sub, MENU_SPEC.know.items, cur, 'gm:know', 'full', bdg, cur === 'full' ? 'gold' : (cur !== 'off' ? 'cyan' : ''));
+  try {
+    if (typeof NARR_RT !== 'undefined' && NARR_RT && NARR_RT.yieldKnow && cur !== 'off') {
+      h += '<div class="ar6-dline ar6-mind" style="color:#94a3b8">当前为「礼让预设」模式：检测到预设已自带防全知条款，上轮已温和避重</div>';
+    }
+  } catch (eYK) {}
+  return h;
 }
 
 function uiCharmHTML() {
   var cur = String(cfg.charm || 'off');
-  var sub = cur !== 'off'
+  var charmOff = (cur === 'off');
+  var wrapMode = (typeof narrCharmWrapMode === 'function') ? narrCharmWrapMode() : String(cfg.charmWrap || 'auto');
+  var wrapOn = (typeof narrCharmWrapOn === 'function') ? narrCharmWrapOn() : false;
+  var lethalPref = !!(cfg && cfg.charmLethal === true);
+  var lethalOn = !charmOff && lethalPref;
+  var wrapSt = charmOff
+    ? (wrapMode === 'on' ? '预设常开·待机' : (wrapMode === 'off' ? '已关闭·待机' : '随中/高档自动'))
+    : (wrapOn ? (wrapMode === 'auto' ? '已开启·联动' : '已开启') : '待机');
+  var lethalSt = charmOff
+    ? (lethalPref ? '已勾选·随主闸待机' : '随主闸待机')
+    : (lethalOn ? '高危开启' : '待机');
+  var charmGrid = '<div class="ar6-tgrid">' +
+    swCell('charm-wrap', '📦 贴脸包裹 · 近2轮意图三明治', !charmOff && wrapOn, '', wrapSt, charmOff ? 'data-off="1"' : '') +
+    swCell('charm-lethal', '☠️ 致命后果 · 高危真实生死代价', lethalOn, 'gold', lethalSt, charmOff ? 'data-off="1"' : '') +
+    '</div>';
+  var sub = !charmOff
     ? charmDesc()
-    : '让配角保持各自作息与立场，告别无脑顺从与主角光环滤镜。';
-  var bdg = cur !== 'off' ? narrTag(cur) : '待机';
-  return segBarHTML('真实引力 · 去主角光环', sub, MENU_SPEC.charm.items, cur, 'gm:charm', 'full', bdg, cur === 'full' ? 'gold' : (cur !== 'off' ? 'cyan' : ''));
+    : '让配角保持独立作息与立场，告别无脑顺从与主角光环；中/高档默认联动「贴脸包裹」近 2 轮玩家输入，不改聊天记录。';
+  var bdg = !charmOff ? narrTag(cur) : '待机';
+  var h = segBarHTML('真实引力 · 去主角光环', sub, MENU_SPEC.charm.items, cur, 'gm:charm', 'full', bdg, cur === 'full' ? 'gold' : (!charmOff ? 'cyan' : ''), charmGrid);
+  try {
+    if (typeof NARR_RT !== 'undefined' && NARR_RT && NARR_RT.yieldCharm && !charmOff) {
+      h += '<div class="ar6-dline ar6-mind" style="color:#94a3b8">当前为「礼让预设」模式：检测到预设已自带去媚/去主角条款，上轮已温和避重</div>';
+    }
+  } catch (eYC) {}
+  return h;
 }
 
 function uiOocHTML() {
@@ -437,14 +469,32 @@ function uiMoreHTML() {
       actBtn('savescope', 'check', '保存') +
       '</div>' +
       '<div class="ar6-tgrid">' +
-        swCell('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), '锁定光之国 · 仅巡检 Gemini', cfg.onlyGemini !== false, '', cfg.onlyGemini === false ? '全模型' : '已开启') +
-        swCell('📄 只算正文:' + (cfg.contentOnly === 'off' ? '关' : '开'), '纯净记账 · 仅计正文轮次', cfg.contentOnly !== 'off') +
+        swCell('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), '锁定光之国 · 仅巡检 Gemini', cfg.onlyGemini !== false, 'span-2', cfg.onlyGemini === false ? '全模型' : '已开启') +
       '</div>';
     h += segBarHTML('雷达扫描范围', '使用 Claude 或 DeepSeek 等非谷歌模型时请关闭「锁定光之国 · 仅巡检 Gemini」；「石像休眠」仅在排查其它插件冲突时临时开启。', [
       ['全部模型', 'all'],
       ['跳过关键词', 'skip'],
       ['仅扫关键词', 'only']
     ], String(cfg.scope || 'all'), 'scope:', '', scopeLabel(), 'cyan', scopeExtra);
+
+    /* V5.65 落位 A：防卫设置独立兼容专卡 —— 插件放行与预设适配双开关彻底解耦 */
+    var coOn = (cfg.contentOnly !== 'off');
+    var pcOn = (typeof presetCompatForce === 'function') ? presetCompatForce() : (String(cfg.presetCompat || 'on') !== 'off');
+    var skipN = (typeof DET !== 'undefined' && DET && DET.pluginSkip) ? DET.pluginSkip : 0;
+    var skipLast = (typeof DET !== 'undefined' && DET && DET.lastPlugin) ? String(DET.lastPlugin) : '';
+    var compatBadge = (coOn ? '正轨' : '全域') + ' · ' + (pcOn ? '强权优先' : '礼让预设');
+    var compatSub = '插件放行（开）对柏宝书 / 柏宝绘 / 龙血玄黄数据库等后台传输零干预直通，不污染采样与路由率' +
+      (skipN ? ('（本会话已静默放行 ' + skipN + ' 次' + (skipLast ? ' · 最近：' + skipLast : '') + '）') : '') +
+      '。预设适配（开）由卢克之光破甲强制优先；关闭则遇到预设自带破甲与载具自动让路。';
+    h += '<div class="ar6-ugroup">' +
+      '<div class="ar6-ug-top"><span class="ar6-ug-title">星域协同 · 插件与预设兼容</span>' +
+        '<span class="ar6-badge ' + (pcOn ? 'gold' : 'cyan') + '">' + esc(compatBadge) + '</span></div>' +
+      '<div class="ar6-tgrid">' +
+        swCell('📄 只算正文:' + (coOn ? '开' : '关'), '纯净正轨 · 放行外部插件', coOn, '', coOn ? '仅检正文' : '全域监测') +
+        swCell('preset-compat', '预设适配 · 破甲主导权', pcOn, pcOn ? 'gold' : '', pcOn ? '强权优先' : '礼让预设') +
+      '</div>' +
+      '<div class="ar6-ug-sub">' + esc(compatSub) + '</div>' +
+    '</div>';
     h += '<div class="ar6-dline">' + esc(ledLine()) + '</div>';
 
     h += '<div class="ar6-mmore-h">彩色计时器圆章与告警方式</div>';
@@ -598,11 +648,12 @@ function uiBaseSig() {
       }
     } catch (eOocSig) {}
     var updSig = (typeof updStatusSig === 'function') ? updStatusSig() : '';
+    var pSkipSig = (typeof DET !== 'undefined' && DET) ? (String(DET.pluginSkip || 0) + ':' + String(DET.lastPlugin || '')) : '';
     return [STRUCT_VER, VERSION, uiMode(), uiCfgSig(),
       c.same, c.diff, c.thin, c.unknown, c.other, String(K.bad), String(K.eff), lg,
       MORE_OPEN ? 1 : 0, LOGW.open ? 1 : 0, st.kind, jl, tr, ab, tc, tt, sv, sj,
       TOOL_CONFIRM ? 1 : 0,
-      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig].join('|');
+      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig].join('|');
   } catch (e) { return 'err'; }
 }
 

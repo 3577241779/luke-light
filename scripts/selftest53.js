@@ -1069,8 +1069,8 @@ async function runAsyncPipelineChecks(win, api, raw, fileLabel) {
     api.setCfg('pvp', savedPvp);
     api.setCfg('onlyGemini', savedOnlyGem);
 
-    // (d) V5.4 / V5.5 / V5.6 / V5.61 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
-    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61') {
+    // (d) V5.4 / V5.5 / V5.6 / V5.61 / V5.65 / V5.70 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
+    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70') {
       api.openPanel();
       api.setUITab('jail');
       api.render();
@@ -1127,7 +1127,7 @@ async function testJsonFile(jsonPath) {
 
     // Run async pipeline & UI integration checks on V5.3+ builds
     let asyncErrs = [];
-    if (/V5\.(?:[3456]|61)|luke-light-/i.test(path.basename(jsonPath))) {
+    if (/V5\.(?:[34567]|61|65|70)|luke-light-/i.test(path.basename(jsonPath))) {
       asyncErrs = await runAsyncPipelineChecks(win, api, raw, path.basename(jsonPath));
     }
 
@@ -1150,9 +1150,9 @@ if (require.main === module) {
   (async () => {
     const args = process.argv.slice(2);
     const files = args.length ? args : [
-      path.join(__dirname, '..', 'dist', 'luke-light-st.json'),
-      path.join(__dirname, '..', 'dist', 'luke-light-tt.json'),
-      path.join(__dirname, '..', 'dist', 'luke-light-desktop.json'),
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·ST酒馆适配.json',
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·TT酒馆适配.json',
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·桌面版.json',
     ];
     let anyFail = false;
     for (const f of files) {

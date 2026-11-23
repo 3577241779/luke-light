@@ -13,11 +13,11 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const DESKTOP_OUT_DIR = path.join(__dirname, '..', 'dist');
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
 const TARGETS = [
-  'luke-light-st.json',
-  'luke-light-tt.json',
-  'luke-light-desktop.json',
+  '卢克之光 V5.7·ST酒馆适配.json',
+  '卢克之光 V5.7·TT酒馆适配.json',
+  '卢克之光 V5.7·桌面版.json',
 ];
 
 function createCanvasMock(state, opts = {}) {
@@ -483,7 +483,7 @@ function runForTarget(fileName) {
   const fullPath = path.join(DESKTOP_OUT_DIR, fileName);
   const raw = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
   const script = new vm.Script('"use strict";\n' + raw.content, { filename: fileName });
-  const isMobile = !/桌面版|-desktop\.json/i.test(fileName);
+  const isMobile = !fileName.includes('桌面版');
   const errs = [];
   let checks = 0;
   function check(cond, msg) {
@@ -498,7 +498,7 @@ function runForTarget(fileName) {
     script.runInContext(ctx);
     env.advance(100, 120);
     const api = env.win.__AR6__;
-    check(api && api.VERSION === '5.61', `VERSION 应为 5.61，实际 ${api && api.VERSION}`);
+    check(api && api.VERSION === '5.70', `VERSION 应为 5.70，实际 ${api && api.VERSION}`);
 
     // 初次使用：未开启桌宠，先进入防卫设置并点开「3D 迪迦 · 光之伙伴桌宠」
     api.openPanel();

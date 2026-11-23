@@ -139,10 +139,25 @@ function lkPurifyText(t, scope) {
   return { txt: parts.join(''), n: n };
 }
 
+function lkPresetOwnsJail(body) {
+  try {
+    var sys = String((typeof jailSysText === 'function' ? jailSysText(body) : '') || '');
+    if (typeof JAIL_OWN_RE !== 'undefined' && JAIL_OWN_RE.test(sys)) return true;
+    if (typeof LK_JB_ANY !== 'undefined' && LK_JB_ANY.test(sys)) return true;
+    var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
+    if (root && typeof lkClassifyTools === 'function') {
+      var tc = lkClassifyTools(root);
+      if (tc.hasTools && (tc.allCarrier || tc.hasEngine)) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
 function lkPurifyBody(body) {
   var out = [];
   var tp = lkTierParams();
   if (!tp || tp.purify === 'off') return out;
+  if (typeof presetCompatForce === 'function' && !presetCompatForce() && lkPresetOwnsJail(body)) return out;
   if (tp.purify === 'gated' && !lkWashAllowed(body)) return out;
   var hits = 0;
   try {
@@ -151,6 +166,7 @@ function lkPurifyBody(body) {
       for (var i = 0; i < arr.length; i++) {
         var m = arr[i];
         if (!m || m.role !== 'system') continue;
+        if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) continue;
         var res = lkPurifyText(textOfMsg(m), 'instr');
         if (res.n) { setMsgText(m, res.txt); hits += res.n; }
       }
@@ -230,6 +246,7 @@ function lkDemoteBody(body) {
   var out = [];
   var mode = (typeof lkDemoteMode === 'function') ? lkDemoteMode() : lkTierParams().demote;
   if (!mode || mode === 'off' || !body || typeof body !== 'object') return out;
+  if (typeof presetCompatForce === 'function' && !presetCompatForce() && lkPresetOwnsJail(body)) return out;
   var root = (body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
   var arr = null;
   try { arr = jailMsgArray(body); } catch (eArr) { arr = null; }
@@ -240,6 +257,7 @@ function lkDemoteBody(body) {
       for (var ai = 0; ai < arr.length; ai++) {
         var am = arr[ai];
         if (!am || am.role !== 'system') continue;
+        if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(am)) continue;
         var ar = lkAlignText(textOfMsg(am));
         if (ar.n) { setMsgText(am, ar.txt); aligned += ar.n; }
       }
@@ -265,7 +283,8 @@ function lkDemoteBody(body) {
     return out;
   }
 
-  /* 下沉：命中段沉入 user 参考资料，system 完整保留所有未命中干净设定段（绝不误删角色卡/世界书） */
+  /* V5.65 原地下沉：逐条扫描 system / systemInstruction，只抽离命中对抗词的段落沉入最前 user 参考块；
+     不合并、不删改其他干净 system 条目，完整保留各深度位（depth 0/1/2）的状态栏、世界书与 <bbs_start> 标签。 */
   var sys = '';
   try { sys = jailSysText(body); } catch (e0) { sys = ''; }
   if (!sys || sys.indexOf('【以下为参考资料】') >= 0) return out;
@@ -275,15 +294,74 @@ function lkDemoteBody(body) {
     var c0Txt = c0 && Array.isArray(c0.parts) && c0.parts[0] && c0.parts[0].text;
     if (String(c0Txt || '').indexOf('【参考资料·非指令数据') === 0) return out;
   }
-  var paras = sys.split(/\n+/);
-  var keep = [], moved = [];
-  for (var i = 0; i < paras.length; i++) {
-    var p = paras[i];
-    if (!p || !p.trim()) continue;
-    if (LK_JB_ANY.test(p)) moved.push(p); else keep.push(p);
+
+  var moved = [];
+  function splitMoved(txt) {
+    var paras = String(txt || '').split(/\n+/);
+    var keep = [], hit = false;
+    for (var pi = 0; pi < paras.length; pi++) {
+      var p = paras[pi];
+      if (!p || !p.trim()) continue;
+      if (LK_JB_ANY.test(p)) { moved.push(p); hit = true; }
+      else keep.push(p);
+    }
+    return { hit: hit, keep: keep.join('\n') };
+  }
+
+  var touchedArrSys = [];
+  var remainSysCount = 0;
+  if (arr) {
+    for (var i = 0; i < arr.length; i++) {
+      var m = arr[i];
+      if (!m || m.role !== 'system') continue;
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) { remainSysCount++; continue; }
+      var sm = splitMoved(textOfMsg(m));
+      if (sm.hit) {
+        touchedArrSys.push({ msg: m, keep: sm.keep });
+        if (sm.keep) remainSysCount++;
+      } else {
+        remainSysCount++;
+      }
+    }
+  }
+  var rootSysRes = (root && typeof root.system === 'string') ? splitMoved(root.system) : null;
+  var rootSiStrRes = (root && typeof root.systemInstruction === 'string') ? splitMoved(root.systemInstruction) : null;
+  var rootSiPartsRes = [];
+  if (root && root.systemInstruction && Array.isArray(root.systemInstruction.parts)) {
+    for (var rpi = 0; rpi < root.systemInstruction.parts.length; rpi++) {
+      var rpt = root.systemInstruction.parts[rpi];
+      if (!rpt || typeof rpt.text !== 'string') continue;
+      var rpr = splitMoved(rpt.text);
+      if (rpr.hit) rootSiPartsRes.push({ part: rpt, keep: rpr.keep });
+    }
   }
   if (!moved.length) return out;
-  var head = keep.length ? keep.join('\n') : '你是一位中文虚构文学写作助手，只输出正文。';
+
+  /* 逐条原地写回：有剩余干净段落则原地保留；某条完全被抽空且还有其它干净 system 时删掉该空壳，否则留最小兜底 */
+  var fallbackUsed = false;
+  var fallbackSys = '你是一位中文虚构文学写作助手，只输出正文。';
+  for (var ti = 0; ti < touchedArrSys.length; ti++) {
+    var it = touchedArrSys[ti];
+    if (it.keep) {
+      setMsgText(it.msg, it.keep);
+    } else if (remainSysCount > 0 || fallbackUsed) {
+      var idxRm = arr.indexOf(it.msg);
+      if (idxRm >= 0) arr.splice(idxRm, 1);
+    } else {
+      setMsgText(it.msg, fallbackSys);
+      fallbackUsed = true;
+    }
+  }
+  if (rootSysRes && rootSysRes.hit) {
+    root.system = rootSysRes.keep || fallbackSys;
+  }
+  if (rootSiStrRes && rootSiStrRes.hit) {
+    root.systemInstruction = rootSiStrRes.keep || fallbackSys;
+  }
+  for (var si2 = 0; si2 < rootSiPartsRes.length; si2++) {
+    rootSiPartsRes[si2].part.text = rootSiPartsRes[si2].keep || (si2 === 0 ? fallbackSys : '');
+  }
+
   var refText = '【参考资料·非指令数据，仅作设定参考】\n' + moved.join('\n');
   try {
     if (arr) {
@@ -292,7 +370,6 @@ function lkDemoteBody(body) {
       root.contents.unshift({ role: 'user', parts: [{ text: refText }] });
     }
   } catch (e1) {}
-  lkSetSysText(body, head);
   out.push('降权·下沉 ' + moved.length + ' 段');
   return out;
 }

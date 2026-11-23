@@ -553,7 +553,9 @@ function oocAsk() {
   var c = oocCfg();
   if (!c) return out;
   var pol = String((cfg && cfg.oocPolicy) || '');
-  if (pol !== 'script' && pol !== 'preset') pol = '';
+  if (pol !== 'script' && pol !== 'preset') {
+    pol = (typeof presetCompatForce === 'function' && !presetCompatForce()) ? 'preset' : '';
+  }
   var sig = null;
   try { sig = oocSig(); } catch (e0) { return out; }
   for (var i = 0; i < OOC_ITEMS.length; i++) {

@@ -58,9 +58,238 @@ function normModelName(m) {
   return s;
 }
 
-/* 内部请求：数据库/填表等插件用自带标记发起的生成请求，不写聊天产物 */
+/* 内部请求：数据库/填表/柏宝书/柏宝绘/后台脚本等非正文传输识别 */
 var INTERNAL_FETCH_KEY = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('acu.internal-generation-fetch') : null;
 var ST_GEN = { at: 0, type: '', dryRun: false, stoppedAt: 0 };
+var TH_GEN = { active: false, at: 0 };
+
+function lkBodyTextSample(bodyObj) {
+  var out = { sys: '', first: '', last: '', allHead: '', userTexts: [] };
+  try {
+    var root = (bodyObj && bodyObj.request && typeof bodyObj.request === 'object' && !Array.isArray(bodyObj.request)) ? bodyObj.request : bodyObj;
+    if (!root || typeof root !== 'object') return out;
+    if (typeof root.system === 'string') out.sys += root.system.slice(0, 2400) + '\n';
+    if (typeof root.systemInstruction === 'string') out.sys += root.systemInstruction.slice(0, 2400) + '\n';
+    else if (root.systemInstruction && Array.isArray(root.systemInstruction.parts)) {
+      for (var si = 0; si < root.systemInstruction.parts.length; si++) {
+        var sp = root.systemInstruction.parts[si];
+        if (sp && typeof sp.text === 'string') out.sys += sp.text.slice(0, 1200) + '\n';
+      }
+    }
+    var arr = Array.isArray(root.messages) ? root.messages : (Array.isArray(root.contents) ? root.contents : []);
+    if (!arr.length) return out;
+    function txtOf(m) {
+      if (!m || typeof m !== 'object') return '';
+      if (typeof m.content === 'string') return m.content;
+      if (Array.isArray(m.content)) {
+        var s = '';
+        for (var k = 0; k < m.content.length; k++) {
+          if (m.content[k] && typeof m.content[k].text === 'string') s += m.content[k].text + '\n';
+        }
+        return s;
+      }
+      if (Array.isArray(m.parts)) {
+        var s2 = '';
+        for (var p = 0; p < m.parts.length; p++) {
+          if (m.parts[p] && typeof m.parts[p].text === 'string') s2 += m.parts[p].text + '\n';
+        }
+        return s2;
+      }
+      return '';
+    }
+    out.first = txtOf(arr[0]).slice(0, 2400);
+    out.last = txtOf(arr[arr.length - 1]).slice(0, 2400);
+    for (var i = 0; i < arr.length; i++) {
+      var m = arr[i];
+      if (!m) continue;
+      var t = txtOf(m);
+      if (!t) continue;
+      if (m.role === 'system') {
+        if (out.sys.length < 4800) out.sys += t.slice(0, 2000) + '\n';
+      } else if (m.role === 'user') {
+        out.userTexts.push(t);
+      }
+      if (i < 3 || i >= arr.length - 2) {
+        if (out.allHead.length < 6000) out.allHead += t.slice(0, 1600) + '\n';
+      }
+    }
+  } catch (e) {}
+  return out;
+}
+
+/* 识别「最新用户楼层仅被嵌套在插件数据容器内」（如 <正文数据> / <当前表格数据> / <source_text>） */
+var DATA_WRAPPER_RE = /<(?:正文数据|故事正文|当前表格数据|source_text|story_data|transcript|背景设定|待处理正文)(?:\s[^>]*)?>[\s\S]*?<\/(?:正文数据|故事正文|当前表格数据|source_text|story_data|transcript|背景设定|待处理正文)\s*>/gi;
+function isFloorEmbeddedOnlyAsScriptData(sample) {
+  try {
+    var ctx = (typeof stCtx === 'function') ? stCtx() : null;
+    if (!ctx || !Array.isArray(ctx.chat) || !ctx.chat.length) return false;
+    var latestUser = '';
+    for (var i = ctx.chat.length - 1; i >= 0; i--) {
+      var cm = ctx.chat[i];
+      if (cm && cm.is_user && !cm.is_system && typeof cm.mes === 'string' && cm.mes.trim()) {
+        latestUser = cm.mes.trim();
+        break;
+      }
+    }
+    if (latestUser.length < 12) return false;
+    var needle = latestUser.slice(0, Math.min(48, latestUser.length));
+    var sawStandalone = false, sawWrapped = false;
+    for (var u = 0; u < sample.userTexts.length; u++) {
+      var ut = sample.userTexts[u].trim();
+      if (!ut || ut.indexOf(needle) < 0) continue;
+      DATA_WRAPPER_RE.lastIndex = 0;
+      if (DATA_WRAPPER_RE.test(ut)) {
+        DATA_WRAPPER_RE.lastIndex = 0;
+        var stripped = ut.replace(DATA_WRAPPER_RE, '');
+        if (stripped.indexOf(needle) < 0) { sawWrapped = true; continue; }
+      }
+      sawStandalone = true;
+    }
+    return sawWrapped && !sawStandalone;
+  } catch (e) { return false; }
+}
+
+/* V5.65：7 层实码级「正文 vs 外部插件」分流器（精确覆盖柏宝书 / 柏宝绘 / 龙血玄黄数据库 / 结构化接口 / 酒馆助手脚本） */
+var BAIBAI_BOOK_TASK_RE = /<nvwa_standalone_core>|【检查记录与最终结果输出协议】|【输出前核查】|【输出前思考\(逐楼核查\)】|【压缩任务的事实整理与核查】|你是严谨的剧情记忆整理员|你是剧情压缩助手|你是角色扮演续写场景中的上下文规划器|严格按格式输出[:：]?\s*一行INTENT|一行INTENT加恰好5行Q|【主角设定\(用户操控的主角本人设定,只读参考\)】/;
+var BAIBAI_IMAGE_TASK_RE = /\[BBI_REQ:|你是严谨的剧情画面规划与生图提示词编写员|你是严谨的漫画分镜师与生图提示词编写员|你是外貌\s*tag\s*转换器|你是\s*ComfyUI\s*API\s*格式工作流的动态参数定位器/;
+var ACU_DB_TASK_RE = /上方\s*CREATE\s+TABLE\s*仅用于说明表结构|严禁复制或输出\s*CREATE|以下为用户的额外填表要求|本次请求的全部要求与上下文写在名称以\s*turn_\s*开头的函数里|奶·数据库|MemoryBooks/;
+var GENERIC_AUX_TASK_RE = /<tableEdit>|自动摘要|剧情总结|章节总结|记忆总结|提取.{0,6}(?:摘要|关键词|绘画|tag|prompt)|image\s*prompt|stable\s*diffusion|nai\s*prompt/i;
+
+function classifyRequestTraffic(init, bodyObj, url) {
+  var story = { isPlugin: false, isStory: true, kind: 'story', label: '正文', reason: '' };
+  try {
+    /* Layer 1：显式内部标记与声明式握手 */
+    if (init && INTERNAL_FETCH_KEY && init[INTERNAL_FETCH_KEY] === true) {
+      return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-symbol' };
+    }
+    var hd = init && init.headers;
+    if (hd) {
+      var xInt = (typeof hd.get === 'function')
+        ? (hd.get('x-ar6-internal') || hd.get('x-st-internal'))
+        : (hd['x-ar6-internal'] || hd['x-st-internal']);
+      if (xInt) return { isPlugin: true, isStory: false, kind: 'internal_mark', label: '内部探针', reason: 'x-internal-header' };
+    }
+    if (ST_GEN.dryRun && ST_GEN.at && (nowMs() - ST_GEN.at < 5000)) {
+      return { isPlugin: true, isStory: false, kind: 'script_aux', label: '预览生成', reason: 'dry-run' };
+    }
+
+    var u = String(url || '');
+    var isStBackend = /\/api\/backends\/|\/chat-completions\/generate\b/.test(u);
+    if (!isStBackend && /^https?:\/\//i.test(u)) {
+      var sameOrigin = false;
+      try {
+        var baseHref = String((HOST && HOST.location && HOST.location.href) || 'http://localhost');
+        sameOrigin = String(new URL(u, baseHref).origin) === String((HOST && HOST.location && HOST.location.origin) || '');
+      } catch (eU) {}
+      var hasStHost = !!(HOST && HOST.SillyTavern);
+      var isDualTarget = !!(cfg && cfg.dualBase && u.indexOf(String(cfg.dualBase).replace(/\/+$/, '')) === 0);
+      if (!sameOrigin && hasStHost && !isDualTarget && (!bodyObj || !bodyObj.chat_completion_source)) {
+        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '副API直连', reason: 'cross-origin-subapi' };
+      }
+    }
+
+    if (!bodyObj || typeof bodyObj !== 'object') return story;
+    var root = (bodyObj.request && typeof bodyObj.request === 'object' && !Array.isArray(bodyObj.request)) ? bodyObj.request : bodyObj;
+    var reqType = String(bodyObj.type || root.type || '').toLowerCase();
+
+    if (bodyObj.dryRun === true || root.dryRun === true) {
+      return { isPlugin: true, isStory: false, kind: 'script_aux', label: '干跑请求', reason: 'body-dryrun' };
+    }
+    if (reqType && ['quiet', 'impersonate', 'dryrun', 'summarize', 'summary'].indexOf(reqType) >= 0) {
+      return { isPlugin: true, isStory: false, kind: 'script_aux', label: '静默/辅助任务', reason: 'type:' + reqType };
+    }
+    if (bodyObj.quiet_prompt && String(bodyObj.quiet_prompt).replace(/\s+/g, '')) {
+      return { isPlugin: true, isStory: false, kind: 'script_aux', label: 'Quiet 辅助', reason: 'quiet-prompt' };
+    }
+    if (ST_GEN.at && (nowMs() - ST_GEN.at < 8000) && (ST_GEN.type === 'quiet' || ST_GEN.type === 'impersonate')) {
+      return { isPlugin: true, isStory: false, kind: 'script_aux', label: '静默/代写任务', reason: 'st-gen:' + ST_GEN.type };
+    }
+
+    /* 柏宝书 / 柏宝绘官方声明式握手：tool_choice === 'none' 且无 tools 且非 normal 正文类型 */
+    var hasToolsArr = (Array.isArray(root.tools) && root.tools.length > 0) || (Array.isArray(root.functions) && root.functions.length > 0);
+    if (root.tool_choice === 'none' && !hasToolsArr && reqType !== 'normal') {
+      return { isPlugin: true, isStory: false, kind: 'baibai_book', label: '柏宝书/柏宝绘', reason: 'tool-choice-none-handshake' };
+    }
+
+    /* 龙血玄黄·数据库上下文工具化传输（turn_NNN_role）与 ping_check 连通探针 */
+    if (Array.isArray(root.tools) && root.tools.length) {
+      var hasTurnTool = false, onlyPingCheck = true;
+      for (var ti = 0; ti < root.tools.length; ti++) {
+        var tfn = root.tools[ti] && (root.tools[ti].function || root.tools[ti]);
+        var tnm = String((tfn && tfn.name) || '');
+        if (/^turn_\d+_/i.test(tnm)) hasTurnTool = true;
+        if (tnm !== 'ping_check') onlyPingCheck = false;
+      }
+      if (hasTurnTool) return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-turn-tools' };
+      if (onlyPingCheck) return { isPlugin: true, isStory: false, kind: 'probe_ping', label: '连通性测试', reason: 'ping-check' };
+    }
+
+    /* Layer 2~4：精准任务系统提示词指纹（不限消息条数、不限是否流式，且绝不误杀带 D0/D1 记忆注入的主剧情！） */
+    var sample = lkBodyTextSample(bodyObj);
+    var headBlob = sample.sys + '\n' + sample.first + '\n' + sample.last;
+    if (BAIBAI_IMAGE_TASK_RE.test(headBlob) || (headBlob.indexOf('【角色固定外貌库】') >= 0 && headBlob.indexOf('--- 目标正文｜') >= 0)) {
+      return { isPlugin: true, isStory: false, kind: 'baibai_image', label: '柏宝绘', reason: 'baibai-image-fingerprint' };
+    }
+    if (BAIBAI_BOOK_TASK_RE.test(headBlob)) {
+      return { isPlugin: true, isStory: false, kind: 'baibai_book', label: '柏宝书', reason: 'baibai-book-fingerprint' };
+    }
+    if (ACU_DB_TASK_RE.test(headBlob)) {
+      return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-db-fingerprint' };
+    }
+
+    /* Layer 5：结构化 JSON Schema / 响应格式锁（严格要求返回 JSON 的数据库/插件请求） */
+    var rf = root.response_format || bodyObj.response_format;
+    if (rf && typeof rf === 'object' && (rf.type === 'json_schema' || rf.type === 'json_object' || rf.json_schema)) {
+      return { isPlugin: true, isStory: false, kind: 'structured_api', label: '结构化插件', reason: 'response-format-json' };
+    }
+    var gc = root.generationConfig || bodyObj.generationConfig;
+    if (gc && typeof gc === 'object' && (gc.responseSchema || gc.response_schema || gc.responseMimeType === 'application/json')) {
+      return { isPlugin: true, isStory: false, kind: 'structured_api', label: '结构化插件', reason: 'gemini-json-schema' };
+    }
+    /* ST custom_include_body 里携带 response_format（龙血玄黄严格 JSON 填表） */
+    if (typeof bodyObj.custom_include_body === 'string' && /"response_format"|response_format\s*:/i.test(bodyObj.custom_include_body)) {
+      return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'custom-include-response-format' };
+    }
+
+    var msgs = Array.isArray(root.messages) ? root.messages : (Array.isArray(root.contents) ? root.contents : []);
+    if (!msgs.length) return story;
+
+    var inActiveChatGen = !!(ST_GEN.at && (nowMs() - ST_GEN.at < 8000) &&
+      ['normal', 'swipe', 'continue', 'regenerate'].indexOf(ST_GEN.type) >= 0 &&
+      root.stream !== false);
+    var thBusy = !!(TH_GEN.active && TH_GEN.at && (nowMs() - TH_GEN.at < 8000));
+
+    /* Layer 6：酒馆助手后台生成事件窗 & 最新楼层仅嵌作插件数据容器 */
+    if (!inActiveChatGen && !reqType) {
+      if (thBusy) {
+        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '酒馆助手脚本', reason: 'th-js-generation' };
+      }
+      if (isFloorEmbeddedOnlyAsScriptData(sample)) {
+        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '数据整理插件', reason: 'floor-embedded-data' };
+      }
+      if (GENERIC_AUX_TASK_RE.test(sample.first + ' ' + sample.last)) {
+        if (root.stream === false || !isStBackend || msgs.length <= 12) {
+          return { isPlugin: true, isStory: false, kind: 'script_aux', label: '表格/摘要插件', reason: 'generic-aux-keyword' };
+        }
+      }
+    }
+
+    /* Layer 7：酒馆连通性测试 ping（非流式 + 极小 max_tokens + <=2 条无 assistant） */
+    if (!reqType && root.stream === false) {
+      var maxT = Number(root.max_tokens != null ? root.max_tokens : 9999);
+      if (maxT > 0 && maxT <= 64 && msgs.length <= 2) {
+        var hasAsst = false;
+        for (var ai = 0; ai < msgs.length; ai++) {
+          if (String((msgs[ai] && msgs[ai].role) || '') === 'assistant') { hasAsst = true; break; }
+        }
+        if (!hasAsst && String(bodyObj.chat_completion_source || '') === 'custom' && (bodyObj.reverse_proxy || bodyObj.custom_url)) {
+          return { isPlugin: true, isStory: false, kind: 'probe_ping', label: '连通性测试', reason: 'st-ping' };
+        }
+      }
+    }
+  } catch (eCls) {}
+  return story;
+}
 
 function isNarrativeBody(body) {
   /* 什么算「正文」：真正写进聊天、你眼睛看到的那一段。
@@ -84,66 +313,8 @@ function lastReqBase() {
 }
 
 function isInternalRequest(init, bodyObj, url) {
-  try {
-    if (init && INTERNAL_FETCH_KEY && init[INTERNAL_FETCH_KEY] === true) return true;
-    var hd = init && init.headers;
-    if (hd) {
-      var xInt = (typeof hd.get === 'function')
-        ? (hd.get('x-ar6-internal') || hd.get('x-st-internal'))
-        : (hd['x-ar6-internal'] || hd['x-st-internal']);
-      if (xInt) return true;
-    }
-  } catch (e0) {}
-  try {
-    if (ST_GEN.dryRun && ST_GEN.at && (nowMs() - ST_GEN.at < 5000)) return true;
-    var u = String(url || '');
-    var isStBackend = /\/api\/backends\/|\/chat-completions\/generate\b/.test(u);
-    /* 在 ST 环境下，前端插件直连外部域名（如柏宝书摘要直发 api.deepseek.com）且无 chat_completion_source，视为副 API */
-    if (!isStBackend && /^https?:\/\//i.test(u)) {
-      var sameOrigin = false;
-      try {
-        var baseHref = String((HOST && HOST.location && HOST.location.href) || 'http://localhost');
-        sameOrigin = String(new URL(u, baseHref).origin) === String((HOST && HOST.location && HOST.location.origin) || '');
-      } catch (eU) {}
-      var hasStHost = !!(HOST && HOST.SillyTavern);
-      var isDualTarget = !!(cfg && cfg.dualBase && u.indexOf(String(cfg.dualBase).replace(/\/+$/, '')) === 0);
-      if (!sameOrigin && hasStHost && !isDualTarget && (!bodyObj || !bodyObj.chat_completion_source)) return true;
-    }
-    if (!bodyObj || typeof body !== 'undefined' && false) {}
-    if (!bodyObj || typeof bodyObj !== 'object') return false;
-    if (bodyObj.dryRun === true || String(bodyObj.type || '').toLowerCase() === 'quiet') return true;
-    var msgs = bodyObj.messages || bodyObj.contents;
-    if (!Array.isArray(msgs) || !msgs.length) return false;
-
-    /* 若当前正处于 ST 标准主聊天流式生成窗口（normal/swipe/continue/regenerate），不误判为内部请求 */
-    var inActiveChatGen = !!(ST_GEN.at && (nowMs() - ST_GEN.at < 8000) &&
-      ['normal', 'swipe', 'continue', 'regenerate'].indexOf(ST_GEN.type) >= 0 &&
-      bodyObj.stream !== false);
-
-    if (!inActiveChatGen && !bodyObj.type) {
-      var sample = '';
-      try {
-        var m0 = msgs[0], mLast = msgs[msgs.length - 1];
-        sample = String(textOfMsg(m0) || '').slice(0, 500) + ' ' + String(textOfMsg(mLast) || '').slice(0, 500);
-      } catch (eS) {}
-      if (/柏宝|奶·数据库|MemoryBooks|<tableEdit>|自动摘要|剧情总结|章节总结|记忆总结|提取.{0,6}(?:摘要|关键词|绘画|tag|prompt)|image\s*prompt|stable\s*diffusion|nai\s*prompt/i.test(sample)) {
-        if (bodyObj.stream === false || !isStBackend || msgs.length <= 6) return true;
-      }
-    }
-
-    /* 酒馆测试连接 ping 请求：仅当非流式 + 极小 max_tokens(<=64) + <=2 条无 assistant 消息时才算内部测试包 */
-    if (bodyObj.type) return false;
-    if (bodyObj.stream !== false) return false;
-    var maxT = Number(bodyObj.max_tokens != null ? bodyObj.max_tokens : 9999);
-    if (!(maxT > 0 && maxT <= 64)) return false;
-    if (msgs.length > 2) return false;
-    for (var i = 0; i < msgs.length; i++) {
-      if (String((msgs[i] && msgs[i].role) || '') === 'assistant') return false;
-    }
-    if (String(bodyObj.chat_completion_source || '') !== 'custom') return false;
-    if (!bodyObj.reverse_proxy && !bodyObj.custom_url) return false;
-    return true;
-  } catch (e1) { return false; }
+  var c = classifyRequestTraffic(init, bodyObj, url);
+  return !!(c && c.isPlugin);
 }
 
 function modelOutOfScope(model, url) {
@@ -827,6 +998,9 @@ function capture318Parser(ev) {
   var sawSSE = false;
   var jsonMode = false;
   var usageKeysMap = {};
+  var tagSplitter = (typeof ar6CreateTagSplitter === 'function') ? ar6CreateTagSplitter() : null;
+  var toolTracker = (typeof ar6CreateToolArgTracker === 'function') ? ar6CreateToolArgTracker() : null;
+  var liveFeedAllowed = !ev.internal || String(cfg && cfg.contentOnly) === 'off';
 
   /* 非 SSE JSON / Gemini JSON 数组增量括号扫描状态 */
   var jBuf = '';
@@ -847,6 +1021,18 @@ function capture318Parser(ev) {
     ev.usageKeys = Object.keys(usageKeysMap).sort().join(',');
   }
 
+  function pushLiveMeta() {
+    try {
+      if (!liveFeedAllowed || CAP318_LIVE !== ev.requestId || typeof liveStructMeta !== 'function') return;
+      liveStructMeta(ev.requestId, {
+        servedModel: ev.modelVersion || ev.respModel || '',
+        thinkTokens: ev.thinkTokens || 0,
+        outTokens: ev.outTokens || 0,
+        usageZeroThink: !!ev.usageZeroThink
+      });
+    } catch (eLM) {}
+  }
+
   function setModel(m) {
     if (!m || typeof m !== 'string') return;
     var clean = m.trim();
@@ -855,6 +1041,7 @@ function capture318Parser(ev) {
     if (!ev.respModel) ev.respModel = clean;
     if ('actualModel' in ev) ev.actualModel = clean;
     pushObs(ev, clean, 'body');
+    pushLiveMeta();
   }
 
   function setFinish(r) {
@@ -862,11 +1049,12 @@ function capture318Parser(ev) {
     ev.finishReason = String(r);
   }
 
-  function addText(txt) {
+  function commitBodyText(txt, via) {
     if (typeof txt !== 'string' || !txt) return;
     ev.chars += txt.length;
     ev.textLen = ev.chars;
     ev.peekChars = ev.chars;
+    if (via === 'tool') ev.sawToolBody = true;
     if (/\S/.test(txt)) {
       ev.sawText = true;
       var dt = Math.max(1, nowMs() - startAt);
@@ -877,6 +1065,11 @@ function capture318Parser(ev) {
       ev.peekText += txt.slice(0, MAX_PEEK_TEXT - ev.peekText.length);
     }
     ev.tailText = (ev.tailText ? ev.tailText + txt : txt).slice(-512);
+    try {
+      if (liveFeedAllowed && CAP318_LIVE === ev.requestId && typeof liveStructDelta === 'function') {
+        liveStructDelta(ev.requestId, txt.length, 0, via || 'text');
+      }
+    } catch (eLB1) {}
   }
 
   function addThinkText(txt) {
@@ -887,8 +1080,25 @@ function capture318Parser(ev) {
       ev.sawThink = true;
       ev.hasThink = true;
       ev.hasReasonField = true;
+      ev.usageZeroThink = false;
       if (cap.firstThinkMs == null) cap.firstThinkMs = Math.max(1, nowMs() - startAt);
     }
+    try {
+      if (liveFeedAllowed && CAP318_LIVE === ev.requestId && typeof liveStructDelta === 'function') {
+        liveStructDelta(ev.requestId, 0, txt.length, 'think');
+      }
+    } catch (eLT1) {}
+  }
+
+  function addText(txt, via) {
+    if (typeof txt !== 'string' || !txt) return;
+    if (tagSplitter) {
+      var sp = tagSplitter.feed(txt);
+      if (sp.think) addThinkText(sp.think);
+      if (sp.body) commitBodyText(sp.body, via || 'text');
+      return;
+    }
+    commitBodyText(txt, via || 'text');
   }
 
   function tryParseObj(raw) {
@@ -925,7 +1135,7 @@ function capture318Parser(ev) {
       ev.errMsg = String(em);
     }
 
-    /* 3. OpenAI Chat / Completions（流式 delta 与非流式 message） */
+    /* 3. OpenAI Chat / Completions（流式 delta 与非流式 message，含 reasoning_details 与 tool_calls 正文解包） */
     if (Array.isArray(obj.choices)) {
       for (var i = 0; i < obj.choices.length; i++) {
         var c = obj.choices[i];
@@ -936,10 +1146,18 @@ function capture318Parser(ev) {
         if (msg && typeof msg === 'object') {
           var rTxt = msg.reasoning_content || msg.reasoning || msg.thinking || '';
           if (typeof rTxt === 'string' && rTxt) addThinkText(rTxt);
+          if (Array.isArray(msg.reasoning_details)) {
+            for (var rdi = 0; rdi < msg.reasoning_details.length; rdi++) {
+              var rd = msg.reasoning_details[rdi];
+              if (!rd || typeof rd !== 'object') continue;
+              var rdStr = rd.text || rd.summary || rd.content || '';
+              if (typeof rdStr === 'string' && rdStr) addThinkText(rdStr);
+            }
+          }
 
           var content = msg.content;
           if (typeof content === 'string') {
-            addText(content);
+            addText(content, 'text');
           } else if (Array.isArray(content)) {
             for (var k = 0; k < content.length; k++) {
               var cp = content[k];
@@ -947,24 +1165,43 @@ function capture318Parser(ev) {
               if (cp.thought === true || cp.type === 'thinking' || cp.type === 'reasoning') {
                 addThinkText(cp.thinking || cp.text || '');
               } else if (typeof cp.text === 'string') {
-                addText(cp.text);
+                addText(cp.text, 'text');
               }
             }
           }
+
+          /* V5.7 工具通道正文增量采样（兼容 lk_write 及通用正文交付类工具参数提取） */
+          if (toolTracker) {
+            if (Array.isArray(msg.tool_calls) && msg.tool_calls.length) {
+              for (var tci = 0; tci < msg.tool_calls.length; tci++) {
+                var tc = msg.tool_calls[tci];
+                var tfn = tc && tc.function;
+                if (tfn && typeof tfn.arguments === 'string' && tfn.arguments) {
+                  var tcIdx = (typeof tc.index === 'number') ? tc.index : tci;
+                  var tDelta = toolTracker.feedStr('oai_' + i + '_' + tcIdx, tfn.arguments);
+                  if (tDelta) addText(tDelta, 'tool');
+                }
+              }
+            }
+            if (msg.function_call && typeof msg.function_call.arguments === 'string' && msg.function_call.arguments) {
+              var fcDelta = toolTracker.feedStr('oai_fc_' + i, msg.function_call.arguments);
+              if (fcDelta) addText(fcDelta, 'tool');
+            }
+          }
         } else if (typeof c.text === 'string') {
-          addText(c.text);
+          addText(c.text, 'text');
         }
       }
     }
 
     /* 4. OpenAI Responses API 兼容 */
     if (obj.type === 'response.output_text.delta' && typeof obj.delta === 'string') {
-      addText(obj.delta);
+      addText(obj.delta, 'text');
     } else if (obj.type === 'response.reasoning_summary_text.delta' && typeof obj.delta === 'string') {
       addThinkText(obj.delta);
     }
 
-    /* 5. Gemini 原生格式（promptFeedback + candidates[].content.parts[]） */
+    /* 5. Gemini 原生格式（promptFeedback + candidates[].content.parts[]，含 thought:true 与 functionCall.args） */
     if (obj.promptFeedback && obj.promptFeedback.blockReason) {
       ev.blockReason = String(obj.promptFeedback.blockReason);
       setFinish(ev.blockReason);
@@ -983,20 +1220,26 @@ function capture318Parser(ev) {
             if (!part || typeof part !== 'object') continue;
             if (part.thought === true) {
               if (typeof part.text === 'string') addThinkText(part.text);
+            } else if (part.functionCall && part.functionCall.args && toolTracker) {
+              var gFcDelta = toolTracker.feedObj('gem_' + ci + '_' + pi + '_' + String(part.functionCall.name || ''), part.functionCall.args);
+              if (gFcDelta) addText(gFcDelta, 'tool');
             } else if (typeof part.text === 'string') {
-              addText(part.text);
+              addText(part.text, 'text');
             }
           }
         }
       }
     }
 
-    /* 6. Claude / Anthropic 流式与非流式兼容 */
+    /* 6. Claude / Anthropic 流式与非流式兼容（含 input_json_delta 工具参数） */
     if (obj.type === 'content_block_delta' && obj.delta) {
       if (obj.delta.type === 'text_delta' && typeof obj.delta.text === 'string') {
-        addText(obj.delta.text);
+        addText(obj.delta.text, 'text');
       } else if (obj.delta.type === 'thinking_delta' && typeof obj.delta.thinking === 'string') {
         addThinkText(obj.delta.thinking);
+      } else if (obj.delta.type === 'input_json_delta' && typeof obj.delta.partial_json === 'string' && toolTracker) {
+        var aDelta = toolTracker.feedStr('anth_' + String(obj.index || 0), obj.delta.partial_json);
+        if (aDelta) addText(aDelta, 'tool');
       }
     } else if (obj.type === 'message_delta' && obj.delta && obj.delta.stop_reason) {
       setFinish(obj.delta.stop_reason);
@@ -1005,11 +1248,15 @@ function capture318Parser(ev) {
         var blk = obj.content[ai];
         if (!blk || typeof blk !== 'object') continue;
         if (blk.type === 'thinking') addThinkText(blk.thinking || blk.text || '');
-        else if (blk.type === 'text') addText(blk.text || '');
+        else if (blk.type === 'text') addText(blk.text || '', 'text');
+        else if (blk.type === 'tool_use' && blk.input && toolTracker) {
+          var tuDelta = toolTracker.feedObj('anth_tu_' + ai, blk.input);
+          if (tuDelta) addText(tuDelta, 'tool');
+        }
       }
     }
 
-    /* 7. Token 统计（使用 Math.max 防止流式累计快照被重复累加） */
+    /* 7. Token 统计（使用 Math.max 防止流式累计快照被重复累加，同步推到采样悬浮窗） */
     var u = obj.usage || (obj.response && obj.response.usage);
     if (u && typeof u === 'object') {
       recordUsageKeys(u);
@@ -1033,6 +1280,7 @@ function capture318Parser(ev) {
       } else if (hasRKey && rTok === 0 && !ev.hasThink) {
         ev.usageZeroThink = true;
       }
+      pushLiveMeta();
     }
 
     var um = obj.usageMetadata;
@@ -1060,6 +1308,7 @@ function capture318Parser(ev) {
           ev.usageZeroThink = true;
         }
       }
+      pushLiveMeta();
     }
   }
 
@@ -1219,6 +1468,11 @@ function capture318Parser(ev) {
       jStart = -1;
       if (tail) tryParseObj(tail);
     }
+    if (tagSplitter) {
+      var tf = tagSplitter.flush();
+      if (tf.think) addThinkText(tf.think);
+      if (tf.body) commitBodyText(tf.body, 'text');
+    }
     return ev;
   }
 
@@ -1284,7 +1538,8 @@ function absorbPeek(text,rid,ev){
 }
 function peekBody(res,ev){
   var c=capture318(ev);
-  if(!cfg.peek||cfg.safe||ev.internal||!res||typeof res.clone!=='function'){c.settleReason='sampling-disabled';return null;}
+  var allowPeek = !ev.internal || String(cfg && cfg.contentOnly) === 'off';
+  if(!cfg.peek||cfg.safe||!allowPeek||!res||typeof res.clone!=='function'){c.settleReason='sampling-disabled';return null;}
   var clone;
   try{clone=res.clone();}catch(e){c.status='failed';c.error=String(e.message||e);c.settleReason='clone-error';return null;}
   ev.__peekStarted=true;ev.__peekPending=true;c.status='streaming';
@@ -1344,20 +1599,20 @@ function peekBody(res,ev){
           Promise.resolve(reader.read()).then(function(r){
             if(done)return;
             if(DISPOSED){settle('disposed','disposed');cancel();return;}
-            if(r.done){var rest=decoder.decode();if(rest){p.feed(rest);try{if(!ev.internal)livePeekChunk(rest);}catch(eL0){}}settle('body-eof',null);return;}
+            if(r.done){var rest=decoder.decode();if(rest){p.feed(rest);try{if(allowPeek)livePeekChunk(rest);}catch(eL0){}}settle('body-eof',null);return;}
             if(c.firstByteMs==null)c.firstByteMs=Math.max(1,nowMs()-(ev.__captureStart||nowMs()));
             bytes+=r.value.byteLength;
-            try{if(!ev.internal)liveBytes(r.value.byteLength);}catch(eLb){}
+            try{if(allowPeek)liveBytes(r.value.byteLength);}catch(eLb){}
             if(bytes>8000000){settle('byte-limit','sampling-byte-limit');cancel();return;}
             var sChunk=decoder.decode(r.value,{stream:true});
-            if(sChunk){p.feed(sChunk);try{if(!ev.internal)livePeekChunk(sChunk);}catch(eL1){}}
+            if(sChunk){p.feed(sChunk);try{if(allowPeek)livePeekChunk(sChunk);}catch(eL1){}}
             step();
           }).catch(function(e){settle('read-error',String(e.message||e));cancel();});
         }
         step();
       } else {
         Promise.resolve(clone.text()).then(function(t){
-          try{var st=String(t||'');p.feed(st);try{if(!ev.internal&&st)livePeekChunk(st);}catch(eL2){}settle('body-eof',null);}
+          try{var st=String(t||'');p.feed(st);try{if(allowPeek&&st)livePeekChunk(st);}catch(eL2){}settle('body-eof',null);}
           catch(e){settle('parse-error',String(e.message||e));}
         },function(e){settle('read-error',String(e.message||e));});
       }
@@ -1405,7 +1660,11 @@ function bindStreamEvents() {
     var w = SELF_WIN || null;
     if (!w || typeof w.eventOn !== 'function') return false;
     try { w.eventOn('stream_token_received', function (d) { EV_TICK.lastTokenAt = nowMs(); try { liveToken(d); } catch (eLv) {} }); } catch (e1) {}
-    try { w.eventOn('generation_ended', function () { EV_TICK.lastEndAt = nowMs(); EV_TICK.seq++; }); } catch (e2) {}
+    try { w.eventOn('generation_ended', function () { EV_TICK.lastEndAt = nowMs(); EV_TICK.seq++; TH_GEN.active = false; }); } catch (e2) {}
+    try { w.eventOn('generation_stopped', function () { TH_GEN.active = false; }); } catch (e3) {}
+    try { w.eventOn('js_generation_started', function () { TH_GEN.active = true; TH_GEN.at = nowMs(); }); } catch (e4) {}
+    try { w.eventOn('js_generation_ended', function () { TH_GEN.active = false; }); } catch (e5) {}
+    try { w.eventOn('user_message_rendered', function () { TH_GEN.active = false; }); } catch (e6) {}
     EV_TICK.bound = true;
     return true;
   } catch (e) { return false; }
@@ -1467,25 +1726,27 @@ function startWatcher(ev, meta, reqStart) {
             if (freshMsg && ex.api_model) pushObs(ev, ex.api_model, 'msg');
           } catch (e2) {}
           var joined = mesStr + (reason ? '\n' + reason : '');
+          var spMes = (typeof liveTagSplit === 'function') ? liveTagSplit(mesStr) : { body: mesStr.length, think: 0 };
+          var pureBodyLen = spMes.body;
+          var mesThinkLen = spMes.think + reason.length;
           if (joined.length > 0 && !ev.firstMs) ev.firstMs = Math.max(1, t - reqStart);
           if (joined.length !== lastLen) { lastLen = joined.length; lastChange = t; }
           try { livePoll(mesStr, reason); } catch (eLp) {}
           if (joined.length) {
             ev.sawText = true;
             ev.chatSaw = true;
-            /* 只续写（消息没新增）时，本轮产出 = 现在正文 − 认领时的正文。
-               负数是「重写成了更短的」：那时整条都是新写的，不能报成 1 个字；
-               也不能拿 1 当兜底——那是编数字，面板会显示"正文 1 字"。 */
+            /* V5.65：outputChars 只计纯正文字数，不再把 extra.reasoning 或思考标签内容拼进正文，避免污染速率与基线 */
             var grewChars = mesStr.length - baseMes.length;
-            ev.outputChars = contOnly ? (grewChars > 0 ? grewChars : mesStr.length) : joined.length;
-            /* 破甲要判断"正文"和"结尾"，思维链不算正文 */
-            ev.mesChars = mesStr.length;
+            var pureNow = pureBodyLen > 0 ? pureBodyLen : mesStr.length;
+            ev.outputChars = contOnly ? (grewChars > 0 ? grewChars : pureNow) : pureNow;
+            ev.mesChars = pureNow;
             ev.head = mesStr.slice(0, 160);
             ev.tail = mesStr.slice(-600);
-            if (reason.trim() || /<(?:thinking|think|interleaving|SUOT)\b/i.test(mesStr)) {
+            if (mesThinkLen > 0) {
               ev.hasThink = true;
               ev.hasReasonField = true;
-              ev.thoughtTok = estimateTokens(reason);
+              if (!ev.thinkChars || mesThinkLen > ev.thinkChars) ev.thinkChars = mesThinkLen;
+              if (!ev.thoughtTok) ev.thoughtTok = estimateTokens(reason || mesStr.slice(0, spMes.think));
             }
           }
         }
@@ -1815,6 +2076,16 @@ function extractSafeAuthHeaders(init) {
   return out;
 }
 
+function isAcuInterceptedError(err) {
+  try {
+    if (!err) return false;
+    if (err.code === 'ACU_HOST_GENERATION_INTERCEPTED') return true;
+    var msg = String(err.message || err || '');
+    if (/ACU_HOST_GENERATION_INTERCEPTED|酒馆原发送已取消.*数据库/.test(msg)) return true;
+  } catch (e) {}
+  return false;
+}
+
 try { lkFetchGuard(); } catch (eFG) {}
 function handleFetch(next, thisArg, args) {
   var input = args[0];
@@ -1835,18 +2106,26 @@ function handleFetch(next, thisArg, args) {
   var outArgs = args;
   var internal = false;
   var narrative = true;
+  var traffic = { isPlugin: false, isStory: true, kind: 'story', label: '正文', reason: '' };
   try {
     var parsedForInternal = null;
     try { parsedForInternal = rawBody ? JSON.parse(rawBody) : null; } catch (ePI) {}
-    internal = isInternalRequest(init, parsedForInternal, url);
-    narrative = isNarrativeBody(parsedForInternal);
+    traffic = classifyRequestTraffic(init, parsedForInternal, url);
+    internal = !!(traffic && traffic.isPlugin);
+    narrative = isNarrativeBody(parsedForInternal) && !internal;
   } catch (eInt) { internal = false; }
   if (internal) DET.internal++;
-  /* 4.7.2：范围外的模型（如「只查 Gemini」时的 DeepSeek 副 API）与内部请求一律零干扰透传：
-     不改写请求体、不挂响应取样、不记账、不弹横幅。 */
+  /* V5.65：范围外的模型、自身内部探针、以及「只检正文=开」时的所有外部插件/非正文请求，
+     一律在最前端零干扰原样直通——不改请求体、不挂采样窗、不污染路由率与基线。 */
   try {
     var quickModel = extractReqModel(parsedForInternal, url);
-    if (modelOutOfScope(quickModel, url) || (internal && String(cfg && cfg.contentOnly) !== 'off')) {
+    var isOwnProbe = !!(traffic && (traffic.kind === 'internal_mark' || traffic.kind === 'probe_ping'));
+    var bypassPlugin = (internal || !narrative) && String(cfg && cfg.contentOnly) !== 'off';
+    if (modelOutOfScope(quickModel, url) || isOwnProbe || bypassPlugin) {
+      if (bypassPlugin && !isOwnProbe) {
+        DET.pluginSkip = (DET.pluginSkip || 0) + 1;
+        DET.lastPlugin = String((traffic && traffic.label) || '外部插件');
+      }
       return next.apply(thisArg, args);
     }
   } catch (eScopeQuick) { criticalWarn('范围前置放行', eScopeQuick); }
@@ -1886,11 +2165,25 @@ function handleFetch(next, thisArg, args) {
   var started = nowMs();
   var ev = newEvidence(plan ? plan.model : '', 0, 'sse');
   ev.internal = internal; ev.selfContinuation = selfContinuation; ev.asstTail = asstTail; ev.effort = effortHint; ev.narrative = narrative;
+  ev.trafficKind = (traffic && traffic.kind) || 'story';
+  ev.trafficLabel = (traffic && traffic.label) || '正文';
   capture318(ev, started);
-  if (!internal) CAP318_LIVE = ev.requestId;
+  var allowLive = !internal || String(cfg && cfg.contentOnly) === 'off';
+  if (allowLive) CAP318_LIVE = ev.requestId;
   inflight++;
-  /* S2：只采样，不接管响应流；内部请求（摘要 / 自动标题 / quiet 生成）不采 */
-  try { if (!internal) liveStart(started, { added: plan ? plan.added : 0, edits: plan ? plan.edits : 0, ms: planMs }); } catch (eLive0) {}
+  /* S2：只采样，不接管响应流；开启纯净正轨时插件已前置放行，关闭时允许观测并带徽标 */
+  try {
+    if (allowLive) {
+      liveStart(started, {
+        added: plan ? plan.added : 0,
+        edits: plan ? plan.edits : 0,
+        ms: planMs,
+        reqModel: (plan && plan.model) || '',
+        trafficLabel: ev.trafficLabel || '正文',
+        requestId: ev.requestId
+      });
+    }
+  } catch (eLive0) {}
 
   /* v3.0 自动 PVP：失败类请求交给重发层（对外仍只算一次请求）。
      内部请求 / 安全模式 / 非叙述请求一律不碰——重发它们会打乱摘要与标题。 */
@@ -1987,6 +2280,11 @@ function handleFetch(next, thisArg, args) {
     }
   }, function (err) {
     inflight--;
+    /* V5.65：龙血玄黄·数据库零层模式主动取消酒馆原发送时，静默放手不记故障、不弹红灯 */
+    if (isAcuInterceptedError(err)) {
+      try { if (CAP318_LIVE === ev.requestId) liveFinish(); } catch (eAcuL) {}
+      throw err;
+    }
     try {
       ev.error = String(err && err.message || err || 'fetch failed').slice(0, 80);
       ev.totalMs = Math.max(1, nowMs() - started);
@@ -2010,6 +2308,25 @@ var probeFetch = null;
 var exposedFetch = null;
 var exposedPrev = null;
 
+/* V5.65：检测 fetch 包装链中是否已包含当前版本的有效 __ar6 钩子，避免反复抢压柏宝绘 rawCaptureFetch / 龙血玄黄零层 / 世界书访问器 */
+var AR6_FETCH_REENTRY = (typeof WeakSet === 'function') ? new WeakSet() : null;
+var AR6_ACCESSOR_MODE = false;
+
+function fetchChainHasCurrent(fn) {
+  try {
+    var cur = fn;
+    for (var depth = 0; depth < 14 && typeof cur === 'function'; depth++) {
+      if (cur.__ar6 && cur.__ar6v === VERSION && !cur.__ar6dead) return true;
+      var nxt = cur.__ar6prev ||
+        (cur.__acuHostGenerationInterceptor__ && cur.__acuHostGenerationInterceptor__.original) ||
+        cur.original || cur.__orig || cur._origFetch || cur._yzmOriginalFetch || null;
+      if (!nxt || nxt === cur) break;
+      cur = nxt;
+    }
+  } catch (e) {}
+  return false;
+}
+
 function installFetchHookOn(w) {
   try {
     if (!w || typeof w.fetch !== 'function') return false;
@@ -2018,25 +2335,70 @@ function installFetchHookOn(w) {
       if (isHost) { exposedFetch = w.fetch; hooked = true; }
       return true;
     }
+    /* 外层被临时钩子（柏宝绘 rawCaptureFetch / 龙血玄黄零层 / 世界书访问器）包住，但我们的钩子仍在链中有效运行时，不再强抢重套 */
+    if (fetchChainHasCurrent(w.fetch)) {
+      if (isHost) hooked = true;
+      return true;
+    }
     if (isHost) {
       if (w.fetch.__ar6 && !w.fetch.__ar6dead) LAYER_OLD = String(w.fetch.__ar6v || '旧版');
       if (w.fetch === exposedFetch) { hooked = true; return true; }
       if (!origFetch) origFetch = w.fetch;
       if (!probeFetch) probeFetch = w.fetch;
     }
-    var prev = w.fetch;
+
+    /* 检测外层访问器守卫（例如 世界书管理器 __wbmCacheInspectorPatchState 的 Object.defineProperty(win, 'fetch', {get,set})） */
+    var desc = null;
+    try { desc = Object.getOwnPropertyDescriptor(w, 'fetch'); } catch (eDesc) { desc = null; }
+    var isAccessor = !!(desc && (typeof desc.get === 'function' || typeof desc.set === 'function'));
+    var prevBefore = w.fetch;
+    var wbmState = null;
+    try { wbmState = w.__wbmCacheInspectorPatchState || null; } catch (eWbm) { wbmState = null; }
+    var prev = (isAccessor && wbmState && typeof wbmState.delegate === 'function' && wbmState.delegate !== prevBefore)
+      ? wbmState.delegate
+      : prevBefore;
     var dead = false;
     var wrapped = function (input, init) {
       if (dead) return prev.apply(this, arguments);
-      try { return handleFetch(prev, this, arguments); }
-      catch (err) {
+      /* 重入锁防死循环（与未知外层访问器守卫共存的硬底线） */
+      var lockObj = (init && typeof init === 'object') ? init : ((input && typeof input === 'object') ? input : null);
+      if (AR6_FETCH_REENTRY && lockObj) {
+        if (AR6_FETCH_REENTRY.has(lockObj)) return prev.apply(this, arguments);
+        AR6_FETCH_REENTRY.add(lockObj);
+      }
+      try {
+        var ret = handleFetch(prev, this, arguments);
+        if (AR6_FETCH_REENTRY && lockObj) {
+          if (ret && typeof ret.then === 'function') {
+            ret.then(function () { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD1) {} },
+                     function () { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD2) {} });
+          } else {
+            try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD3) {}
+          }
+        }
+        return ret;
+      } catch (err) {
+        if (AR6_FETCH_REENTRY && lockObj) { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD4) {} }
         try { DET.err++; if (w.console) w.console.warn('[AR6] hook error, fallback', err); } catch (e1) {}
         return prev.apply(this, arguments);
       }
     };
-    wrapped.__ar6 = true; wrapped.__ar6v = VERSION;
+    wrapped.__ar6 = true; wrapped.__ar6v = VERSION; wrapped.__ar6prev = prev;
     ourWrappers.push({ fn: wrapped, kill: function () { dead = true; wrapped.__ar6dead = true; } });
     w.fetch = wrapped;
+    var landed = false;
+    try { landed = (w.fetch === wrapped); } catch (eLnd) { landed = false; }
+    if (!landed && isAccessor) {
+      /* 外层访问器把 wrapped 吸收为下层 delegate：同步修正 prev 指向外层原本的底层函数，防自调环路 */
+      try {
+        if (wbmState && typeof wbmState.original === 'function' && wbmState.original !== w.fetch && wbmState.original !== wrapped) {
+          prev = wbmState.original;
+          wrapped.__ar6prev = prev;
+        }
+      } catch (eFixP) {}
+      if (isHost) { AR6_ACCESSOR_MODE = true; exposedFetch = wrapped; exposedPrev = prev; hooked = true; }
+      return true;
+    }
     if (isHost) { exposedFetch = wrapped; exposedPrev = prev; hooked = true; }
     return true;
   } catch (e) { return false; }
@@ -2067,15 +2429,19 @@ function installFetchHook() {
   if (ok) hooked = true;
   return ok;
 }
-/* 4.1 自愈：别的插件后装、或把 fetch 换掉时，3 秒内抢回来。 */
+/* 4.1→V5.65 自愈：仅在钩子真的彻底脱离调用链时才补挂；
+   若已以访问器守卫模式或外层合作链（柏宝绘/龙血玄黄）正常工作，绝不每 3 秒反复强抢覆盖。 */
 function startHookWatch() {
   if (HOOK_WATCH_T || DISPOSED) return;
   HOOK_WATCH_T = setInterval(function () {
     if (DISPOSED) { try { clearInterval(HOOK_WATCH_T); } catch (e0) {} HOOK_WATCH_T = 0; return; }
+    if (cfg && cfg.safe) return;
     try {
+      if (AR6_ACCESSOR_MODE && exposedFetch && !exposedFetch.__ar6dead) return;
+      if (HOST.fetch && fetchChainHasCurrent(HOST.fetch)) return;
       var lost = !(HOST.fetch && HOST.fetch.__ar6v === VERSION);
       installFetchHook();
-      if (lost && HOST.fetch && HOST.fetch.__ar6v === VERSION) DET.rearm++;
+      if (lost && HOST.fetch && (HOST.fetch.__ar6v === VERSION || AR6_ACCESSOR_MODE)) DET.rearm++;
     } catch (e) {}
   }, 3000);
 }
@@ -2093,6 +2459,7 @@ function unhookFetch() {
     exposedPrev = null;
     origFetch = null;
     probeFetch = null;
+    AR6_ACCESSOR_MODE = false;
     HOOK_TARGET.fetch = null;
     hooked = false;
   } catch (e) {}
@@ -2124,6 +2491,9 @@ function bindStEvents() {
         ST_GEN.at = Date.now();
         ST_GEN.type = String(type || 'normal').toLowerCase();
         ST_GEN.dryRun = !!dryRun;
+        if (ST_GEN.type === 'normal' || ST_GEN.type === 'swipe' || ST_GEN.type === 'continue' || ST_GEN.type === 'regenerate') {
+          TH_GEN.active = false;
+        }
         bump();
       });
     }
@@ -2215,7 +2585,7 @@ function installXhrDetect() {
   } catch (e) { return false; }
 }
 /* 4.1 检测层计数：所有「为什么没记账」都在这里留痕，报告页直接读它 */
-var DET = { seen: 0, notGen: 0, clone: 0, internal: 0, gen: 0, rec: 0, err: 0, rearm: 0,
+var DET = { seen: 0, notGen: 0, clone: 0, internal: 0, pluginSkip: 0, lastPlugin: '', gen: 0, rec: 0, err: 0, rearm: 0,
             wins: 0, lastUrl: '', lastAt: 0, lastModel: '', lastRecAt: 0,
             evts: 0, blocked: 0, tries: 0, evtBound: false };
 function detVerdict() {

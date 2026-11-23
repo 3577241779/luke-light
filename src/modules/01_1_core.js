@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.61';
+var VERSION = '5.70';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -157,7 +157,8 @@ var CFG_DEFAULT = {
   base: 'on',
   /* v0.84 结构指纹：on | off（只提示；关闸时不写也不判，不进被换率） */
   shape: 'on',
-  contentOnly: 'on',     // 只把真正落进聊天的正文算进被换率
+  contentOnly: 'on',     // V5.65：纯净正轨，默认仅检测与处理正文对话，外部插件请求零干预直通
+  presetCompat: 'on',    // V5.65：预设适配主导权（'on'=卢克之光强权优先 | 'off'=礼让预设）
   padX: 0,               // v1.1 面板拖动：x 像素偏移（0 居中）
   padY: 0,               // v1.1 面板拖动：y 像素偏移
   /* v1.1 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
@@ -172,10 +173,12 @@ var CFG_DEFAULT = {
   oocChg: false,
   oocVoice: true,
   oocPolicy: '',
-  /* v8.31 叙述层：off | lite | full（贴在末条 user 消息尾部，只改请求副本） */
+  /* v8.31→V5.7 叙述层：off | lite | mid | full（支持 OpenAI/Claude/Gemini 全协议与近2轮贴脸三明治包裹，只改请求副本） */
   know: 'off',             /* 防全知 */
-  knowTip: 'on',           /* 打开防全知前先说明「它会禁止内心话与替人做决定」 */
+  knowTip: 'on',           /* 打开防全知绝对结界前先说明 */
   charm: 'off',            /* 去媚 */
+  charmWrap: 'auto',       /* V5.7：贴脸三明治包裹近2轮用户输入（auto=随中/高档联动 | on=常开 | off=关闭） */
+  charmLethal: false,      /* V5.7：致命后果硬核求生代价（默认关） */
   /* v0.13 检测范围：只有会被路由的模型才需要判「有没有被换」 */
   helpX: null,
   helpY: null,
@@ -485,6 +488,10 @@ function readCfg() {
   d.scope = ar6Pick(d.scope, ['all', 'only', 'skip'], 'all');
   d.know = ar6Pick(d.know, ['off', 'lite', 'mid', 'full'], 'off');
   d.charm = ar6Pick(d.charm, ['off', 'lite', 'mid', 'full'], 'off');
+  d.charmWrap = ar6Pick(d.charmWrap, ['auto', 'on', 'off'], 'auto');
+  d.charmLethal = d.charmLethal === true;
+  d.contentOnly = ar6Pick(d.contentOnly, ['on', 'off'], 'on');
+  d.presetCompat = ar6Pick(d.presetCompat, ['on', 'off'], 'on');
   d.ooc = ar6Pick(d.ooc, ['off', 'on'], 'off');
   try { sanitizeFloat(d); } catch (eS) {}
   try { sanitizeTrunc(d); } catch (eT) {}

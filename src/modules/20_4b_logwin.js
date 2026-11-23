@@ -34,10 +34,18 @@ var LOGW_CSS = [
   '#ar6-logwin .ar6-lwtag.live{color:#7DD3FC;background:rgba(56,189,248,.16);border:1px solid rgba(56,189,248,.5);}',
   '#ar6-logwin .ar6-lwtag.gray{color:#94A3B8;background:#162032;border:1px solid rgba(148,163,184,.32);}',
   '#ar6-logwin .ar6-lwsrc{font-size:11px;color:#94A3B8;}',
+  '#ar6-logwin .ar6-lwroute{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px;padding:4px 7px;border-radius:7px;background:#111B2E;border:1px solid rgba(148,163,184,.24);font-size:11px;color:#CBD5E1;}',
+  '#ar6-logwin .ar6-lwroute.ok{border-color:rgba(56,189,248,.42);color:#BAE6FD;}',
+  '#ar6-logwin .ar6-lwroute.bad{border-color:rgba(244,63,94,.65);background:rgba(136,19,55,.26);color:#FDA4AF;}',
+  '#ar6-logwin .ar6-lwroute.warn{border-color:rgba(245,158,11,.6);background:rgba(120,53,15,.26);color:#FDE68A;}',
+  '#ar6-logwin .ar6-lwrbdg{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(56,189,248,.18);color:#7DD3FC;}',
+  '#ar6-logwin .ar6-lwrm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+  '#ar6-logwin .ar6-lwrwarn{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,.22);color:#FCD34D;}',
   '#ar6-logwin .ar6-lwk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 6px;margin-top:7px;}',
   '#ar6-logwin .ar6-lwcell{background:#162032;border:1px solid rgba(148,163,184,.24);border-radius:7px;padding:4px 5px;',
   'font-size:10px;color:#94A3B8;text-align:center;font-variant-numeric:tabular-nums;}',
   '#ar6-logwin .ar6-lwcell b{display:block;font-size:13.5px;color:#F0F9FF;font-variant-numeric:tabular-nums;}',
+  '#ar6-logwin .ar6-lwcell i{display:block;font-style:normal;font-size:9.5px;color:#7DD3FC;margin-top:1px;}',
   '#ar6-logwin .ar6-lwf{display:flex;gap:6px;padding:7px 10px;border-bottom:1px solid rgba(148,163,184,.22);background:#0B1220;}',
   '#ar6-logwin .ar6-lwfr{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#CBD5E1;',
   'padding:3px 8px;border:1px solid rgba(148,163,184,.32);border-radius:999px;cursor:pointer;background:#162032;touch-action:manipulation;}',
@@ -166,26 +174,44 @@ function liveLineHTML() {
       (cfg.safe ? '（安全模式下不采样）' : '') + '</div></div>';
   }
   var secs = Math.round(s.totalMs / 100) / 10;
+  var ttc = s.ttcMs ? Math.round(s.ttcMs / 100) / 10 : 0;
+  var ttt = s.tttMs ? Math.round(s.tttMs / 100) / 10 : 0;
   var ttft = s.ttftMs ? Math.round(s.ttftMs / 100) / 10 : 0;
+  var firstDisp = ttc ? (ttc + 's') : (ttt ? ('思' + ttt + 's') : (ttft ? (ttft + 's') : '—'));
   var idle = Math.round(Math.max(s.idleByteMs || 0, s.idleContentMs || 0) / 100) / 10;
   var kb = Math.round((s.bytes || 0) / 102.4) / 10;
   var plan = s.plan || {};
+  var bodySub = s.toolBody ? '工具流' : '';
+  var thinkSub = s.thinkTokens ? (s.thinkTokens + ' tok') : (s.zeroThinkWarn ? '零思考预警' : '');
   var cells = [
-    ['总耗时', secs + 's'],
-    ['首字', ttft ? ttft + 's' : '—'],
-    ['正文', String(s.bodyChars || 0)],
-    ['思考', String(s.thinkChars || 0)],
-    ['字/秒', String(s.ema || s.cps || 0)],
-    ['静默', idle + 's'],
-    ['字节', kb + 'K'],
-    ['卡顿', String(s.stalls || 0)],
-    ['注入', '+' + (plan.added || 0) + ' 改' + (plan.edits || 0) + ' · ' + (plan.ms || 0) + 'ms']
+    ['总耗时', secs + 's', ''],
+    ['首字', firstDisp, ttc ? '正文首字' : (ttt ? '思考首字' : '')],
+    ['正文', String(s.bodyChars || 0), bodySub],
+    ['思考', String(s.thinkChars || 0), thinkSub],
+    ['字/秒', String(s.ema || s.cps || 0), ''],
+    ['静默', idle + 's', ''],
+    ['字节', kb + 'K', ''],
+    ['卡顿', String(s.stalls || 0), ''],
+    ['注入', '+' + (plan.added || 0) + ' 改' + (plan.edits || 0) + ' · ' + (plan.ms || 0) + 'ms', '']
   ];
+  var reqShort = s.reqModel ? (typeof shortName === 'function' ? shortName(s.reqModel) : s.reqModel) : '待识别';
+  var srvShort = s.servedModel ? (typeof shortName === 'function' ? shortName(s.servedModel) : s.servedModel) : '等待回传';
+  var routeCls = s.modelMismatch ? 'bad' : (s.zeroThinkWarn ? 'warn' : (s.servedModel ? 'ok' : ''));
+  var routeVerdict = s.modelMismatch ? '疑似路由/换芯' : (s.zeroThinkWarn ? '零思考异常' : (s.servedModel ? '模型一致' : ''));
+  var routeBar = '<div class="ar6-lwroute' + (routeCls ? ' ' + routeCls : '') + '">' +
+    '<span class="ar6-lwrbdg">' + esc(s.trafficLabel || '正文') + '</span>' +
+    '<span class="ar6-lwrm" title="' + esc(String(s.reqModel || '') + ' → ' + String(s.servedModel || '')) + '">' +
+      esc(reqShort + ' → ' + srvShort) + '</span>' +
+    (routeVerdict ? '<span class="ar6-lwrwarn">' + esc(routeVerdict) + '</span>' : '') +
+    '</div>';
+  var skipTxt = (typeof DET !== 'undefined' && DET && DET.pluginSkip) ? (' · 放行插件 ' + DET.pluginSkip) : '';
   var h = '<div class="ar6-lwlive" data-ar6-lwlive="1">' + tag +
-    '<span class="ar6-lwsrc">事件 ' + (src.tok || 0) + ' · 旁观 ' + (src.peek || 0) + ' · 轮询 ' + (src.poll || 0) + '</span>';
+    '<span class="ar6-lwsrc">' + (s.structActive ? '结构流' : '事件') + ' ' + (src.tok || 0) + ' · 旁观 ' + (src.peek || 0) + ' · 轮询 ' + (src.poll || 0) + esc(skipTxt) + '</span>' +
+    routeBar;
   h += '<div class="ar6-lwk">';
   for (var i = 0; i < cells.length; i++) {
-    h += '<span class="ar6-lwcell"><b>' + esc(cells[i][1]) + '</b>' + esc(cells[i][0]) + '</span>';
+    h += '<span class="ar6-lwcell"><b>' + esc(cells[i][1]) + '</b>' + esc(cells[i][0]) +
+      (cells[i][2] ? '<i>' + esc(cells[i][2]) + '</i>' : '') + '</span>';
   }
   return h + '</div></div>';
 }
@@ -1337,8 +1363,41 @@ function onPanelClick(e) {
     return;
   }
   if (act.indexOf('💄 去媚:') === 0 || act.indexOf('💄 防媚:') === 0) {
-    cfg.charm = narrNext(cfg.charm); saveCfg(); render();
+    cfg.charm = narrNext(cfg.charm); saveCfg(); UI_SIG = {}; render();
     banner('💄 去媚：' + narrTag(cfg.charm), cfg.charm === 'off' ? 'gray' : 'ok');
+    return;
+  }
+  if (act === 'charm-wrap') {
+    var charmOffW = narrPick(cfg.charm) === 'off';
+    if (charmOffW) {
+      cfg.charmWrap = (String(cfg.charmWrap || 'auto') === 'on') ? 'off' : 'on';
+      saveCfg(); UI_SIG = {}; render();
+      banner(cfg.charmWrap === 'on'
+        ? '📦 贴脸包裹：已设为常开（开启上方「真实引力」任意档位后即刻包裹近 2 轮输入）'
+        : '📦 贴脸包裹：已关闭（中/高档亦不额外包裹用户输入）', cfg.charmWrap === 'on' ? 'ok' : 'gray');
+      return;
+    }
+    var curWrapOn = (typeof narrCharmWrapOn === 'function') ? narrCharmWrapOn() : false;
+    cfg.charmWrap = curWrapOn ? 'off' : 'on';
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.charmWrap === 'on'
+      ? '📦 贴脸包裹：已开启（无痕三明治包裹近 2 轮玩家输入，不改聊天记录）'
+      : '📦 贴脸包裹：已关闭（仅保留规则块，不包裹玩家发言）', cfg.charmWrap === 'on' ? 'ok' : 'gray');
+    return;
+  }
+  if (act === 'charm-lethal') {
+    cfg.charmLethal = (cfg.charmLethal !== true);
+    var charmOffL = narrPick(cfg.charm) === 'off';
+    saveCfg(); UI_SIG = {}; render();
+    if (charmOffL) {
+      banner(cfg.charmLethal
+        ? '☠️ 致命后果：已勾选待命（开启上方「真实引力」任意档位后生效）'
+        : '☠️ 致命后果：已关闭', cfg.charmLethal ? 'warn' : 'gray');
+    } else {
+      banner(cfg.charmLethal
+        ? '☠️ 致命后果：已开启（高危世界无免死光环，失误可致重伤乃至死亡）'
+        : '☠️ 致命后果：已关闭（恢复常规写实阻力，不强制致命结局）', cfg.charmLethal ? 'warn' : 'gray');
+    }
     return;
   }
 
@@ -1408,14 +1467,25 @@ function onPanelClick(e) {
     return;
   }
 
-  /* v1.1 只算正文：默认开。摘要 / 自动标题 / 替玩家写 / quiet 生成不进被换率 */
+  /* V5.65 纯净正轨 · 只检正文放行外部插件：默认开 */
   if (act.indexOf('📄 只算正文') === 0) {
     cfg.contentOnly = (cfg.contentOnly === 'off') ? 'on' : 'off';
-    saveCfg(); render();
+    saveCfg(); UI_SIG = {}; render();
     banner(cfg.contentOnly === 'off'
-      ? '📄 所有请求都算（辅助请求也会进账本）'
-      : '📄 只算正文（辅助请求照记，但不进被换率）',
-      cfg.contentOnly === 'off' ? 'gray' : 'ok');
+      ? '📄 纯净正轨已关：全域监测含插件请求（仍禁往插件注入小说破甲）'
+      : '📄 纯净正轨已开：柏宝书 / 柏宝绘 / 数据库等外部插件零干预直通，仅守护与采样正文',
+      cfg.contentOnly === 'off' ? 'gray' : 'ok', true);
+    return;
+  }
+
+  /* V5.65 预设适配主导权：开=卢克之光强权优先 | 关=礼让预设 */
+  if (act === 'preset-compat') {
+    cfg.presetCompat = (String(cfg.presetCompat || 'on') === 'off') ? 'on' : 'off';
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.presetCompat === 'off'
+      ? '🕊 预设适配已切为「礼让预设」：遇到预设自带破甲与载具自动让路，保留光之雷达与精准采样'
+      : '⚔️ 预设适配已切为「强权优先」：卢克之光破甲第一顺位主导（保留多字段业务引擎工具不硬拆）',
+      cfg.presetCompat === 'off' ? 'gray' : 'ok', true);
     return;
   }
 

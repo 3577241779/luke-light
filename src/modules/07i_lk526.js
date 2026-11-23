@@ -82,19 +82,30 @@ function lkArmorEsc(ch) {
   return seq;
 }
 
+/* V5.65：码点护甲继续全上下文（含历史对话）满血生效，绝不降破甲；
+   仅加结构安全护栏，跳过 XML标签 / 代码块 / 行内代码 / SQL / JSON键名 / JSONPatch路径 / 宏 / URL */
 function lkArmorEscText(txt, st) {
   var s = String(txt || '');
-  for (var i = 0; i < LK_ARMOR_WORDS.length; i++) {
-    var w = LK_ARMOR_WORDS[i];
-    if (s.indexOf(w) < 0) continue;
-    var esc = '';
-    for (var k = 0; k < w.length; k++) esc += lkArmorEsc(w.charAt(k));
-    while (s.indexOf(w) >= 0) {
-      s = s.replace(w, esc);
-      if (st) st.hits++;
+  if (!s) return s;
+  var parts = (typeof LK_STRUCT_SAFE_RE !== 'undefined')
+    ? (LK_STRUCT_SAFE_RE.lastIndex = 0, s.split(LK_STRUCT_SAFE_RE))
+    : [s];
+  for (var pi = 0; pi < parts.length; pi += 2) {
+    var seg = parts[pi];
+    if (!seg) continue;
+    for (var i = 0; i < LK_ARMOR_WORDS.length; i++) {
+      var w = LK_ARMOR_WORDS[i];
+      if (seg.indexOf(w) < 0) continue;
+      var esc = '';
+      for (var k = 0; k < w.length; k++) esc += lkArmorEsc(w.charAt(k));
+      while (seg.indexOf(w) >= 0) {
+        seg = seg.replace(w, esc);
+        if (st) st.hits++;
+      }
     }
+    parts[pi] = seg;
   }
-  return s;
+  return parts.join('');
 }
 
 function lkArmorWalk(node, depth, st) {
@@ -103,23 +114,27 @@ function lkArmorWalk(node, depth, st) {
   if (Array.isArray(node)) {
     for (var i = 0; i < node.length; i++) {
       var it = node[i];
-      if (it && typeof it === 'object') {
-        if (typeof it.text === 'string') it.text = lkArmorEscText(it.text, st);
-        if (typeof it.content === 'string') it.content = lkArmorEscText(it.content, st);
-        if (typeof it.systemInstruction === 'string') it.systemInstruction = lkArmorEscText(it.systemInstruction, st);
-        lkArmorWalk(it, depth + 1, st);
-      }
+      if (!it || typeof it !== 'object') continue;
+      /* 跳过工具消息与携带 tool_calls / thoughtSignature / reasoning_details 的协议元数据消息 */
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(it)) continue;
+      if (typeof it.text === 'string' && !it.thought) it.text = lkArmorEscText(it.text, st);
+      if (typeof it.content === 'string') it.content = lkArmorEscText(it.content, st);
+      if (typeof it.systemInstruction === 'string') it.systemInstruction = lkArmorEscText(it.systemInstruction, st);
+      if (Array.isArray(it.parts)) lkArmorWalk(it.parts, depth + 1, st);
+      if (Array.isArray(it.content)) lkArmorWalk(it.content, depth + 1, st);
     }
     return;
   }
   if (typeof node === 'object') {
+    if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(node)) return;
     if (typeof node.content === 'string') node.content = lkArmorEscText(node.content, st);
     if (typeof node.systemInstruction === 'string') node.systemInstruction = lkArmorEscText(node.systemInstruction, st);
     if (typeof node.system === 'string') node.system = lkArmorEscText(node.system, st);
-    if (typeof node.text === 'string') node.text = lkArmorEscText(node.text, st);
+    if (typeof node.text === 'string' && !node.thought) node.text = lkArmorEscText(node.text, st);
     if (Array.isArray(node.parts)) lkArmorWalk(node.parts, depth + 1, st);
     if (Array.isArray(node.messages)) lkArmorWalk(node.messages, depth + 1, st);
     if (Array.isArray(node.contents)) lkArmorWalk(node.contents, depth + 1, st);
+    if (node.request && typeof node.request === 'object') lkArmorWalk(node.request, depth + 1, st);
     if (node.systemInstruction && typeof node.systemInstruction === 'object') lkArmorWalk(node.systemInstruction, depth + 1, st);
   }
 }

@@ -5,9 +5,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
-const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = '修复初次触发神光棒变身及 90Hz/120Hz/144Hz 高刷屏下 3D 迪迦与侧边计时器圆章同时消失的问题：改为时间增量粒子与动画帧持续驱动、加入彗星抵达墙钟兜底与 3.5 秒硬看门狗保护、修复层叠序号与圆章自愈防失联、强化离线抠图防空白保护。';
+const CHANGELOG_LATEST = 'V5.7 全域兼容 · 精准采样 · 叙述结界大升级：防卫设置新增「星域协同」双独立开关（外部插件 7 层纯净放行 + 预设兼容强权优先/礼让双态）；加固 4 项结构安全护栏与多插件 fetch 链和平共存；重构流式解析与光波采样悬浮窗，精准拆分多协议思考字段、自定义思考标签与工具流正文并实时亮出路由预警；全面重写「迷雾结界（防全知）」与「真实引力（去媚）」，新增「📦 贴脸包裹」与「☠️ 致命后果」双子开关，全协议支持 OpenAI / Claude / Gemini 原生端点。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -82,10 +82,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.61·ST酒馆适配.json',
+    fileName: '卢克之光 V5.7·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.61·ST酒馆适配',
-    info: '卢克之光 V5.61「光之守护」· 手机 ST 酒馆适配（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 移动端触控安全区）',
+    name: '卢克之光 V5.7·ST酒馆适配',
+    info: '卢克之光 V5.7「光之守护」· 手机 ST 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与神光棒变身）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -93,10 +93,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.61·TT酒馆适配.json',
+    fileName: '卢克之光 V5.7·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.61·TT酒馆适配',
-    info: '卢克之光 V5.61「光之守护」· TT 酒馆适配（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / TT 防失联双入口）',
+    name: '卢克之光 V5.7·TT酒馆适配',
+    info: '卢克之光 V5.7「光之守护」· TT 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与 TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -104,10 +104,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.61·桌面版.json',
+    fileName: '卢克之光 V5.7·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.61·桌面版',
-    info: '卢克之光 V5.61「光之守护」· 电脑桌面版（3D CG 雕像迪迦桌宠+神光棒变身高刷落位修复 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 桌面宽屏自由拖拽）',
+    name: '卢克之光 V5.7·桌面版',
+    info: '卢克之光 V5.7「光之守护」· 电脑桌面版（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },
@@ -153,8 +153,9 @@ function buildContent(target) {
 }
 
 function buildAll() {
-  fs.mkdirSync(DIST_DIR, { recursive: true });
-  if (DESKTOP_OUT_DIR) fs.mkdirSync(DESKTOP_OUT_DIR, { recursive: true });
+  const sameAsDesktop = path.resolve(ROOT).toLowerCase() === path.resolve(DESKTOP_OUT_DIR).toLowerCase();
+  if (!sameAsDesktop) fs.mkdirSync(DIST_DIR, { recursive: true });
+  fs.mkdirSync(DESKTOP_OUT_DIR, { recursive: true });
 
   const built = [];
   for (const t of TARGETS) {
@@ -187,11 +188,14 @@ function buildAll() {
       data: {},
     };
     const serialized = JSON.stringify(jsonObj, null, 2) + '\n';
+    const distPath = sameAsDesktop ? path.join(DESKTOP_OUT_DIR, t.fileName) : path.join(DIST_DIR, t.fileName);
     const canonDistPath = path.join(DIST_DIR, t.distName);
+    const desktopPath = path.join(DESKTOP_OUT_DIR, t.fileName);
+    if (!sameAsDesktop) fs.writeFileSync(distPath, serialized, 'utf8');
     fs.writeFileSync(canonDistPath, serialized, 'utf8');
-    if (DESKTOP_OUT_DIR) fs.writeFileSync(path.join(DESKTOP_OUT_DIR, t.fileName), serialized, 'utf8');
-    built.push({ id: t.id, fileName: t.fileName, distName: t.distName, canonDistPath, chars: content.length });
-    console.log(`[BUILT] ${t.distName} (${content.length} JS chars) -> ${canonDistPath}`);
+    fs.writeFileSync(desktopPath, serialized, 'utf8');
+    built.push({ id: t.id, fileName: t.fileName, distName: t.distName, distPath, canonDistPath, desktopPath, chars: content.length });
+    console.log(`[BUILT] ${t.fileName} (${content.length} JS chars) -> ${desktopPath}`);
   }
   const coreSrc = fs.readFileSync(path.join(SRC_MOD, '01_1_core.js'), 'utf8');
   const verMatch = coreSrc.match(/var VERSION\s*=\s*'([^']+)'/);

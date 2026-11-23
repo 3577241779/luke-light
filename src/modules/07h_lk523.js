@@ -100,6 +100,7 @@ function lkReceiptInject(body) {
   try {
     if (!cfg || !cfg.enabled) return false;
     if (!lkTierAtLeastStrong()) return false;
+    if (typeof presetCompatForce === 'function' && !presetCompatForce()) return false;
     var arr = lkMsgArrOf(body);
     if (!arr || !arr.length) return false;
     var last = arr[arr.length - 1];
@@ -155,12 +156,12 @@ function lkFetchGuard(fn) {
   } catch (e) { return false; }
 }
 
-/* V5.23 · A 组补齐：前缀稳定——把 system 里易变的时刻/编号抹成固定记号，提高上游命中 */
+/* V5.65 · 前缀稳定：只归一精确到时分秒的动态时间戳、轮次与显式追踪 ID，
+   不再把角色卡/世界书里的静态故事历法日期（如 1996年9月7日）或表 UUID 误改掉 */
 var LK_VOLATILE = [
   [/\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?/g, '<TIME>'],
-  [/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '<ID>'],
-  [/第\s*\d+\s*轮/g, '第N轮'],
-  [/\b(?:19|20)\d{2}年\d{1,2}月\d{1,2}日/g, '<DATE>']
+  [/((?:request|trace|session|correlation)[_-]?id\s*[:=]\s*)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '$1<ID>'],
+  [/第\s*\d+\s*轮/g, '第N轮']
 ];
 function lkPrefixStable(body) {
   try {
@@ -170,9 +171,15 @@ function lkPrefixStable(body) {
     for (var i = 0; i < arr.length; i++) {
       var m = arr[i];
       if (!m || (m.role !== 'system' && m.role !== 'systemInstruction')) continue;
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) continue;
       if (typeof m.content !== 'string') continue;
-      var t = m.content, orig = t;
-      for (var k = 0; k < LK_VOLATILE.length; k++) t = t.replace(LK_VOLATILE[k][0], LK_VOLATILE[k][1]);
+      var orig = m.content;
+      var parts = (typeof LK_STRUCT_SAFE_RE !== 'undefined') ? (LK_STRUCT_SAFE_RE.lastIndex = 0, orig.split(LK_STRUCT_SAFE_RE)) : [orig];
+      for (var pi = 0; pi < parts.length; pi += 2) {
+        if (!parts[pi]) continue;
+        for (var k = 0; k < LK_VOLATILE.length; k++) parts[pi] = parts[pi].replace(LK_VOLATILE[k][0], LK_VOLATILE[k][1]);
+      }
+      var t = parts.join('');
       if (t !== orig) { m.content = t; changed = true; }
     }
     return changed;

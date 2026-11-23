@@ -597,7 +597,9 @@ function planRequest(rawBody, url, internal) {
       try { if (!toolWillRun && lkReceiptInject(body)) out.changed.push('尾句回执'); } catch (eRC) {}
       try { if (lkPrefixStable(body)) out.changed.push('前缀稳定'); } catch (ePS) {}
       try {
-        if (typeof lkArmorOn === 'function' && lkArmorOn()) {
+        var skipArmorForPreset = (typeof presetCompatForce === 'function' && !presetCompatForce() &&
+          typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body));
+        if (!skipArmorForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
           var arHits = lkArmorApply(body);
           if (arHits > 0) { out.armor = true; out.changed.push('码点护甲 ' + arHits + ' 处'); }
         }

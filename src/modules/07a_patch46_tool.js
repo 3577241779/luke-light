@@ -76,8 +76,13 @@ function toolChanEligible(body) {
     if (Array.isArray(root.contents)) return false;
     var arr = root.messages;
     if (!Array.isArray(arr) || !arr.length) return false;
-    if (Array.isArray(root.tools) && root.tools.length) return false;
-    if (root.functions && root.functions.length) return false;
+    var tc = (typeof lkClassifyTools === 'function') ? lkClassifyTools(root) : { hasTools: !!(Array.isArray(root.tools) && root.tools.length) || !!(root.functions && root.functions.length), allCarrier: false, hasEngine: false, hasExternal: true };
+    if (tc.hasTools) {
+      /* V5.7：结构化多字段业务引擎工具与外部工具绝不硬拆；
+         仅当「预设适配=强权优先」且现有 tools 全为同类纯正文交付载具时，才由 lk_write 接管！ */
+      if (tc.hasEngine || tc.hasExternal || !tc.allCarrier) return false;
+      if (typeof presetCompatForce === 'function' && !presetCompatForce()) return false;
+    }
     if (toolHistoryTouched(root)) return false;
     for (var i = arr.length - 1; i >= 0; i--) {
       var m = arr[i];
@@ -141,8 +146,26 @@ function toolChanPatch(body, meta) {
     if (Array.isArray(root.contents)) { out.push('武装货舱：Gemini 原生形态不支持，已跳过'); return out; }
     var arr = root.messages;
     if (!Array.isArray(arr) || !arr.length) { out.push('武装货舱：没有消息列表，已跳过'); return out; }
-    if (Array.isArray(root.tools) && root.tools.length) { out.push('武装货舱：请求里已有 tools，已跳过'); return out; }
-    if (root.functions && root.functions.length) { out.push('武装货舱：请求里已有 functions，已跳过'); return out; }
+    var tc = (typeof lkClassifyTools === 'function') ? lkClassifyTools(root) : { hasTools: !!(Array.isArray(root.tools) && root.tools.length) || !!(root.functions && root.functions.length), allCarrier: false, hasEngine: false, hasExternal: true, names: [] };
+    var tookOverCarrier = '';
+    if (tc.hasTools) {
+      var nmList = tc.names.join(',') || 'tools';
+      if (tc.hasEngine) {
+        out.push('武装货舱：保留预设业务引擎工具(' + nmList + ')，破甲主干照常生效');
+        return out;
+      }
+      if (tc.hasExternal || !tc.allCarrier) {
+        out.push('武装货舱：请求里已有外部 tools(' + nmList + ')，已跳过');
+        return out;
+      }
+      if (typeof presetCompatForce === 'function' && !presetCompatForce()) {
+        out.push('武装货舱：礼让预设载具(' + nmList + ')，已跳过');
+        return out;
+      }
+      /* 强权优先接管同类防截断载具 */
+      tookOverCarrier = nmList;
+      if (root.functions) delete root.functions;
+    }
     if (toolHistoryTouched(root)) { out.push('武装货舱：历史里有工具轮，已跳过'); return out; }
 
     if (meta && meta.prefillBlocked) {
@@ -180,7 +203,7 @@ function toolChanPatch(body, meta) {
       if (meta) { meta.baseKey = bKey; meta.forcedChoice = true; }
     }
     toolAppendNote(root);
-    out.push('武装货舱：已发 ' + TOOL_NAME + (poppedEmpty ? '（已清理末尾空助手块）' : ''));
+    out.push('武装货舱：已发 ' + TOOL_NAME + (tookOverCarrier ? '（强权接管 ' + tookOverCarrier + '）' : (poppedEmpty ? '（已清理末尾空助手块）' : '')));
     return out;
   } catch (eT) { try { criticalWarn('武装货舱请求', eT); } catch (eT2) {} return out; }
 }
@@ -337,13 +360,22 @@ function toolCreateUnwrapper() {
     return 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: tailTxt }, finish_reason: null }] }) + '\n\n';
   }
 
+  function toolPreserveThink(origDelta, nextDelta) {
+    if (!origDelta || typeof origDelta !== 'object') return nextDelta;
+    if (origDelta.reasoning_content !== undefined) nextDelta.reasoning_content = origDelta.reasoning_content;
+    if (origDelta.reasoning !== undefined) nextDelta.reasoning = origDelta.reasoning;
+    if (origDelta.thinking !== undefined) nextDelta.thinking = origDelta.thinking;
+    if (origDelta.reasoning_details !== undefined) nextDelta.reasoning_details = origDelta.reasoning_details;
+    return nextDelta;
+  }
+
   function handleObj(o) {
     if (!o || typeof o !== 'object') return o;
     var ch = Array.isArray(o.choices) ? o.choices[0] : null;
     if (!ch) return o;
     var d = ch.delta;
 
-    /* 1) 标准流式 delta.tool_calls */
+    /* 1) 标准流式 delta.tool_calls（V5.65：完整保留同帧 reasoning_content / reasoning / thinking / reasoning_details） */
     if (d && Array.isArray(d.tool_calls) && d.tool_calls.length) {
       sawTool = true;
       if (d.content && String(d.content).trim() && typeof LK_CONFLICT !== 'undefined') LK_CONFLICT.n++;
@@ -356,7 +388,7 @@ function toolCreateUnwrapper() {
         if (typeof f.arguments === 'string') add += feed('d' + idx, f.arguments, isEnd1);
       }
       if (isEnd1) add += drainHeld();
-      ch.delta = add ? { content: add } : {};
+      ch.delta = toolPreserveThink(d, add ? { content: add } : {});
       if (isEnd1) ch.finish_reason = 'stop';
       else delete ch.finish_reason;
       return o;
@@ -369,7 +401,7 @@ function toolCreateUnwrapper() {
       var isEnd2 = (ch.finish_reason === 'tool_calls' || ch.finish_reason === 'function_call');
       var fcAdd = (typeof d.function_call.arguments === 'string') ? feed('dfc', d.function_call.arguments, isEnd2) : '';
       if (isEnd2) fcAdd += drainHeld();
-      ch.delta = fcAdd ? { content: fcAdd } : {};
+      ch.delta = toolPreserveThink(d, fcAdd ? { content: fcAdd } : {});
       if (isEnd2) ch.finish_reason = 'stop';
       else delete ch.finish_reason;
       return o;
@@ -408,7 +440,7 @@ function toolCreateUnwrapper() {
     /* 4) 结束帧 finish_reason === 'tool_calls' / 'function_call' */
     if (ch.finish_reason === 'tool_calls' || ch.finish_reason === 'function_call') {
       var tailAdd = drainHeld();
-      if (d) ch.delta = { content: tailAdd };
+      if (d) ch.delta = toolPreserveThink(d, tailAdd ? { content: tailAdd } : {});
       ch.finish_reason = 'stop';
       sawTool = true;
       return o;

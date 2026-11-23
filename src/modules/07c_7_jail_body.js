@@ -41,8 +41,10 @@ function jailPatchBody(body) {
 
   var TX = jailTextSet(String(body.model || (body.request && body.request.model) || ''));
   var own = false;
-  try { own = JAIL_OWN_RE.test(jailSysText(body)); } catch (e0) { own = false; }
-  if (own) out.push('预设自带破甲：token 仍保底');
+  try { own = JAIL_OWN_RE.test(jailSysText(body)) || (typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body)); } catch (e0) { own = false; }
+  var yieldToPreset = own && (typeof presetCompatForce === 'function' && !presetCompatForce());
+  if (own && !yieldToPreset) out.push('预设自带破甲：强权优先，破甲仍由光之守护主导');
+  if (yieldToPreset) out.push('礼让预设：检测到预设自带破甲/载具，仅保留保底 token 与解安全');
 
   /* 1) 保底 token：只加不减；字段缺失时不动（默认上限未知，乱补可能反而砍短） */
   if (jTok) {
@@ -100,6 +102,9 @@ function jailPatchBody(body) {
       out.push('解安全 BLOCK_NONE×' + ss.length);
     }
   }
+
+  /* V5.65 礼让预设：检测到预设自带破甲/载具且「预设适配=礼让预设」时，保底 token 与解安全保留，其余文本注入让路 */
+  if (yieldToPreset) return out;
 
   /* V5.22：强力及以上走「单一委托块」——权威头/任务单/资料标记/接管收进一份 <doc> */
   var lkAuth = (strong || sup || hard);
