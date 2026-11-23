@@ -130,12 +130,16 @@ var NARR_CHARM_LETHAL = [
 ].join('\n');
 
 /* 通用同类叙事规则探测（仅在「预设适配 = 礼让预设」时用于温和避重） */
-var NARR_PRESET_KNOW_RE = /<knowledge_boundaries>|<perspective_limited>|<Knowledge_Limit>|防全知|反全知|认知隔离|信息隔离|防上帝视角|禁止角色全知/;
-var NARR_PRESET_CHARM_RE = /<independent_regard>|去主角化|去媚|防魅|防媚|反讨好|去光环|世界逻辑优先|不以.{0,6}为中心/;
+var NARR_PRESET_KNOW_RE = /<knowledge_boundaries>|<perspective_limited>|<Knowledge_Limit>|防[·\s]?全知|反[·\s]?全知|认知隔离|信息隔离|防上帝视角|禁止角色全知|认知边界|认知基线|信息边界/;
+var NARR_PRESET_CHARM_RE = /<independent_regard>|去主角化|去[·\s]?[媚魅]|防[·\s]?[媚魅]|反讨好|去光环|世界逻辑优先|不以.{0,6}为中心|角色独立性|去中心化|不围绕.{0,6}转/;
 
-/* 通用控制块识别：贴脸包裹必须精准跳过塞在 role:'user' 里的系统指令、思维链或台账块 */
-var NARR_CTRL_HEAD_RE = /^\s*(?:<(?:Knowledge_Limit|output_contract|spec|turn|doc|rule|step|system|instruction|prompt|cot|thinking|think|guide|OOC|AR-|lk_|input_format|format_rule|perspective_limited|knowledge_boundaries|independent_regard)|【(?:历史参考|视角与认知|世界不围着人转|本回合|信息控制|系统指令)|（以下为值班台账摘录|〔AR-|\[Protocol:)/i;
-var NARR_CTRL_BODY_RE = /<output_contract>|##\s*禁止角色全知|##\s*禁止元词汇|思考步骤|{{(?:setvar|addvar|getvar)::|输入类型A：|执行优先级|Reply directly|editorial system|<Master_input>/;
+/* 通用非故事元模式探测（如闲聊 / 设定挖掘 / 剧情回顾等显式声明本轮不写故事的轮次） */
+var NARR_META_MODE_RE = /本轮不写故事|本轮不推进剧情|本轮不创作|输出模式[:：]\s*(?:闲聊|设定挖掘|剧情回顾)/;
+
+/* 通用控制块识别：贴脸包裹必须精准跳过塞在 role:'user' 里的系统指令、思维链、尾段起笔引导或台账块 */
+var NARR_CTRL_HEAD_RE = /^\s*(?:<\/?[a-zA-Z0-9_\u4e00-\u9fa5~-]+(?:\s[^>]*)?>|【(?:历史参考|视角与认知|世界不围着人转|本回合|信息控制|系统指令)|（以下为值班台账摘录|〔AR-|\[Protocol:|\[重要要求|---\s*\n\s*[a-zA-Z0-9_]+_protocol\s*:|#{1,4}\s*(?:禁用元素|正文视角|正文字数|严格遵守|使用<|已知悉设定|创造回复|镜头应当)|(?:\*{2,3})(?:切记|注意<|Please use English|测试指令|正文内容必须用))/i;
+var NARR_CTRL_BODY_RE = /<output_contract>|##\s*禁止角色全知|##\s*禁止元词汇|思考步骤|{{(?:setvar|addvar|getvar)::|输入类型A：|执行优先级|Reply directly|editorial system|<Master_input>|回复直接以\s*<|从\s*<[a-zA-Z0-9_\u4e00-\u9fa5~-]+>\s*开始|思考第一句固定为|即将开始思考|执行[A-Za-z0-9_]+\s*工具/;
+var NARR_UNCLOSED_TAIL_TAG_RE = /<([a-zA-Z0-9_\u4e00-\u9fa5~-]{2,32})(?:\s[^>]*)?>[^\n<]{0,120}$/;
 
 /* ---------------- 状态与开关判定 ---------------- */
 
@@ -482,6 +486,13 @@ function narrIsPresetControlUserMsg(cleanText, msg, chatUsers) {
   if (narrMatchesRecentChat(t, chatUsers)) return false;
   if (NARR_CTRL_HEAD_RE.test(t)) return true;
   if (NARR_CTRL_BODY_RE.test(t)) return true;
+  /* 孤立闭合标签或末尾挂有未闭合起笔开标签的预设预填桥接尾块 */
+  if (/^<\/[a-zA-Z0-9_\u4e00-\u9fa5~-]+>\s*$/.test(t)) return true;
+  var tailOpen = NARR_UNCLOSED_TAIL_TAG_RE.exec(t);
+  if (tailOpen) {
+    var tagNm = String(tailOpen[1] || '').toLowerCase();
+    if (tagNm !== 'user' && tagNm !== 'char' && t.toLowerCase().indexOf('</' + tagNm + '>') < 0) return true;
+  }
   /* 超长结构化 Markdown 规则清单（预设 system-in-user 典型形态） */
   if (t.length > 1400) {
     var ruleHits = t.match(/^(?:#{1,4}\s+|[-*]\s+.*(?:严禁|禁止|必须|规则|视角|格式|原则|准则))/gm);
@@ -490,10 +501,42 @@ function narrIsPresetControlUserMsg(cleanText, msg, chatUsers) {
   return false;
 }
 
+/* 剥离末尾已挂载的其它脚本/插件尾块（AR-TRUNC / AR-OOC / 外部导演卡 / 定时提醒），避免把它们误包进 <<<ACT>>> 或干扰真楼层匹配 */
+function narrSplitExternalTails(s) {
+  var core = String(s == null ? '' : s);
+  var tails = [];
+  var pairs = [
+    ['〔AR-TRUNC', '〔/AR-TRUNC〕'],
+    ['〔AR-OOC', '〔/AR-OOC〕'],
+    ['<下轮导演卡>', '</下轮导演卡>'],
+    ['<定时提醒>', '</定时提醒>'],
+    ['<定时注入提示词>', '</定时注入提示词>']
+  ];
+  for (var guard = 0; guard < 8; guard++) {
+    var cut = false;
+    var trimmed = core.replace(/[ \t\r\n]+$/, '');
+    for (var p = 0; p < pairs.length; p++) {
+      var openMark = pairs[p][0], closeMark = pairs[p][1];
+      if (trimmed.length >= closeMark.length && trimmed.slice(-closeMark.length) === closeMark) {
+        var oi = trimmed.lastIndexOf(openMark);
+        if (oi >= 0) {
+          tails.unshift(trimmed.slice(oi));
+          core = trimmed.slice(0, oi).replace(/[ \t\r\n]+$/, '');
+          cut = true;
+          break;
+        }
+      }
+    }
+    if (!cut) break;
+  }
+  return { core: core, tail: tails.join('\n\n') };
+}
+
 /* 返回按“从新到旧”排序的真实玩家 user 消息下标数组（depth 0, 1, 2...） */
 function narrFindRealUserIndices(listInfo) {
   var arr = listInfo.arr, proto = listInfo.proto;
   var chatUsers = narrRecentChatUserTexts();
+  var matchedChat = [];
   var real = [];
   var fallback = [];
   for (var i = arr.length - 1; i >= 0; i--) {
@@ -504,10 +547,18 @@ function narrFindRealUserIndices(listInfo) {
     var clean = narrStrip(raw);
     if (!clean.trim()) continue;
     fallback.push(i);
+    var coreForMatch = (typeof narrSplitExternalTails === 'function') ? narrSplitExternalTails(clean).core : clean;
+    if (chatUsers.length && (narrMatchesRecentChat(coreForMatch, chatUsers) || narrMatchesRecentChat(clean, chatUsers))) {
+      matchedChat.push(i);
+      real.push(i);
+      continue;
+    }
     if (!narrIsPresetControlUserMsg(clean, m, chatUsers)) {
       real.push(i);
     }
   }
+  /* 若已通过 ST 聊天记录精确命中真实玩家楼层，则仅信任这些已核验楼层，彻底杜绝任何预设合成 user 块被误包 */
+  if (matchedChat.length) return { real: matchedChat, fallback: fallback };
   return { real: real, fallback: fallback };
 }
 
@@ -542,14 +593,20 @@ function narrApply(body) {
     }
   }
 
-  /* 2) 判定「预设适配 = 礼让预设」是否需要单维避重 */
+  /* 2) 非故事元模式避让 & 「预设适配 = 礼让预设」单维避重 */
+  var presetTextAll = narrCollectPresetText(body);
+  if (NARR_META_MODE_RE.test(presetTextAll)) {
+    if (cleanedAny) out.push('叙述:清掉');
+    else out.push('叙述:元模式避让');
+    return out;
+  }
   var forceMode = (typeof presetCompatForce === 'function') ? presetCompatForce() : true;
   var wantKnow = narrPick(cfg && cfg.know) !== 'off';
   var wantCharm = narrPick(cfg && cfg.charm) !== 'off';
   var skipKnow = false, skipCharm = false;
   if (!forceMode) {
-    if (wantKnow && narrPresetHasKnow(body)) { skipKnow = true; NARR_RT.yieldKnow = true; }
-    if (wantCharm && narrPresetHasCharm(body)) { skipCharm = true; NARR_RT.yieldCharm = true; }
+    if (wantKnow && NARR_PRESET_KNOW_RE.test(presetTextAll)) { skipKnow = true; NARR_RT.yieldKnow = true; }
+    if (wantCharm && NARR_PRESET_CHARM_RE.test(presetTextAll)) { skipCharm = true; NARR_RT.yieldCharm = true; }
   }
 
   var block = narrBody({ skipKnow: skipKnow, skipCharm: skipCharm, skipLethal: skipCharm });
@@ -575,35 +632,7 @@ function narrApply(body) {
   /* 规则块落点：优先最新真实玩家 user；若全部都是合成/规则消息，兜底落到最后一条非受保护 user */
   var ruleIdx = found.real.length ? found.real[0] : (found.fallback.length ? found.fallback[0] : -1);
 
-/* 剥离末尾已挂载的其它脚本尾块（AR-TRUNC / AR-OOC），避免二次 narrApply 时把它们误包进 <<<ACT>>> */
-function narrSplitExternalTails(s) {
-  var core = String(s == null ? '' : s);
-  var tails = [];
-  var pairs = [
-    ['〔AR-TRUNC', '〔/AR-TRUNC〕'],
-    ['〔AR-OOC', '〔/AR-OOC〕']
-  ];
-  for (var guard = 0; guard < 8; guard++) {
-    var cut = false;
-    var trimmed = core.replace(/[ \t\r\n]+$/, '');
-    for (var p = 0; p < pairs.length; p++) {
-      var openMark = pairs[p][0], closeMark = pairs[p][1];
-      if (trimmed.length >= closeMark.length && trimmed.slice(-closeMark.length) === closeMark) {
-        var oi = trimmed.lastIndexOf(openMark);
-        if (oi >= 0) {
-          tails.unshift(trimmed.slice(oi));
-          core = trimmed.slice(0, oi).replace(/[ \t\r\n]+$/, '');
-          cut = true;
-          break;
-        }
-      }
-    }
-    if (!cut) break;
-  }
-  return { core: core, tail: tails.join('\n\n') };
-}
-
-/* 4) 执行近 2 轮三明治贴脸包裹（depth 0 全量，depth 1~2 轻量） */
+  /* 4) 执行近 2 轮三明治贴脸包裹（depth 0 全量，depth 1~2 轻量） */
   var wrappedN = 0;
   var savedTails = {};
   for (var wj = 0; wj < wrapIdxs.length; wj++) {

@@ -5,9 +5,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = 'V5.7 全域兼容 · 精准采样 · 叙述结界大升级：防卫设置新增「星域协同」双独立开关（外部插件 7 层纯净放行 + 预设兼容强权优先/礼让双态）；加固 4 项结构安全护栏与多插件 fetch 链和平共存；重构流式解析与光波采样悬浮窗，精准拆分多协议思考字段、自定义思考标签与工具流正文并实时亮出路由预警；全面重写「迷雾结界（防全知）」与「真实引力（去媚）」，新增「📦 贴脸包裹」与「☠️ 致命后果」双子开关，全协议支持 OpenAI / Claude / Gemini 原生端点。';
+const CHANGELOG_LATEST = 'V5.71 · 修复了部分 bug。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -82,10 +82,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.7·ST酒馆适配.json',
+    fileName: '卢克之光 V5.71·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.7·ST酒馆适配',
-    info: '卢克之光 V5.7「光之守护」· 手机 ST 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与神光棒变身）',
+    name: '卢克之光 V5.71·ST酒馆适配',
+    info: '卢克之光 V5.71「光之守护」· 手机 ST 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与神光棒变身）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -93,10 +93,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.7·TT酒馆适配.json',
+    fileName: '卢克之光 V5.71·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.7·TT酒馆适配',
-    info: '卢克之光 V5.7「光之守护」· TT 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与 TT 双入口）',
+    name: '卢克之光 V5.71·TT酒馆适配',
+    info: '卢克之光 V5.71「光之守护」· TT 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与 TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -104,10 +104,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.7·桌面版.json',
+    fileName: '卢克之光 V5.71·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.7·桌面版',
-    info: '卢克之光 V5.7「光之守护」· 电脑桌面版（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与桌面宽屏拖拽）',
+    name: '卢克之光 V5.71·桌面版',
+    info: '卢克之光 V5.71「光之守护」· 电脑桌面版（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

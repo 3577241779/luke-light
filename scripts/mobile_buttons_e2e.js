@@ -9,10 +9,10 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
 const MOBILE_TARGETS = [
-  '卢克之光 V5.7·ST酒馆适配.json',
-  '卢克之光 V5.7·TT酒馆适配.json',
+  '卢克之光 V5.71·ST酒馆适配.json',
+  '卢克之光 V5.71·TT酒馆适配.json',
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -976,7 +976,7 @@ async function runSuiteForTarget(fileName) {
     check(win.document.lastCopiedText.length > 10, '局域网 HTTP 环境 exportlog 走 textarea+execCommand 成功复制');
     win.document.lastCopiedText = '';
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcopy', true));
-    check(win.document.lastCopiedText.includes('版本 5.70'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
+    check(win.document.lastCopiedText.includes('版本 5.71'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
 
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcheck', true));
     const bnAfterDiag = win.document.getElementById('ar6-bn2');

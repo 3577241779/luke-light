@@ -1069,8 +1069,8 @@ async function runAsyncPipelineChecks(win, api, raw, fileLabel) {
     api.setCfg('pvp', savedPvp);
     api.setCfg('onlyGemini', savedOnlyGem);
 
-    // (d) V5.4 / V5.5 / V5.6 / V5.61 / V5.65 / V5.70 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
-    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70') {
+    // (d) V5.4 / V5.5 / V5.6 / V5.61 / V5.65 / V5.70 / V5.71 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
+    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70' || api.VERSION === '5.71') {
       api.openPanel();
       api.setUITab('jail');
       api.render();
@@ -1150,9 +1150,9 @@ if (require.main === module) {
   (async () => {
     const args = process.argv.slice(2);
     const files = args.length ? args : [
-      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·ST酒馆适配.json',
-      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·TT酒馆适配.json',
-      'c:\\Users\\23548\\Desktop\\卢克之光 V5.7\\卢克之光 V5.7·桌面版.json',
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.71\\卢克之光 V5.71·ST酒馆适配.json',
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.71\\卢克之光 V5.71·TT酒馆适配.json',
+      'c:\\Users\\23548\\Desktop\\卢克之光 V5.71\\卢克之光 V5.71·桌面版.json',
     ];
     let anyFail = false;
     for (const f of files) {

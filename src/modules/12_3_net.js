@@ -149,10 +149,12 @@ function isFloorEmbeddedOnlyAsScriptData(sample) {
   } catch (e) { return false; }
 }
 
-/* V5.65：7 层实码级「正文 vs 外部插件」分流器（精确覆盖柏宝书 / 柏宝绘 / 龙血玄黄数据库 / 结构化接口 / 酒馆助手脚本） */
+/* V5.71：7 层实码级「正文 vs 外部插件」分流器（精确覆盖柏宝书 / 柏宝绘 / 龙血玄黄数据库 / 柚月记忆 / 结构化接口 / 酒馆助手脚本） */
 var BAIBAI_BOOK_TASK_RE = /<nvwa_standalone_core>|【检查记录与最终结果输出协议】|【输出前核查】|【输出前思考\(逐楼核查\)】|【压缩任务的事实整理与核查】|你是严谨的剧情记忆整理员|你是剧情压缩助手|你是角色扮演续写场景中的上下文规划器|严格按格式输出[:：]?\s*一行INTENT|一行INTENT加恰好5行Q|【主角设定\(用户操控的主角本人设定,只读参考\)】/;
 var BAIBAI_IMAGE_TASK_RE = /\[BBI_REQ:|你是严谨的剧情画面规划与生图提示词编写员|你是严谨的漫画分镜师与生图提示词编写员|你是外貌\s*tag\s*转换器|你是\s*ComfyUI\s*API\s*格式工作流的动态参数定位器/;
 var ACU_DB_TASK_RE = /上方\s*CREATE\s+TABLE\s*仅用于说明表结构|严禁复制或输出\s*CREATE|以下为用户的额外填表要求|本次请求的全部要求与上下文写在名称以\s*turn_\s*开头的函数里|奶·数据库|MemoryBooks/;
+var YUZUKI_MEM_TASK_RE = /【导演账本与本轮核验信息】|【轨道B核验规则】|你是一个用于连通性测试的助手/;
+var MAIN_STORY_MEM_INJECT_RE = /【前情提要(?:\s*-|】)|【当前世界状态参考\s*-|【记忆只读数据库\s*-|【系统检索到的历史记忆片段】|<下轮导演卡>/;
 var GENERIC_AUX_TASK_RE = /<tableEdit>|自动摘要|剧情总结|章节总结|记忆总结|提取.{0,6}(?:摘要|关键词|绘画|tag|prompt)|image\s*prompt|stable\s*diffusion|nai\s*prompt/i;
 
 function classifyRequestTraffic(init, bodyObj, url) {
@@ -162,12 +164,30 @@ function classifyRequestTraffic(init, bodyObj, url) {
     if (init && INTERNAL_FETCH_KEY && init[INTERNAL_FETCH_KEY] === true) {
       return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-symbol' };
     }
+    if (init && (init.yzmMemoryInternalApi === true || init.stPhoneInternalApi === true)) {
+      return { isPlugin: true, isStory: false, kind: 'yuzuki_mem', label: '柚月记忆', reason: 'yzm-internal-flag' };
+    }
     var hd = init && init.headers;
     if (hd) {
-      var xInt = (typeof hd.get === 'function')
-        ? (hd.get('x-ar6-internal') || hd.get('x-st-internal'))
-        : (hd['x-ar6-internal'] || hd['x-st-internal']);
-      if (xInt) return { isPlugin: true, isStory: false, kind: 'internal_mark', label: '内部探针', reason: 'x-internal-header' };
+      var readHdr = function (name) {
+        if (typeof hd.get === 'function') return hd.get(name);
+        if (Array.isArray(hd)) {
+          for (var hi = 0; hi < hd.length; hi++) {
+            if (hd[hi] && String(hd[hi][0] || '').toLowerCase() === name) return hd[hi][1];
+          }
+          return '';
+        }
+        for (var hk in hd) {
+          if (Object.prototype.hasOwnProperty.call(hd, hk) && String(hk).toLowerCase() === name) return hd[hk];
+        }
+        return '';
+      };
+      if (readHdr('x-ar6-internal') || readHdr('x-st-internal')) {
+        return { isPlugin: true, isStory: false, kind: 'internal_mark', label: '内部探针', reason: 'x-internal-header' };
+      }
+      if (String(readHdr('x-yuzuki-memory-internal-api')) === '1' || String(readHdr('x-st-phone-internal-api')) === '1') {
+        return { isPlugin: true, isStory: false, kind: 'yuzuki_mem', label: '柚月记忆', reason: 'yzm-internal-header' };
+      }
     }
     if (ST_GEN.dryRun && ST_GEN.at && (nowMs() - ST_GEN.at < 5000)) {
       return { isPlugin: true, isStory: false, kind: 'script_aux', label: '预览生成', reason: 'dry-run' };
@@ -236,6 +256,9 @@ function classifyRequestTraffic(init, bodyObj, url) {
     if (ACU_DB_TASK_RE.test(headBlob)) {
       return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-db-fingerprint' };
     }
+    if (YUZUKI_MEM_TASK_RE.test(headBlob)) {
+      return { isPlugin: true, isStory: false, kind: 'yuzuki_mem', label: '柚月记忆', reason: 'yuzuki-mem-fingerprint' };
+    }
 
     /* Layer 5：结构化 JSON Schema / 响应格式锁（严格要求返回 JSON 的数据库/插件请求） */
     var rf = root.response_format || bodyObj.response_format;
@@ -254,7 +277,8 @@ function classifyRequestTraffic(init, bodyObj, url) {
     var msgs = Array.isArray(root.messages) ? root.messages : (Array.isArray(root.contents) ? root.contents : []);
     if (!msgs.length) return story;
 
-    var inActiveChatGen = !!(ST_GEN.at && (nowMs() - ST_GEN.at < 8000) &&
+    /* V5.71：放宽 ST 主生成活跃窗至 45s（兼容记忆插件向量召回+重排耗时），GENERATION_ENDED/STOPPED 会即时清零 */
+    var inActiveChatGen = !!(ST_GEN.at && (nowMs() - ST_GEN.at < 45000) &&
       ['normal', 'swipe', 'continue', 'regenerate'].indexOf(ST_GEN.type) >= 0 &&
       root.stream !== false);
     var thBusy = !!(TH_GEN.active && TH_GEN.at && (nowMs() - TH_GEN.at < 8000));
@@ -267,7 +291,15 @@ function classifyRequestTraffic(init, bodyObj, url) {
       if (isFloorEmbeddedOnlyAsScriptData(sample)) {
         return { isPlugin: true, isStory: false, kind: 'script_aux', label: '数据整理插件', reason: 'floor-embedded-data' };
       }
-      if (GENERIC_AUX_TASK_RE.test(sample.first + ' ' + sample.last)) {
+      var hasMainMemInject = MAIN_STORY_MEM_INJECT_RE.test(headBlob);
+      var asstTurnCnt = 0, usrTurnCnt = 0;
+      for (var mi = 0; mi < msgs.length; mi++) {
+        var mr = String((msgs[mi] && msgs[mi].role) || '').toLowerCase();
+        if (mr === 'assistant' || mr === 'model') asstTurnCnt++;
+        else if (mr === 'user') usrTurnCnt++;
+      }
+      var looksLikeMultiTurnStory = hasMainMemInject || (asstTurnCnt >= 2 && usrTurnCnt >= 2);
+      if (!looksLikeMultiTurnStory && GENERIC_AUX_TASK_RE.test(sample.first + ' ' + sample.last)) {
         if (root.stream === false || !isStBackend || msgs.length <= 12) {
           return { isPlugin: true, isStory: false, kind: 'script_aux', label: '表格/摘要插件', reason: 'generic-aux-keyword' };
         }
@@ -977,6 +1009,42 @@ function buildPeekEntry(ev, done, failed) {
   if (typeof ev.promptTokens === 'number' && ev.promptTokens > 0) entry.prompt = ev.promptTokens;
   return entry;
 }
+/* V5.71：检测请求末尾（assistant 预填或 user 尾块）是否提前打开了未闭合的思考/草稿标签 */
+function detectPrefillThinkTag(bodyObj) {
+  try {
+    if (!bodyObj || typeof bodyObj !== 'object' || typeof AR6_THINK_TAG_SRC === 'undefined') return '';
+    var root = (bodyObj.request && typeof bodyObj.request === 'object' && !Array.isArray(bodyObj.request)) ? bodyObj.request : bodyObj;
+    var arr = Array.isArray(root.messages) ? root.messages : (Array.isArray(root.contents) ? root.contents : []);
+    if (!arr.length) return '';
+    var lastTxt = '';
+    for (var i = arr.length - 1; i >= 0; i--) {
+      var m = arr[i];
+      if (!m) continue;
+      var t = '';
+      if (typeof m.content === 'string') t = m.content;
+      else if (Array.isArray(m.content)) {
+        for (var k = 0; k < m.content.length; k++) if (m.content[k] && typeof m.content[k].text === 'string') t += m.content[k].text + '\n';
+      } else if (Array.isArray(m.parts)) {
+        for (var p = 0; p < m.parts.length; p++) if (m.parts[p] && typeof m.parts[p].text === 'string') t += m.parts[p].text + '\n';
+      }
+      if (t && t.trim()) { lastTxt = t; break; }
+    }
+    if (!lastTxt) return '';
+    var tailSlice = lastTxt.slice(-1600);
+    var rxOpen = new RegExp('<(' + AR6_THINK_TAG_SRC + ')(?:\\s[^>]*)?>', 'gi');
+    var mOpen, lastUnclosed = '';
+    while ((mOpen = rxOpen.exec(tailSlice)) !== null) {
+      var tag = String(mOpen[1] || '').toLowerCase();
+      if (!tag) continue;
+      var esc = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var rxClose = new RegExp('<\\/' + esc + '\\s*>', 'i');
+      var after = tailSlice.slice(mOpen.index + mOpen[0].length);
+      if (!rxClose.test(after)) lastUnclosed = tag;
+    }
+    return lastUnclosed;
+  } catch (e) { return ''; }
+}
+
 function capture318Parser(ev) {
   ev = ev || {};
   var cap = capture318(ev);
@@ -998,9 +1066,19 @@ function capture318Parser(ev) {
   var sawSSE = false;
   var jsonMode = false;
   var usageKeysMap = {};
-  var tagSplitter = (typeof ar6CreateTagSplitter === 'function') ? ar6CreateTagSplitter() : null;
+  var tagSplitter = (typeof ar6CreateTagSplitter === 'function')
+    ? ar6CreateTagSplitter(ev.prefillThinkTag ? { initialTag: ev.prefillThinkTag } : null)
+    : null;
   var toolTracker = (typeof ar6CreateToolArgTracker === 'function') ? ar6CreateToolArgTracker() : null;
+  var toolNameBySlot = Object.create(null);
   var liveFeedAllowed = !ev.internal || String(cfg && cfg.contentOnly) === 'off';
+
+  function isThinkToolName(nm) {
+    if (!nm) return false;
+    return (typeof LK_THINK_TOOL_RE !== 'undefined')
+      ? LK_THINK_TOOL_RE.test(String(nm))
+      : /^(?:think|thinking|plan|planning|cot|reason|reasoning|draft|scratchpad)(?:$|[_-])/i.test(String(nm));
+  }
 
   /* 非 SSE JSON / Gemini JSON 数组增量括号扫描状态 */
   var jBuf = '';
@@ -1090,10 +1168,40 @@ function capture318Parser(ev) {
     } catch (eLT1) {}
   }
 
+  function reclassBodyToThink(movedChars) {
+    var mv = Number(movedChars) || 0;
+    if (mv <= 0) return;
+    var actual = Math.min(ev.chars, mv);
+    if (actual <= 0) return;
+    ev.chars = Math.max(0, ev.chars - actual);
+    ev.textLen = ev.chars;
+    ev.peekChars = ev.chars;
+    if (ev.chars === 0) {
+      ev.sawText = false;
+      ev.peekText = '';
+      ev.tailText = '';
+    } else if (ev.peekText.length >= actual) {
+      ev.peekText = ev.peekText.slice(actual);
+    }
+    ev.thinkChars += actual;
+    ev.thinkLen = ev.thinkChars;
+    ev.sawThink = true;
+    ev.hasThink = true;
+    ev.hasReasonField = true;
+    ev.usageZeroThink = false;
+    if (cap.firstThinkMs == null) cap.firstThinkMs = Math.max(1, nowMs() - startAt);
+    try {
+      if (liveFeedAllowed && CAP318_LIVE === ev.requestId && typeof liveStructReclass === 'function') {
+        liveStructReclass(ev.requestId, actual);
+      }
+    } catch (eLR1) {}
+  }
+
   function addText(txt, via) {
     if (typeof txt !== 'string' || !txt) return;
     if (tagSplitter) {
       var sp = tagSplitter.feed(txt);
+      if (sp.retroBodyToThink > 0) reclassBodyToThink(sp.retroBodyToThink);
       if (sp.think) addThinkText(sp.think);
       if (sp.body) commitBodyText(sp.body, via || 'text');
       return;
@@ -1170,22 +1278,34 @@ function capture318Parser(ev) {
             }
           }
 
-          /* V5.7 工具通道正文增量采样（兼容 lk_write 及通用正文交付类工具参数提取） */
+          /* V5.71 工具通道增量采样（自动区分思考型工具 think_* 与正文交付类工具） */
           if (toolTracker) {
             if (Array.isArray(msg.tool_calls) && msg.tool_calls.length) {
               for (var tci = 0; tci < msg.tool_calls.length; tci++) {
                 var tc = msg.tool_calls[tci];
                 var tfn = tc && tc.function;
+                var tcIdx = (typeof tc.index === 'number') ? tc.index : tci;
+                var tcSlot = 'oai_' + i + '_' + tcIdx;
+                if (tfn && tfn.name) toolNameBySlot[tcSlot] = String(tfn.name);
                 if (tfn && typeof tfn.arguments === 'string' && tfn.arguments) {
-                  var tcIdx = (typeof tc.index === 'number') ? tc.index : tci;
-                  var tDelta = toolTracker.feedStr('oai_' + i + '_' + tcIdx, tfn.arguments);
-                  if (tDelta) addText(tDelta, 'tool');
+                  var tDelta = toolTracker.feedStr(tcSlot, tfn.arguments);
+                  if (tDelta) {
+                    if (isThinkToolName(toolNameBySlot[tcSlot])) addThinkText(tDelta);
+                    else addText(tDelta, 'tool');
+                  }
                 }
               }
             }
-            if (msg.function_call && typeof msg.function_call.arguments === 'string' && msg.function_call.arguments) {
-              var fcDelta = toolTracker.feedStr('oai_fc_' + i, msg.function_call.arguments);
-              if (fcDelta) addText(fcDelta, 'tool');
+            if (msg.function_call) {
+              var fcSlot = 'oai_fc_' + i;
+              if (msg.function_call.name) toolNameBySlot[fcSlot] = String(msg.function_call.name);
+              if (typeof msg.function_call.arguments === 'string' && msg.function_call.arguments) {
+                var fcDelta = toolTracker.feedStr(fcSlot, msg.function_call.arguments);
+                if (fcDelta) {
+                  if (isThinkToolName(toolNameBySlot[fcSlot])) addThinkText(fcDelta);
+                  else addText(fcDelta, 'tool');
+                }
+              }
             }
           }
         } else if (typeof c.text === 'string') {
@@ -1221,8 +1341,12 @@ function capture318Parser(ev) {
             if (part.thought === true) {
               if (typeof part.text === 'string') addThinkText(part.text);
             } else if (part.functionCall && part.functionCall.args && toolTracker) {
-              var gFcDelta = toolTracker.feedObj('gem_' + ci + '_' + pi + '_' + String(part.functionCall.name || ''), part.functionCall.args);
-              if (gFcDelta) addText(gFcDelta, 'tool');
+              var gFcName = String(part.functionCall.name || '');
+              var gFcDelta = toolTracker.feedObj('gem_' + ci + '_' + pi + '_' + gFcName, part.functionCall.args);
+              if (gFcDelta) {
+                if (isThinkToolName(gFcName)) addThinkText(gFcDelta);
+                else addText(gFcDelta, 'tool');
+              }
             } else if (typeof part.text === 'string') {
               addText(part.text, 'text');
             }
@@ -1231,15 +1355,21 @@ function capture318Parser(ev) {
       }
     }
 
-    /* 6. Claude / Anthropic 流式与非流式兼容（含 input_json_delta 工具参数） */
-    if (obj.type === 'content_block_delta' && obj.delta) {
+    /* 6. Claude / Anthropic 流式与非流式兼容（含 input_json_delta 工具参数与思考工具区分） */
+    if (obj.type === 'content_block_start' && obj.content_block && obj.content_block.type === 'tool_use') {
+      toolNameBySlot['anth_' + String(obj.index || 0)] = String(obj.content_block.name || '');
+    } else if (obj.type === 'content_block_delta' && obj.delta) {
       if (obj.delta.type === 'text_delta' && typeof obj.delta.text === 'string') {
         addText(obj.delta.text, 'text');
       } else if (obj.delta.type === 'thinking_delta' && typeof obj.delta.thinking === 'string') {
         addThinkText(obj.delta.thinking);
       } else if (obj.delta.type === 'input_json_delta' && typeof obj.delta.partial_json === 'string' && toolTracker) {
-        var aDelta = toolTracker.feedStr('anth_' + String(obj.index || 0), obj.delta.partial_json);
-        if (aDelta) addText(aDelta, 'tool');
+        var aSlot = 'anth_' + String(obj.index || 0);
+        var aDelta = toolTracker.feedStr(aSlot, obj.delta.partial_json);
+        if (aDelta) {
+          if (isThinkToolName(toolNameBySlot[aSlot])) addThinkText(aDelta);
+          else addText(aDelta, 'tool');
+        }
       }
     } else if (obj.type === 'message_delta' && obj.delta && obj.delta.stop_reason) {
       setFinish(obj.delta.stop_reason);
@@ -1251,7 +1381,10 @@ function capture318Parser(ev) {
         else if (blk.type === 'text') addText(blk.text || '', 'text');
         else if (blk.type === 'tool_use' && blk.input && toolTracker) {
           var tuDelta = toolTracker.feedObj('anth_tu_' + ai, blk.input);
-          if (tuDelta) addText(tuDelta, 'tool');
+          if (tuDelta) {
+            if (isThinkToolName(blk.name)) addThinkText(tuDelta);
+            else addText(tuDelta, 'tool');
+          }
         }
       }
     }
@@ -1470,6 +1603,7 @@ function capture318Parser(ev) {
     }
     if (tagSplitter) {
       var tf = tagSplitter.flush();
+      if (tf.retroBodyToThink > 0) reclassBodyToThink(tf.retroBodyToThink);
       if (tf.think) addThinkText(tf.think);
       if (tf.body) commitBodyText(tf.body, 'text');
     }
@@ -2138,11 +2272,13 @@ function handleFetch(next, thisArg, args) {
       var newInit = {};
       for (var k in init) newInit[k] = init[k];
       newInit.body = plan.body;
+      if (AR6_REQ_DONE_SYM) { try { newInit[AR6_REQ_DONE_SYM] = true; } catch (eSymN) {} }
+      if (AR6_FETCH_REENTRY) { try { AR6_FETCH_REENTRY.add(newInit); } catch (eAddN) {} }
       outArgs = [input, newInit];
     }
-    var asstTail = '', effortHint = false;
+    var asstTail = '', effortHint = false, prefillThinkTag = '';
     try {
-      var bodyObj = parsedForInternal || (plan.body ? JSON.parse(plan.body) : null);
+      var bodyObj = (plan && plan.body && plan.body !== rawBody) ? JSON.parse(plan.body) : (parsedForInternal || (plan.body ? JSON.parse(plan.body) : null));
       var msgsB = (bodyObj && bodyObj.request && Array.isArray(bodyObj.request.messages))
         ? bodyObj.request.messages : ((bodyObj && Array.isArray(bodyObj.messages)) ? bodyObj.messages : []);
       for (var mbi = msgsB.length - 1; mbi >= 0; mbi--) {
@@ -2153,6 +2289,7 @@ function handleFetch(next, thisArg, args) {
       }
       var sysB = String((bodyObj && bodyObj.system) || '') + '\n' + (typeof jailSysText === 'function' ? jailSysText(bodyObj) : '');
       effortHint = /EFFORT LEVEL|think silently/i.test(sysB);
+      prefillThinkTag = detectPrefillThinkTag(bodyObj);
     } catch (eLB) {}
     if (plan.model) lastReq = { url: url, raw: rawBody, model: plan.model, base: plan.base || '', asstTail: asstTail, effort: effortHint, authHeaders: extractSafeAuthHeaders(init) };
   } catch (e) { plan = null; }
@@ -2165,6 +2302,7 @@ function handleFetch(next, thisArg, args) {
   var started = nowMs();
   var ev = newEvidence(plan ? plan.model : '', 0, 'sse');
   ev.internal = internal; ev.selfContinuation = selfContinuation; ev.asstTail = asstTail; ev.effort = effortHint; ev.narrative = narrative;
+  ev.prefillThinkTag = prefillThinkTag || '';
   ev.trafficKind = (traffic && traffic.kind) || 'story';
   ev.trafficLabel = (traffic && traffic.label) || '正文';
   capture318(ev, started);
@@ -2308,20 +2446,40 @@ var probeFetch = null;
 var exposedFetch = null;
 var exposedPrev = null;
 
-/* V5.65：检测 fetch 包装链中是否已包含当前版本的有效 __ar6 钩子，避免反复抢压柏宝绘 rawCaptureFetch / 龙血玄黄零层 / 世界书访问器 */
+/* V5.71：检测 fetch 包装链中是否已包含当前版本的有效 __ar6 钩子（兼容显式链表、闭包守卫与任意访问器锁），
+   并配合跨浅拷贝 Symbol + AbortSignal 三重防重入锁，彻底避免与外层插件/脚本形成双套双跑。 */
 var AR6_FETCH_REENTRY = (typeof WeakSet === 'function') ? new WeakSet() : null;
+var AR6_SIG_REENTRY = (typeof WeakSet === 'function') ? new WeakSet() : null;
+var AR6_REQ_DONE_SYM = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('ar6.fetch.handled') : null;
 var AR6_ACCESSOR_MODE = false;
 
-function fetchChainHasCurrent(fn) {
+function isNativeFetchFn(fn) {
+  try {
+    return typeof fn === 'function' && Function.prototype.toString.call(fn).indexOf('[native code]') >= 0;
+  } catch (e) { return false; }
+}
+
+function fetchChainHasCurrent(fn, win) {
   try {
     var cur = fn;
     for (var depth = 0; depth < 14 && typeof cur === 'function'; depth++) {
       if (cur.__ar6 && cur.__ar6v === VERSION && !cur.__ar6dead) return true;
       var nxt = cur.__ar6prev ||
         (cur.__acuHostGenerationInterceptor__ && cur.__acuHostGenerationInterceptor__.original) ||
-        cur.original || cur.__orig || cur._origFetch || cur._yzmOriginalFetch || null;
+        cur.original || cur.__orig || cur._origFetch || cur._yzmOriginalFetch ||
+        cur.__ereunaSanitizerV3Original || cur.__geminiToolCallOrigFetch || null;
       if (!nxt || nxt === cur) break;
       cur = nxt;
+    }
+    /* 外层合作闭包守卫（如不暴露 .original 指针的插件/扩展脚本）：
+       只要我们的 exposedFetch 仍存活，且外层是一个后装的非原生、非 AR6 包装函数，说明我们已被包在链内，绝不再反压重套。 */
+    if (exposedFetch && !exposedFetch.__ar6dead && typeof fn === 'function' && fn !== origFetch && !fn.__ar6) {
+      if (fn.__yzmMemoryRequestProbeFetch === true) return true;
+      try {
+        var yzmReg = win && win.__yzmMemoryRequestProbeFetchRegistration;
+        if (yzmReg && yzmReg.wrapper === fn) return true;
+      } catch (eYReg) {}
+      if ((!win || win === HOST) && !isNativeFetchFn(fn)) return true;
     }
   } catch (e) {}
   return false;
@@ -2335,8 +2493,8 @@ function installFetchHookOn(w) {
       if (isHost) { exposedFetch = w.fetch; hooked = true; }
       return true;
     }
-    /* 外层被临时钩子（柏宝绘 rawCaptureFetch / 龙血玄黄零层 / 世界书访问器）包住，但我们的钩子仍在链中有效运行时，不再强抢重套 */
-    if (fetchChainHasCurrent(w.fetch)) {
+    /* 外层被临时钩子、合作闭包守卫或访问器包住，但我们的钩子仍在链中有效运行时，不再强抢重套 */
+    if (fetchChainHasCurrent(w.fetch, w)) {
       if (isHost) hooked = true;
       return true;
     }
@@ -2347,7 +2505,7 @@ function installFetchHookOn(w) {
       if (!probeFetch) probeFetch = w.fetch;
     }
 
-    /* 检测外层访问器守卫（例如 世界书管理器 __wbmCacheInspectorPatchState 的 Object.defineProperty(win, 'fetch', {get,set})） */
+    /* 检测任意外层访问器守卫（Object.defineProperty(win, 'fetch', { get, set })） */
     var desc = null;
     try { desc = Object.getOwnPropertyDescriptor(w, 'fetch'); } catch (eDesc) { desc = null; }
     var isAccessor = !!(desc && (typeof desc.get === 'function' || typeof desc.set === 'function'));
@@ -2360,25 +2518,41 @@ function installFetchHookOn(w) {
     var dead = false;
     var wrapped = function (input, init) {
       if (dead) return prev.apply(this, arguments);
-      /* 重入锁防死循环（与未知外层访问器守卫共存的硬底线） */
+      /* 三重防重入锁：WeakSet(init) + 跨浅拷贝 Symbol(init) + WeakSet(init.signal) */
       var lockObj = (init && typeof init === 'object') ? init : ((input && typeof input === 'object') ? input : null);
-      if (AR6_FETCH_REENTRY && lockObj) {
-        if (AR6_FETCH_REENTRY.has(lockObj)) return prev.apply(this, arguments);
-        AR6_FETCH_REENTRY.add(lockObj);
+      var lockSig = (init && init.signal && typeof init.signal === 'object') ? init.signal : null;
+      var hitReentry = false;
+      if (AR6_FETCH_REENTRY && lockObj && AR6_FETCH_REENTRY.has(lockObj)) hitReentry = true;
+      if (!hitReentry && AR6_REQ_DONE_SYM && lockObj && lockObj[AR6_REQ_DONE_SYM] === true) hitReentry = true;
+      if (!hitReentry && AR6_SIG_REENTRY && lockSig && AR6_SIG_REENTRY.has(lockSig)) hitReentry = true;
+      if (hitReentry) return prev.apply(this, arguments);
+
+      var symMarked = false;
+      if (AR6_FETCH_REENTRY && lockObj) { try { AR6_FETCH_REENTRY.add(lockObj); } catch (eA1) {} }
+      if (AR6_SIG_REENTRY && lockSig) { try { AR6_SIG_REENTRY.add(lockSig); } catch (eA2) {} }
+      if (AR6_REQ_DONE_SYM && lockObj) {
+        try {
+          if (Object.isExtensible ? Object.isExtensible(lockObj) : true) {
+            Object.defineProperty(lockObj, AR6_REQ_DONE_SYM, { value: true, enumerable: true, configurable: true, writable: true });
+            symMarked = true;
+          }
+        } catch (eA3) {}
       }
+      var releaseLocks = function () {
+        if (AR6_FETCH_REENTRY && lockObj) { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD1) {} }
+        if (AR6_SIG_REENTRY && lockSig) { try { AR6_SIG_REENTRY.delete(lockSig); } catch (eD2) {} }
+        if (symMarked && AR6_REQ_DONE_SYM && lockObj) { try { delete lockObj[AR6_REQ_DONE_SYM]; } catch (eD3) {} }
+      };
       try {
         var ret = handleFetch(prev, this, arguments);
-        if (AR6_FETCH_REENTRY && lockObj) {
-          if (ret && typeof ret.then === 'function') {
-            ret.then(function () { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD1) {} },
-                     function () { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD2) {} });
-          } else {
-            try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD3) {}
-          }
+        if (ret && typeof ret.then === 'function') {
+          ret.then(releaseLocks, releaseLocks);
+        } else {
+          releaseLocks();
         }
         return ret;
       } catch (err) {
-        if (AR6_FETCH_REENTRY && lockObj) { try { AR6_FETCH_REENTRY.delete(lockObj); } catch (eD4) {} }
+        releaseLocks();
         try { DET.err++; if (w.console) w.console.warn('[AR6] hook error, fallback', err); } catch (e1) {}
         return prev.apply(this, arguments);
       }
@@ -2391,8 +2565,11 @@ function installFetchHookOn(w) {
     if (!landed && isAccessor) {
       /* 外层访问器把 wrapped 吸收为下层 delegate：同步修正 prev 指向外层原本的底层函数，防自调环路 */
       try {
-        if (wbmState && typeof wbmState.original === 'function' && wbmState.original !== w.fetch && wbmState.original !== wrapped) {
-          prev = wbmState.original;
+        var fallbackOrig = (wbmState && typeof wbmState.original === 'function') ? wbmState.original
+          : ((typeof w.__geminiToolCallOrigFetch === 'function') ? w.__geminiToolCallOrigFetch
+            : ((typeof w._yzmOriginalFetch === 'function') ? w._yzmOriginalFetch : null));
+        if (fallbackOrig && fallbackOrig !== w.fetch && fallbackOrig !== wrapped) {
+          prev = fallbackOrig;
           wrapped.__ar6prev = prev;
         }
       } catch (eFixP) {}
@@ -2429,8 +2606,8 @@ function installFetchHook() {
   if (ok) hooked = true;
   return ok;
 }
-/* 4.1→V5.65 自愈：仅在钩子真的彻底脱离调用链时才补挂；
-   若已以访问器守卫模式或外层合作链（柏宝绘/龙血玄黄）正常工作，绝不每 3 秒反复强抢覆盖。 */
+/* 4.1→V5.71 自愈：仅在钩子真的彻底脱离调用链时才补挂；
+   若已以访问器守卫模式或外层合作链（显式链表或闭包守卫）正常工作，绝不每 3 秒反复强抢覆盖。 */
 function startHookWatch() {
   if (HOOK_WATCH_T || DISPOSED) return;
   HOOK_WATCH_T = setInterval(function () {
@@ -2438,7 +2615,7 @@ function startHookWatch() {
     if (cfg && cfg.safe) return;
     try {
       if (AR6_ACCESSOR_MODE && exposedFetch && !exposedFetch.__ar6dead) return;
-      if (HOST.fetch && fetchChainHasCurrent(HOST.fetch)) return;
+      if (HOST.fetch && fetchChainHasCurrent(HOST.fetch, HOST)) return;
       var lost = !(HOST.fetch && HOST.fetch.__ar6v === VERSION);
       installFetchHook();
       if (lost && HOST.fetch && (HOST.fetch.__ar6v === VERSION || AR6_ACCESSOR_MODE)) DET.rearm++;

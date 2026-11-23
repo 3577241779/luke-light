@@ -1,10 +1,10 @@
 {
-  "version": "5.70",
-  "releasedAt": "2026-11-23T14:08:11.878Z",
-  "changelog": "V5.7 全域兼容 · 精准采样 · 叙述结界大升级：防卫设置新增「星域协同」双独立开关（外部插件 7 层纯净放行 + 预设兼容强权优先/礼让双态）；加固 4 项结构安全护栏与多插件 fetch 链和平共存；重构流式解析与光波采样悬浮窗，精准拆分多协议思考字段、自定义思考标签与工具流正文并实时亮出路由预警；全面重写「迷雾结界（防全知）」与「真实引力（去媚）」，新增「📦 贴脸包裹」与「☠️ 致命后果」双子开关，全协议支持 OpenAI / Claude / Gemini 原生端点。",
+  "version": "5.71",
+  "releasedAt": "2026-11-23T15:04:44.312Z",
+  "changelog": "V5.71 · 修复了部分 bug。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.70/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.70/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.70/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.71/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.71/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.71/dist/luke-light-desktop.json"
   }
 }

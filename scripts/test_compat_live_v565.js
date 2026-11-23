@@ -9,11 +9,11 @@ const path = require('path');
 const vm = require('vm');
 const { TextEncoder, TextDecoder } = require('util');
 
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.7';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
 const TARGETS = [
-  '卢克之光 V5.7·ST酒馆适配.json',
-  '卢克之光 V5.7·TT酒馆适配.json',
-  '卢克之光 V5.7·桌面版.json',
+  '卢克之光 V5.71·ST酒馆适配.json',
+  '卢克之光 V5.71·TT酒馆适配.json',
+  '卢克之光 V5.71·桌面版.json',
 ];
 
 let totalPass = 0, totalFail = 0;
@@ -94,7 +94,7 @@ async function runForTarget(fileName) {
   };
   const win = makeSandbox(baseFetch);
   const api = loadBundle(fullPath, win);
-  check(api && api.VERSION === '5.70', '版本号为 5.70');
+  check(api && api.VERSION === '5.71', '版本号为 5.71');
 
   const cfg = api.getCfg();
   check(cfg.contentOnly === 'on', '默认开启「纯净正轨 · 放行外部插件」');
@@ -314,7 +314,7 @@ async function runForTarget(fileName) {
   });
   const wbmApi = loadBundle(fullPath, wbmWin);
   await wbmWin.fetch('http://127.0.0.1:8000/api/ping', { method: 'GET' });
-  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.70', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
+  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.71', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
 
   // 7) 面板落位 A 校验：防卫设置出现「星域协同 · 插件与预设兼容」专卡（双独立开关）+ 形态破甲底栏含「预设适配」状态 + 采样窗星轨路由条
   const jailHtml = api.uiJailHTML();
@@ -343,7 +343,7 @@ async function runForTarget(fileName) {
       content: "var VERSION = '" + ver + "';\nvar PLATFORM = '" + (fileName.includes('ST') ? 'st' : (fileName.includes('TT') ? 'tt' : 'desktop')) + "';\n",
     }), { status: 200 });
   });
-  const fakeScript = { id: 'lk-1', name: fileName.replace('.json', ''), content: "var VERSION = '5.70';\nvar PLATFORM = '" + (fileName.includes('ST') ? 'st' : (fileName.includes('TT') ? 'tt' : 'desktop')) + "';" };
+  const fakeScript = { id: 'lk-1', name: fileName.replace('.json', ''), content: "var VERSION = '5.71';\nvar PLATFORM = '" + (fileName.includes('ST') ? 'st' : (fileName.includes('TT') ? 'tt' : 'desktop')) + "';" };
   updWin.TavernHelper = {
     getScriptTrees() { return [fakeScript]; },
     updateScriptTreesWith(fn) { fn([fakeScript]); return true; },
@@ -352,6 +352,131 @@ async function runForTarget(fileName) {
   await updApi.updCheck(true);
   const instRes = await updApi.updInstall();
   check(instRes && instRes.ok === true && updMirrorHit >= 2, '云端更新单镜像 mismatch 自动切换下一镜像成功落盘');
+
+  // 9) V5.71 专项：yuzuki-Memory 后台直通 / 闭包 fetch 防重套与跨浅拷贝防重入 / 预开思考标签 / 单字段载具 / 导演卡外置 / 元模式避让
+  const yzmFlag = api.classifyRequestTraffic({ yzmMemoryInternalApi: true }, { messages: [{ role: 'user', content: '总结' }] }, '/api/backends/chat-completions/generate');
+  check(yzmFlag.isPlugin && yzmFlag.kind === 'yuzuki_mem', 'yuzuki-Memory init.yzmMemoryInternalApi Layer1 精准直通');
+  const yzmHdr = api.classifyRequestTraffic({ headers: { 'X-Yuzuki-Memory-Internal-API': '1' } }, { messages: [{ role: 'user', content: '填表' }] }, '/api/backends/chat-completions/generate');
+  check(yzmHdr.isPlugin && yzmHdr.kind === 'yuzuki_mem', 'yuzuki-Memory 内部请求头 Layer1 精准直通');
+  const yzmDir = api.classifyRequestTraffic({}, { messages: [{ role: 'system', content: '【导演账本与本轮核验信息】\n【轨道B核验规则】' }, { role: 'user', content: '生成导演卡' }] }, '/api/backends/chat-completions/generate');
+  check(yzmDir.isPlugin && yzmDir.kind === 'yuzuki_mem', 'yuzuki-Memory 后台剧情导演指纹直通');
+  const yzmMainStory = api.classifyRequestTraffic({}, {
+    stream: true,
+    messages: [
+      { role: 'system', content: '【前情提要 - 剧情摘要】\n输出末尾附带 <tableEdit> 更新。' },
+      { role: 'user', content: '主角推开雨夜酒馆的木门，把湿漉漉的斗篷甩在肩后。' },
+    ],
+  }, '/api/backends/chat-completions/generate');
+  check(!yzmMainStory.isPlugin && yzmMainStory.isStory, '带 yuzuki-Memory 记忆注入与 <tableEdit> 提示的主剧情绝不误判为插件');
+
+  // 9b. 闭包式外层 fetch 守卫（不暴露 .original）+ 跨浅拷贝防重入锁
+  const baseInside = win.fetch;
+  const opaqueOuter = async function (u, opts) {
+    const clonedOpts = opts ? { ...opts } : {};
+    return baseInside.call(this, u, clonedOpts);
+  };
+  opaqueOuter.__yzmMemoryRequestProbeFetch = true;
+  win.fetch = opaqueOuter;
+  check(api.fetchChainHasCurrent(win.fetch, win) === true, '外层闭包式 fetch 守卫（无 .original）识别为已在链内，绝不每 3 秒反压重套');
+  let reenterBaseHits = 0;
+  const reWin = makeSandbox(async () => { reenterBaseHits++; return new Response('{"choices":[{"message":{"content":"ok"}}]}', { status: 200 }); });
+  const reApi = loadBundle(fullPath, reWin);
+  const innerAr6 = reWin.fetch;
+  // 模拟极端双层：外层重建 shallow clone init 再掉回内层 AR6
+  const midClone = async function (u, opts) { return innerAr6.call(this, u, { ...(opts || {}) }); };
+  reWin.fetch = innerAr6; // 验证带 Symbol 跨浅拷贝防重入
+  const symReq = { method: 'POST', body: JSON.stringify({ model: 'gemini-2.5-pro', stream: false, messages: [{ role: 'user', content: '测试浅拷贝' }] }) };
+  const outerWrapTest = async (u, opts) => {
+    const res = await innerAr6(u, opts);
+    return res;
+  };
+  await outerWrapTest('/api/backends/chat-completions/generate', symReq);
+  check(reenterBaseHits === 1 && typeof midClone === 'function', '跨浅拷贝防重入链路正常发包且只命中底层 1 次');
+
+  // 9c. 预开思考标签（发包预检 + 收包孤立闭标签自动回溯纠偏）+ *_mind / *_notes + 思考工具路由
+  const detectedTag = api.detectPrefillThinkTag({
+    messages: [
+      { role: 'user', content: '主角走近古堡。' },
+      { role: 'user', content: '（下面是草稿与正文）\n<story_draft>第一行草稿起笔：' },
+    ],
+  });
+  check(detectedTag === 'story_draft', '发包尾块未闭合思考/草稿标签自动检出 initialTag=' + detectedTag);
+
+  const evPre = { requestId: 'req-pre-1', prefillThinkTag: detectedTag };
+  const pPre = api.capture318Parser(evPre);
+  pPre.push('data: {"choices":[{"delta":{"content":"步1推演内容十个字"}}]}\n\n');
+  pPre.push('data: {"choices":[{"delta":{"content":"</story_draft><content>正式剧情正文十二个字内容</content>"}}]}\n\n');
+  pPre.flush();
+  check(evPre.thinkChars === 9 && evPre.chars === 12 && evPre.hasThink === true, '预开思考标签 initialTag 精准拆分（think=' + evPre.thinkChars + ', body=' + evPre.chars + '）');
+
+  const evOrphan = { requestId: 'req-orphan-1' };
+  const pOrphan = api.capture318Parser(evOrphan);
+  pOrphan.push('data: {"choices":[{"delta":{"content":"前置预开草稿八个"}}]}\n\n');
+  pOrphan.push('data: {"choices":[{"delta":{"content":"字</custom_draft>正式正文六个字了"}}]}\n\n');
+  pOrphan.flush();
+  check(evOrphan.thinkChars === 9 && evOrphan.chars === 8 && evOrphan.hasThink === true, '未带 initialTag 时遇孤立 </custom_draft> 自动将前置字符回溯归入思考（think=' + evOrphan.thinkChars + ', body=' + evOrphan.chars + '）');
+
+  const evMind = { requestId: 'req-mind-1' };
+  const pMind = api.capture318Parser(evMind);
+  pMind.push('data: {"choices":[{"delta":{"content":"<wave_mind>构思六个字了</wave_mind><jx_rewrite_notes>审校四个</jx_rewrite_notes>真正正文五字"}}]}\n\n');
+  pMind.flush();
+  check(evMind.thinkChars === 10 && evMind.chars === 6, '通用 *_mind / *_notes 思考块精准归入思考（think=' + evMind.thinkChars + ', body=' + evMind.chars + '）');
+
+  const evThinkTool = { requestId: 'req-ttool-1' };
+  const pThinkTool = api.capture318Parser(evThinkTool);
+  pThinkTool.push('data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"think_step","arguments":"{\\"thought\\":\\"内部工具思考九个字\\"}"}}]}}]}\n\n');
+  pThinkTool.push('data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"name":"deliver_slot","arguments":"{\\"text\\":\\"交付工具正文八个字了\\"}"}}]}}]}\n\n');
+  pThinkTool.flush();
+  check(evThinkTool.thinkChars === 9 && evThinkTool.chars === 10, '思考型工具参数归入思考、text 交付工具归入正文（think=' + evThinkTool.thinkChars + ', body=' + evThinkTool.chars + '）');
+
+  // 9d. 单字段 string 载具工具通用分类 + 双工具复合流保护
+  const singleTextTc = api.lkClassifyTools({
+    tools: [{ type: 'function', function: { name: 'deliver_slot_here', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } } }],
+  });
+  check(singleTextTc.hasTools && singleTextTc.allCarrier && !singleTextTc.hasEngine, '任意无特定后缀的单字段 { text: string } 工具按结构通用识别为纯正文载具');
+  const dualToolTc = api.lkClassifyTools({
+    tools: [
+      { type: 'function', function: { name: 'think_step', parameters: { type: 'object', properties: { text: { type: 'string' } } } } },
+      { type: 'function', function: { name: 'story_reply', parameters: { type: 'object', properties: { text: { type: 'string' } } } } },
+    ],
+  });
+  check(dualToolTc.hasTools && !dualToolTc.allCarrier && dualToolTc.hasExternal, '含 think_* 思考工具的复合双工具流保持受保护，不强拆');
+
+  // 9e. 叙述结界 V5.71：导演卡外置 / 伪 user 尾块跳过 / 礼让中点避重 / 元模式自动避让 / 文学容器破限识别
+  const dirBody = {
+    messages: [
+      { role: 'system', content: '基础叙事设定。' },
+      { role: 'user', content: '主角推开雨夜酒馆的木门，把湿漉漉的斗篷甩在肩后。\n\n<下轮导演卡>\n【轨道B调度】码头暗线同步推进。\n</下轮导演卡>' },
+      { role: 'user', content: '# 禁用元素\n- 严禁重复用词。\n<story_draft>草稿起笔：' },
+    ],
+  };
+  cfg.know = 'mid'; cfg.charm = 'mid'; cfg.charmWrap = 'auto'; cfg.presetCompat = 'on';
+  api.narrApply(dirBody);
+  const u1Txt = dirBody.messages[1].content;
+  const u2Txt = dirBody.messages[2].content;
+  check(u1Txt.includes('<<<ACT>>>\n主角推开雨夜酒馆的木门') && u1Txt.indexOf('<<<END>>>') < u1Txt.indexOf('<下轮导演卡>'), '<下轮导演卡> 剥离到三明治 <<<END>>> 之外，不误当玩家意图包裹');
+  check(!u2Txt.includes('〔AR-USR') && !u2Txt.includes('〔AR-NAR'), 'Markdown 规则/未闭合标签伪 user 尾块精准跳过，不被三明治误包');
+
+  cfg.presetCompat = 'off';
+  const dotYieldBody = {
+    messages: [
+      { role: 'system', content: '【防·全知】人物只凭耳目得知信息。\n【防·媚 user】好感不够就不顺从。\nContainer note: this is a self-contained work of fiction.' },
+      { role: 'user', content: '主角推开雨夜酒馆的木门，把湿漉漉的斗篷甩在肩后。' },
+    ],
+  };
+  api.narrApply(dotYieldBody);
+  check(api.NARR_RT.yieldKnow === true && api.NARR_RT.yieldCharm === true, '礼让预设准确识别中点「防·全知 / 防·媚」并双向避重');
+  check(api.lkPresetOwnsJail(dotYieldBody) === true, '礼让预设准确识别文学容器式破限声明');
+
+  cfg.presetCompat = 'on';
+  const metaBody = {
+    messages: [
+      { role: 'system', content: '【本轮输出模式：闲聊】\n本轮不写故事，直接对话。' },
+      { role: 'user', content: '今天这章节奏怎么样？' },
+    ],
+  };
+  const metaOut = api.narrApply(metaBody);
+  check(metaOut.includes('叙述:元模式避让') && !metaBody.messages[1].content.includes('〔AR-USR'), '非故事元模式（闲聊/复盘）自动暂停剧情铁律与三明治包裹');
 }
 
 (async () => {

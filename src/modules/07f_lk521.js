@@ -46,7 +46,9 @@ function presetCompatForce() {
 
 /* 通用区分「纯正文交付载具工具」与「结构化多字段业务引擎工具」（基于字段结构与通用语义动词，不绑定任何特定预设名） */
 var LK_ENGINE_TOOL_RE = /(?:workflow|engine|state|table|database|phone|hud|status|scene|event|inventory|quest|memory|search|fetch|image|draw|ping_check)/i;
+var LK_THINK_TOOL_RE = /^(?:think|thinking|plan|planning|cot|reason|reasoning|draft|scratchpad)(?:$|[_-])/i;
 var LK_CARRIER_TOOL_RE = /^(?:lk_write|submit_story_output|game_content|emit_complete_response(?:_[a-zA-Z0-9_]+)?|write_to_file(?:_[a-zA-Z0-9_]+)?|[a-zA-Z0-9_-]+_(?:content|reply|story|response|output|narrative))$/i;
+var LK_CARRIER_FIELD_RE = /^(?:text|content|story|reply|output|response|body|narrative|prose|main_text|game_content)$/i;
 function lkClassifyTools(root) {
   var out = { hasTools: false, allCarrier: false, hasEngine: false, hasExternal: false, names: [] };
   if (!root || typeof root !== 'object') return out;
@@ -61,14 +63,29 @@ function lkClassifyTools(root) {
     var nm = String(fn.name || '').trim();
     if (nm) out.names.push(nm);
     var props = fn.parameters && fn.parameters.properties;
-    var propCount = (props && typeof props === 'object') ? Object.keys(props).length : 0;
+    var propKeys = (props && typeof props === 'object') ? Object.keys(props) : [];
+    var propCount = propKeys.length;
     /* 1) 参数字段 >= 3 或命中通用业务域动词：一律按业务引擎工具保护，严禁强拆 */
     if (propCount >= 3 || LK_ENGINE_TOOL_RE.test(nm)) {
       out.hasEngine = true;
       continue;
     }
-    /* 2) 参数简单（<= 2 字段）且命名属通用正文交付载具：归为纯正文载具 */
-    if (LK_CARRIER_TOOL_RE.test(nm)) {
+    /* 2) 思考型辅助工具（如 think_* / plan_*）：按复合工具流保护，不强拆为单一正文载具 */
+    if (LK_THINK_TOOL_RE.test(nm)) {
+      out.hasExternal = true;
+      continue;
+    }
+    /* 3) 参数简单（<= 2 字段）且命名属通用正文交付载具，或纯单字段 string 文本交付载具（如 { text: string }） */
+    var isSingleTextCarrier = false;
+    if (propCount === 1) {
+      var onlyKey = propKeys[0];
+      var onlySpec = props[onlyKey];
+      var onlyType = onlySpec && typeof onlySpec.type === 'string' ? onlySpec.type.toLowerCase() : '';
+      if (LK_CARRIER_FIELD_RE.test(onlyKey) && (!onlyType || onlyType === 'string')) {
+        isSingleTextCarrier = true;
+      }
+    }
+    if (LK_CARRIER_TOOL_RE.test(nm) || isSingleTextCarrier) {
       carrierCount++;
       continue;
     }

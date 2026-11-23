@@ -16,16 +16,20 @@ var LIVE_PUB_MS = 600;
 var LIVE_PP_MAX = 65536;
 var LIVE_TICK_MS = 1000;
 
-/* 通用推理/思考/规划标签通配规则（不硬编码特定第三方预设名，自动覆盖各类 *_think* / think_* / *_plan* / 中文思考审校标签与注释思考块） */
-var AR6_THINK_TAG_SRC = '(?:[a-z0-9_-]{1,20}_)?(?:thinking|think|thought|cot|interleaving|suot|planning|plan|draft|scratchpad|reasoning|reason|tuiyan|review|audit)(?:_[a-z0-9_-]{1,20})?~?|report_[a-z0-9_-]{1,16}~?|[\\u4e00-\\u9fa5]{0,3}(?:思考|推演|规划|审核|审校|草稿|思维链|构思)';
+/* 通用推理/思考/规划标签通配规则（不硬编码特定第三方预设名，自动覆盖各类 *_think* / think_* / *_plan* / *_draft / *_mind / *_notes / 中文思考审校标签与注释思考块） */
+var AR6_THINK_TAG_SRC = '(?:[a-z0-9_-]{1,20}_)?(?:thinking|think|thought|cot|interleaving|suot|planning|plan|draft|scratchpad|reasoning|reason|tuiyan|review|audit)(?:_[a-z0-9_-]{1,20})?~?|(?:[a-z0-9_-]{1,20}_)(?:mind|notes)~?|report_[a-z0-9_-]{1,16}~?|[\\u4e00-\\u9fa5]{0,3}(?:思考|推演|规划|审核|审校|草稿|思维链|构思)';
 var AR6_BODY_WRAP_RE = /<\/?(?:content|zw)\b[^>]*>/gi;
 var AR6_THINK_OPEN_RE = new RegExp('<(' + AR6_THINK_TAG_SRC + ')(?:\\s[^>]*)?>|<!--\\s*(?:run|plan|cot|jp|[a-z]*think[a-z]*)\\b', 'i');
+var AR6_THINK_CLOSE_RE = new RegExp('<\\/(' + AR6_THINK_TAG_SRC + ')\\s*>', 'i');
 var AR6_THINK_PAIR_RE = new RegExp('<(' + AR6_THINK_TAG_SRC + ')(?:\\s[^>]*)?>([\\s\\S]*?)<\\/\\1\\s*>|<!--\\s*(?:run|plan|cot|jp|[a-z]*think[a-z]*)\\b[\\s\\S]*?-->', 'gi');
 var AR6_THINK_UNCLOSED_RE = new RegExp('<(' + AR6_THINK_TAG_SRC + ')(?:\\s[^>]*)?>([\\s\\S]*)$|<!--\\s*(?:run|plan|cot|jp|[a-z]*think[a-z]*)\\b([\\s\\S]*)$', 'i');
 
-/* 跨 SSE 分片有状态标签状态机：实时拆分流式思考与正文，支持半截标签跨帧拼接 */
-function ar6CreateTagSplitter() {
-  var inTag = '';
+/* 跨 SSE 分片有状态标签状态机：实时拆分流式思考与正文，支持半截标签跨帧拼接、预开思考标签 initialTag 与孤立闭标签自动回溯纠偏 */
+function ar6CreateTagSplitter(opts) {
+  var initTag = (opts && opts.initialTag) ? String(opts.initialTag).toLowerCase() : '';
+  var inTag = initTag;
+  var sawOpen = !!initTag;
+  var preOpenBodyChars = 0;
   var pending = '';
   var MAX_HOLD = 40;
 
@@ -63,20 +67,39 @@ function ar6CreateTagSplitter() {
   }
 
   function step(chunk, isFlush) {
-    var outBody = '', outThink = '';
+    var outBody = '', outThink = '', retroBodyToThink = 0;
     var buf = pending + String(chunk == null ? '' : chunk);
     pending = '';
     var guard = 0;
     while (buf.length && guard++ < 4000) {
       if (!inTag) {
         var om = AR6_THINK_OPEN_RE.exec(buf);
+        var orphanCm = !sawOpen ? AR6_THINK_CLOSE_RE.exec(buf) : null;
+        if (orphanCm && (!om || orphanCm.index < om.index)) {
+          /* 请求侧预开了思考标签但未带入 initialTag 时，首见孤立 </思考标签> 自动将前置文本回溯纠偏归入思考 */
+          if (preOpenBodyChars > 0) {
+            retroBodyToThink += preOpenBodyChars;
+            preOpenBodyChars = 0;
+          }
+          if (orphanCm.index > 0) outThink += buf.slice(0, orphanCm.index);
+          sawOpen = true;
+          buf = buf.slice(orphanCm.index + orphanCm[0].length);
+          continue;
+        }
         if (!om) {
           var cut = isFlush ? buf.length : holdTailIndex(buf, false);
-          outBody += stripWrap(buf.slice(0, cut));
+          var bPiece = stripWrap(buf.slice(0, cut));
+          outBody += bPiece;
+          if (!sawOpen && bPiece) preOpenBodyChars += bPiece.length;
           pending = buf.slice(cut);
           break;
         }
-        if (om.index > 0) outBody += stripWrap(buf.slice(0, om.index));
+        if (om.index > 0) {
+          var bPre = stripWrap(buf.slice(0, om.index));
+          outBody += bPre;
+        }
+        sawOpen = true;
+        preOpenBodyChars = 0;
         inTag = om[1] ? String(om[1]).toLowerCase() : '<!--';
         buf = buf.slice(om.index + om[0].length);
       } else {
@@ -92,7 +115,7 @@ function ar6CreateTagSplitter() {
         buf = buf.slice(cm.end);
       }
     }
-    return { body: outBody, think: outThink, inThink: !!inTag };
+    return { body: outBody, think: outThink, inThink: !!inTag, retroBodyToThink: retroBodyToThink };
   }
 
   return {
@@ -104,7 +127,8 @@ function ar6CreateTagSplitter() {
 
 var AR6_TOOL_BODY_KEYS = [
   'content', 'story', 'narrative', 'game_content', 'main_text',
-  'text', 'output', 'reply', 'body', 'response', 'prose', 'story_text', 'scene'
+  'text', 'output', 'reply', 'body', 'response', 'prose', 'story_text', 'scene',
+  'thought', 'thinking', 'reasoning', 'plan', 'draft', 'analysis', 'notes'
 ];
 
 function ar6UnescapeJsonSlice(src, startIdx) {
@@ -406,6 +430,14 @@ function liveTagSplit(t) {
     else think += Math.max(0, m.length - 7);
     return '';
   });
+  var orphanM = AR6_THINK_CLOSE_RE.exec(body);
+  if (orphanM) {
+    var openBefore = AR6_THINK_OPEN_RE.exec(body.slice(0, orphanM.index));
+    if (!openBefore) {
+      think += orphanM.index;
+      body = body.slice(orphanM.index + orphanM[0].length);
+    }
+  }
   var um = AR6_THINK_UNCLOSED_RE.exec(body);
   if (um) {
     var uInner = um[2] != null ? um[2] : (um[3] || '');
@@ -452,6 +484,21 @@ function liveStructDelta(reqId, bodyAdd, thinkAdd, via) {
       if (!LIVE.firstContentAt) LIVE.firstContentAt = t;
       LIVE.lastContentAt = t;
     }
+  } catch (e) {}
+}
+
+function liveStructReclass(reqId, bodyToThink) {
+  try {
+    if (!LIVE.on || liveSafe()) return;
+    if (reqId && LIVE.requestId && reqId !== LIVE.requestId) return;
+    var mv = Number(bodyToThink) || 0;
+    if (mv <= 0) return;
+    var actual = Math.min(LIVE.struct.body, mv);
+    LIVE.struct.body = Math.max(0, LIVE.struct.body - actual);
+    LIVE.struct.think += actual;
+    if (!LIVE.firstThinkAt) LIVE.firstThinkAt = nowMs();
+    if (LIVE.struct.body === 0) LIVE.firstContentAt = 0;
+    LIVE.usageZeroThink = false;
   } catch (e) {}
 }
 

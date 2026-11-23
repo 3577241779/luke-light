@@ -2044,7 +2044,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.70') throw new Error('VERSION 应为 5.70，实际 ' + VERSION);
+      if (VERSION !== '5.71') throw new Error('VERSION 应为 5.71，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2974,6 +2974,9 @@ var AR6_API = {
   liveLineHTML: (typeof liveLineHTML === 'function') ? liveLineHTML : null,
   liveStructDelta: (typeof liveStructDelta === 'function') ? liveStructDelta : null,
   liveStructMeta: (typeof liveStructMeta === 'function') ? liveStructMeta : null,
+  liveStructReclass: (typeof liveStructReclass === 'function') ? liveStructReclass : null,
+  detectPrefillThinkTag: (typeof detectPrefillThinkTag === 'function') ? detectPrefillThinkTag : null,
+  lkPresetOwnsJail: (typeof lkPresetOwnsJail === 'function') ? lkPresetOwnsJail : null,
   narrCharmWrapMode: (typeof narrCharmWrapMode === 'function') ? narrCharmWrapMode : null,
   narrCharmWrapOn: (typeof narrCharmWrapOn === 'function') ? narrCharmWrapOn : null,
   narrCharmLethalOn: (typeof narrCharmLethalOn === 'function') ? narrCharmLethalOn : null,

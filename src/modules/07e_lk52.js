@@ -139,11 +139,13 @@ function lkPurifyText(t, scope) {
   return { txt: parts.join(''), n: n };
 }
 
+var LK_LITERARY_JAIL_RE = /self-contained work of fiction|transcription layer|treat as environmental noise|虚构故事容器|不置评.{0,8}誊录/i;
 function lkPresetOwnsJail(body) {
   try {
     var sys = String((typeof jailSysText === 'function' ? jailSysText(body) : '') || '');
     if (typeof JAIL_OWN_RE !== 'undefined' && JAIL_OWN_RE.test(sys)) return true;
     if (typeof LK_JB_ANY !== 'undefined' && LK_JB_ANY.test(sys)) return true;
+    if (LK_LITERARY_JAIL_RE.test(sys)) return true;
     var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
     if (root && typeof lkClassifyTools === 'function') {
       var tc = lkClassifyTools(root);
