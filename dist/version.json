@@ -1,10 +1,10 @@
 {
-    "changelog":  "V5.71 · 更新了多款主题皮肤，并修复了部分 bug。",
-    "version":  "5.71",
-    "releasedAt":  "2026-11-23T16:31:03.674Z",
-    "packages":  {
-                     "desktop":  "https://cdn.jsdelivr.net/gh/3577241779/luke-light@f1c3d9381bcb/dist/luke-light-desktop.json",
-                     "st":  "https://cdn.jsdelivr.net/gh/3577241779/luke-light@f1c3d9381bcb/dist/luke-light-st.json",
-                     "tt":  "https://cdn.jsdelivr.net/gh/3577241779/luke-light@f1c3d9381bcb/dist/luke-light-tt.json"
-                 }
+  "version": "5.72",
+  "releasedAt": "2026-11-23T16:35:40.037Z",
+  "changelog": "V5.72 · 更新了多款主题皮肤，并修复了部分 bug。",
+  "packages": {
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.72/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.72/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.72/dist/luke-light-desktop.json"
+  }
 }

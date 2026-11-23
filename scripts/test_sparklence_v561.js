@@ -13,11 +13,11 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.72';
 const TARGETS = [
-  '卢克之光 V5.71·ST酒馆适配.json',
-  '卢克之光 V5.71·TT酒馆适配.json',
-  '卢克之光 V5.71·桌面版.json',
+  '卢克之光 V5.72·ST酒馆适配.json',
+  '卢克之光 V5.72·TT酒馆适配.json',
+  '卢克之光 V5.72·桌面版.json',
 ];
 
 function createCanvasMock(state, opts = {}) {
@@ -498,7 +498,7 @@ function runForTarget(fileName) {
     script.runInContext(ctx);
     env.advance(100, 120);
     const api = env.win.__AR6__;
-    check(api && api.VERSION === '5.71', `VERSION 应为 5.71，实际 ${api && api.VERSION}`);
+    check(api && api.VERSION === '5.72', `VERSION 应为 5.72，实际 ${api && api.VERSION}`);
 
     // 初次使用：未开启桌宠，先进入防卫设置并点开「3D 迪迦 · 光之伙伴桌宠」
     api.openPanel();

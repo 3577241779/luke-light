@@ -5,9 +5,9 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.72';
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = 'V5.71 · 更新了多款主题皮肤，并修复了部分 bug。';
+const CHANGELOG_LATEST = 'V5.72 · 更新了多款主题皮肤，并修复了部分 bug。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -83,10 +83,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.71·ST酒馆适配.json',
+    fileName: '卢克之光 V5.72·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.71·ST酒馆适配',
-    info: '卢克之光 V5.71「光之守护」· 手机 ST 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与神光棒变身）',
+    name: '卢克之光 V5.72·ST酒馆适配',
+    info: '卢克之光 V5.72「光之守护」· 手机 ST 酒馆适配（五款主题皮肤自由切换 / 流式响应与断流抢救引擎 / 武装货舱双轮与外衣剥壳 / 插件放行+预设适配 / 3D 迪迦桌宠）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -94,10 +94,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.71·TT酒馆适配.json',
+    fileName: '卢克之光 V5.72·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.71·TT酒馆适配',
-    info: '卢克之光 V5.71「光之守护」· TT 酒馆适配（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与 TT 双入口）',
+    name: '卢克之光 V5.72·TT酒馆适配',
+    info: '卢克之光 V5.72「光之守护」· TT 酒馆适配（五款主题皮肤自由切换 / 流式响应与断流抢救引擎 / 武装货舱双轮与外衣剥壳 / 插件放行+预设适配 / 3D 迪迦桌宠与 TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -105,10 +105,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.71·桌面版.json',
+    fileName: '卢克之光 V5.72·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.71·桌面版',
-    info: '卢克之光 V5.71「光之守护」· 电脑桌面版（插件放行+预设适配双开关 / 光波采样思考正文精准分离 / 迷雾结界防全知+真实引力去媚与近2轮贴脸包裹+致命后果 / 3D 迪迦桌宠与桌面宽屏拖拽）',
+    name: '卢克之光 V5.72·桌面版',
+    info: '卢克之光 V5.72「光之守护」· 电脑桌面版（五款主题皮肤自由切换 / 流式响应与断流抢救引擎 / 武装货舱双轮与外衣剥壳 / 插件放行+预设适配 / 3D 迪迦桌宠与桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },
