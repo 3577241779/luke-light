@@ -100,6 +100,7 @@ var CSS_TEXT = [
   '#ar6-root .ar6-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px 12px;background:rgba(8,13,24,.78);border-bottom:1px solid rgba(148,163,184,.22);}',
   '#ar6-root .ar6-navb{position:relative;width:100%;text-align:center;justify-content:center;padding:7px 4px;font:600 12.5px/1.2 inherit;border-radius:8px;border:1px solid rgba(148,163,184,.32);background:#162032;color:#94A3B8;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));transition:all .12s ease;}',
   '#ar6-root .ar6-nav-dot{position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:#FCD34D;box-shadow:0 0 8px rgba(252,211,77,.95);pointer-events:none;}',
+  '#ar6-root .ar6-b:active,#ar6-root .ar6-ubtn:active{transform:scale(.97);}',
   '#ar6-root .ar6-navb:hover{border-color:#7DD3FC;color:#E2E8F0;}',
   '#ar6-root .ar6-navb[aria-pressed="true"]{background:linear-gradient(135deg,#0284C7,#0C2D48);border-color:#38BDF8;color:#F0F9FF;box-shadow:0 0 14px rgba(56,189,248,.3);}',
   /* ---- 形态共鸣顶栏与壳体 (#ar6-root[data-tier="..."]) ---- */
@@ -595,6 +596,7 @@ function bindOutsideDismiss() {
       var t = ev && ev.target;
       if (t && t.closest && t.closest('#ar6-pill')) return;
       if (t && t.closest && t.closest('#ar6-avatar')) return;
+      if (t && t.closest && t.closest('#ar6-spark')) return;
       if (t && t.closest && t.closest('#ar6-bn2')) return;
       if (t && t.closest && t.closest('#ar6-logwin')) return;
       if (t && t.closest && t.closest('#ar6-pvdbg')) return;
@@ -629,7 +631,7 @@ function bindOutsideDismiss() {
       if (ev && ev.detail === 0 && !ev.pointerType) return;
       if (LAST_SYNTH_SHIELD_AT > 0 && DOC_PD_SEQ === LAST_SYNTH_SHIELD_PD && (Date.now() - LAST_SYNTH_SHIELD_AT < 650)) {
         var ct = ev && ev.target;
-        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill')) {
+        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill,#ar6-spark')) {
           LAST_SYNTH_SHIELD_AT = 0;
           try { ev.preventDefault(); } catch (eP0) {}
           try { ev.stopPropagation(); } catch (eP1) {}

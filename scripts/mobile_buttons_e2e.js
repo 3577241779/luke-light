@@ -976,7 +976,7 @@ async function runSuiteForTarget(fileName) {
     check(win.document.lastCopiedText.length > 10, '局域网 HTTP 环境 exportlog 走 textarea+execCommand 成功复制');
     win.document.lastCopiedText = '';
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcopy', true));
-    check(win.document.lastCopiedText.includes('版本 5.5'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
+    check(win.document.lastCopiedText.includes('版本 5.6'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
 
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcheck', true));
     const bnAfterDiag = win.document.getElementById('ar6-bn2');
@@ -1379,10 +1379,36 @@ async function runSuiteForTarget(fileName) {
     await mobileTouchTap(win, () => findAr6Btn(win, 'pill-reset', true));
     check(api.getCfg().pillHide === false && api.getCfg().pillSide === 'right', 'pill-reset 复位并重新显示圆章');
 
-    // 召唤闪耀迪迦桌宠 + 子设置 + 双击立绘打开主面板 + 无其它备用入口时关桌宠自动恢复圆章防失联
+    // 召唤 3D CG 雕像迪迦 + 神光棒点击弹翼 + 诺亚/深渊形态联动 + 音效开关 + 子设置 + 双击立绘打开主面板
     await mobileTouchTap(win, () => findAr6Btn(win, 'pet-show', true));
+    const sparkOv = win.document.getElementById('ar6-spark');
+    check(!!sparkOv && sparkOv.getAttribute('data-ar6-spark') === 'waiting', 'V5.6 召唤 3D 迪迦弹出屏幕中央可点击 3D 神光棒浮层');
+    if (sparkOv) {
+      await mobileTouchTap(win, () => sparkOv.querySelector('[data-ar6-sp="fire"]'), { directTarget: true });
+      check(sparkOv.getAttribute('data-ar6-spark') === 'firing', '点击 3D 神光棒触发双翼弹开与变身序列');
+      api.closeSparklence(true);
+      check(!win.document.getElementById('ar6-spark'), 'closeSparklence 彻底清理神光棒浮层并呈现边缘 3D 迪迦');
+    }
     const avatarEl = win.document.getElementById('ar6-avatar');
-    check(!!avatarEl && api.petIsExpanded() === true, 'pet-show 召唤闪耀迪迦桌宠立绘');
+    check(!!avatarEl && api.petIsExpanded() === true, 'pet-show 召唤 3D CG 雕像迪迦桌宠');
+
+    // 验证诺亚动态圣翼与凝视深渊黑曜红形态实时联动
+    const prevJailPet = api.getCfg().jail;
+    api.setCfg('jail', 'gatanothor');
+    api.avatarSyncForm(false);
+    check(win.document.getElementById('ar6-avatar').getAttribute('data-form') === 'noa', '切换诺亚形态同步触发 3D 桌宠 data-form="noa"（展开动态圣翼）');
+    api.setCfg('jail', 'abyss');
+    api.avatarSyncForm(false);
+    check(win.document.getElementById('ar6-avatar').getAttribute('data-form') === 'abyss', '切换凝视深渊形态同步触发 3D 桌宠 data-form="abyss"（黑曜血红）');
+    api.setCfg('jail', prevJailPet);
+    api.avatarSyncForm(false);
+
+    // 验证纯代码特摄音效开关与预设切换
+    await mobileTouchTap(win, () => findAr6Btn(win, 'pet-sfx', true));
+    await mobileTouchTap(win, () => findAr6Btn(win, 'pet-sfx-glitter', true));
+    check(JSON.parse(win.localStorage.getItem('ar6-pet-v2')).sfx === true && JSON.parse(win.localStorage.getItem('ar6-pet-v2')).sfxPreset === 'glitter',
+      'V5.6 0KB 纯合成特摄音效开关与「闪耀圣域」预设落盘成功');
+    await mobileTouchTap(win, () => findAr6Btn(win, 'pet-sfx', true));
 
     await mobileTouchTap(win, () => findAr6Btn(win, 'pet-voice', true));
     await mobileTouchTap(win, () => findAr6Btn(win, 'pet-auto', true));

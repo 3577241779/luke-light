@@ -586,7 +586,7 @@ function uiBaseSig() {
     var petSig = '';
     try {
       var psPet = (typeof AR6_PET_STATE !== 'undefined' && AR6_PET_STATE) ? AR6_PET_STATE : ((typeof petRead === 'function') ? petRead() : null);
-      if (psPet) petSig = [psPet.show ? 1 : 0, psPet.docked ? 1 : 0, psPet.voice ? 1 : 0, psPet.autoDock ? 1 : 0, psPet.paused ? 1 : 0, String(psPet.motion || ''), String(psPet.opacity || ''), String(psPet.size || '')].join(',');
+      if (psPet) petSig = [psPet.show ? 1 : 0, psPet.docked ? 1 : 0, psPet.voice ? 1 : 0, psPet.autoDock ? 1 : 0, psPet.paused ? 1 : 0, psPet.sfx ? 1 : 0, String(psPet.sfxPreset || ''), String(psPet.motion || ''), String(psPet.opacity || ''), String(psPet.size || '')].join(',');
     } catch (ePetSig) {}
     var clrArmed = (CLEAR_CONFIRM_AT && (Date.now() - CLEAR_CONFIRM_AT < 4000)) ? 1 : 0;
     var mpLockSig = (typeof MODEL_LOCKED_VAL !== 'undefined' ? String(MODEL_LOCKED_VAL || '') : '') + ':' +
@@ -694,6 +694,7 @@ function patchRole() {
       b.className = 'ar6-x ar6-lwbtn' + (LOGW.open ? ' on' : '');
       b.setAttribute('aria-pressed', LOGW.open ? 'true' : 'false');
     }
+    try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (ePetS) {}
     return true;
   } catch (e) { return false; }
 }

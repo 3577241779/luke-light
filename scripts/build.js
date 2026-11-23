@@ -7,7 +7,7 @@ const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || DIST_DIR;
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = '新增「光之星轨 · 云端自动更新」：默认开启后台静默追新，支持手动巡检一键升级与刷新前时空回溯，全部个人开关与锁定波段 100% 无损保留。';
+const CHANGELOG_LATEST = '全面重制 3D CG 雕像风迪迦桌宠、可点击 3D 金属神光棒化光变身演出（白光剪影破柱凝实 → 圣光彗星流光飞掠 → 边缘再现）、诺亚动态铂银圣翼与凝视深渊黑曜红形态联动、胸口精准红灯告警及 0KB 纯合成 1996 迪迦特摄音效。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -35,6 +35,7 @@ const MODULE_ORDER = [
   '13_9_card.js',
   '14_10_help.js',
   '15a_pet_asset.js',
+  '15b_sparklence.js',
   '15_11_wand.js',
   '16_19_pvp.js',
   '17_18_live.js',
@@ -81,10 +82,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.5·ST酒馆适配.json',
+    fileName: '卢克之光 V5.6·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.5·ST酒馆适配',
-    info: '卢克之光 V5.5「光之守护」· 手机 ST 酒馆适配（光之星轨云端自动更新 / 移动端触控安全区 / 魔法棒+圆章双入口 / 迪迦五形态+诺亚圣翼+凝视深渊 / 全屏觉醒光流）',
+    name: '卢克之光 V5.6·ST酒馆适配',
+    info: '卢克之光 V5.6「光之守护」· 手机 ST 酒馆适配（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 移动端触控安全区）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -92,10 +93,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.5·TT酒馆适配.json',
+    fileName: '卢克之光 V5.6·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.5·TT酒馆适配',
-    info: '卢克之光 V5.5「光之守护」· TT 酒馆适配（光之星轨云端自动更新 / TT 专属防失联双入口 / 跨层存储同步 / 迪迦五形态+诺亚圣翼+凝视深渊 / 全屏觉醒光流）',
+    name: '卢克之光 V5.6·TT酒馆适配',
+    info: '卢克之光 V5.6「光之守护」· TT 酒馆适配（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / TT 防失联双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -103,10 +104,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.5·桌面版.json',
+    fileName: '卢克之光 V5.6·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.5·桌面版',
-    info: '卢克之光 V5.5「光之守护」· 电脑桌面版（光之星轨云端自动更新 / 桌面宽屏自由拖拽 / 图鉴并排对照 / 武装货舱零空回 / 迪迦五形态+诺亚圣翼+凝视深渊）',
+    name: '卢克之光 V5.6·桌面版',
+    info: '卢克之光 V5.6「光之守护」· 电脑桌面版（3D CG 雕像迪迦桌宠+神光棒化光变身 / 诺亚动态圣翼+深渊黑曜红 / 光之星轨云端自动更新 / 桌面宽屏自由拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },
