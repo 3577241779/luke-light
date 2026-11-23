@@ -2401,6 +2401,7 @@ function dispose() {
   try { if (bannerTimer) { clearTimeout(bannerTimer); bannerTimer = null; } } catch (e) {}
   step('还原 fetch', unhookFetch);
   step('还原 XHR', unhookXhr);
+  try { if (typeof lkSyncStToolPostProcess === 'function') lkSyncStToolPostProcess(true); } catch (ePPD) {}
   step('移除面板', function () {
     try { if (typeof closeSparklence === 'function') closeSparklence(false); } catch (eSpD) {}
     try { if (typeof clearAwakenFx === 'function') clearAwakenFx(); } catch (eFx) {}
@@ -2901,6 +2902,25 @@ var AR6_API = {
   toolChanEligible: toolChanEligible,
   toolChanPatch: toolChanPatch,
   toolPull: toolPull,
+  lkCreateArgExtractor: (typeof lkCreateArgExtractor === 'function') ? lkCreateArgExtractor : null,
+  lkCreateCoverStripper: (typeof lkCreateCoverStripper === 'function') ? lkCreateCoverStripper : null,
+  lkStripCoverOnce: (typeof lkStripCoverOnce === 'function') ? lkStripCoverOnce : null,
+  TOOL_COVER_LINE: (typeof TOOL_COVER_LINE === 'string') ? TOOL_COVER_LINE : '',
+  TOOL_READ_NAME: (typeof TOOL_READ_NAME === 'string') ? TOOL_READ_NAME : '',
+  lkSalvageIncompleteText: (typeof lkSalvageIncompleteText === 'function') ? lkSalvageIncompleteText : null,
+  lkSalvageLastRaw: (typeof lkSalvageLastRaw === 'function') ? lkSalvageLastRaw : null,
+  lkAttachResponsePipeline: (typeof lkAttachResponsePipeline === 'function') ? lkAttachResponsePipeline : null,
+  lkAbortActiveStreams: (typeof lkAbortActiveStreams === 'function') ? lkAbortActiveStreams : null,
+  lkCleanLatestAiFloor: (typeof lkCleanLatestAiFloor === 'function') ? lkCleanLatestAiFloor : null,
+  lkParseTokLimitFromErr: (typeof lkParseTokLimitFromErr === 'function') ? lkParseTokLimitFromErr : null,
+  lkTryTok400Clamp: (typeof lkTryTok400Clamp === 'function') ? lkTryTok400Clamp : null,
+  lkSyncStToolPostProcess: (typeof lkSyncStToolPostProcess === 'function') ? lkSyncStToolPostProcess : null,
+  toolYieldReason: (typeof toolYieldReason === 'function') ? toolYieldReason : null,
+  resumeSchedule: (typeof resumeSchedule === 'function') ? resumeSchedule : null,
+  startWatcher: (typeof startWatcher === 'function') ? startWatcher : null,
+  getStGen: function () { return (typeof ST_GEN !== 'undefined') ? ST_GEN : null; },
+  getJL: function () { return (typeof JL !== 'undefined') ? JL : null; },
+  getTokCaps: function () { return (typeof LK_TOK_CAPS !== 'undefined') ? LK_TOK_CAPS : null; },
   toolCreateUnwrapper: toolCreateUnwrapper,
   toolWrapStream: toolWrapStream,
   toolFixJson: toolFixJson,
@@ -2987,6 +3007,9 @@ var AR6_API = {
   narrPresetHasCharm: (typeof narrPresetHasCharm === 'function') ? narrPresetHasCharm : null,
   NARR_CHARM_LETHAL: (typeof NARR_CHARM_LETHAL !== 'undefined') ? NARR_CHARM_LETHAL : '',
   NARR_RT: (typeof NARR_RT !== 'undefined') ? NARR_RT : null,
+  skinId: (typeof skinId === 'function') ? skinId : null,
+  AR6_SKINS: (typeof AR6_SKINS !== 'undefined') ? AR6_SKINS : null,
+  AR6_SKIN_ORDER: (typeof AR6_SKIN_ORDER !== 'undefined') ? AR6_SKIN_ORDER : null,
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}

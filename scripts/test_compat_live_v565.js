@@ -477,6 +477,19 @@ async function runForTarget(fileName) {
   };
   const metaOut = api.narrApply(metaBody);
   check(metaOut.includes('叙述:元模式避让') && !metaBody.messages[1].content.includes('〔AR-USR'), '非故事元模式（闲聊/复盘）自动暂停剧情铁律与三明治包裹');
+
+  // 10) 多皮肤引擎校验：默认 ultra 原皮 + 顶栏 🎨 抽屉切换 5 套皮肤（极简直白 / 修仙 / 玄幻 / 绯粉 / 原皮）无报错且文案实时切换
+  check(api.skinId() === 'ultra' && Array.isArray(api.AR6_SKIN_ORDER) && api.AR6_SKIN_ORDER.length === 5, '默认原奥特曼皮肤 ultra，共注册 5 套皮肤');
+  cfg.skin = 'plain';
+  check(api.skinId() === 'plain' && api.uiJailHTML().includes('破限强度档位'), '切换皮肤一「极简直白」后文案实时切换为直白功能名');
+  cfg.skin = 'xianxia';
+  check(api.skinId() === 'xianxia' && api.uiJailHTML().includes('问道境界'), '切换皮肤二「太虚玉简·修仙」后文案实时切换为修仙境界');
+  cfg.skin = 'xuanhuan';
+  check(api.skinId() === 'xuanhuan' && api.uiJailHTML().includes('大千境界'), '切换皮肤三「焚天帝炎·玄幻」后文案实时切换为玄幻大千境界');
+  cfg.skin = 'pink';
+  check(api.skinId() === 'pink' && api.uiJailHTML().includes('微醺热度'), '切换皮肤四「绯樱微醺·粉欲」后文案实时切换为微醺色气风格');
+  cfg.skin = 'ultra';
+  check(api.skinId() === 'ultra' && api.uiJailHTML().includes('迪迦形态切换'), '切回默认皮肤「光之守护」完整还原原皮文案');
 }
 
 (async () => {

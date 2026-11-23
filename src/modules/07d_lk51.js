@@ -144,7 +144,11 @@ function lkTee(res) {
         rd.read().then(function (r) {
           if (r.done) { LK_TEE.res++; LK_TEE.chars += total; return; }
           try { total += dec.decode(r.value, { stream: true }).length; } catch (eD) {}
-          if (total < 600000) pump(); else LK_TEE.drop++;
+          if (total < 600000) pump();
+          else {
+            LK_TEE.drop++;
+            try { Promise.resolve(rd.cancel()).catch(function () {}); } catch (eCan) {}
+          }
         }, function () {});
       };
       pump();

@@ -1,7 +1,7 @@
 {
   "version": "5.71",
-  "releasedAt": "2026-11-23T15:04:44.312Z",
-  "changelog": "V5.71 · 修复了部分 bug。",
+  "releasedAt": "2026-11-23T16:30:15.761Z",
+  "changelog": "V5.71 · 更新了多款主题皮肤，并修复了部分 bug。",
   "packages": {
     "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.71/dist/luke-light-st.json",
     "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.71/dist/luke-light-tt.json",

@@ -89,7 +89,9 @@ var CFG_DEFAULT = {
   think: 'auto',
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
-  toolChan: 'off',       // low | medium | high（4.1 起三段，无自动）
+  toolChan: 'off',       // off | on（武装货舱）
+  toolLoop: false,       // 第三期：双轮工具链（合成读入工具轮 + auto，适配 Gemini 兼容反代）
+  toolCover: false,      // 第三期：可选原创中性外层封装 + 流式零延迟自动剥壳
   retry503: 'on',
   jailTool: 'off',       /* 4.6：工具破甲 关/低/中/高/强；仅 Gemini 原生 contents */
   jailToolKeep: false,   /* 4.6：与文本破甲共存（默认关；关着时开工具破甲会自动把文本破甲设成 off） */
@@ -159,6 +161,7 @@ var CFG_DEFAULT = {
   shape: 'on',
   contentOnly: 'on',     // V5.65：纯净正轨，默认仅检测与处理正文对话，外部插件请求零干预直通
   presetCompat: 'on',    // V5.65：预设适配主导权（'on'=卢克之光强权优先 | 'off'=礼让预设）
+  skin: 'ultra',         // 多皮肤主题：'ultra'(默认原皮) | 'plain' | 'xianxia' | 'xuanhuan' | 'pink'
   padX: 0,               // v1.1 面板拖动：x 像素偏移（0 居中）
   padY: 0,               // v1.1 面板拖动：y 像素偏移
   /* v1.1 只查 Gemini：true=只判定 google 家族；false=所有认得出家族的都判定
@@ -482,6 +485,8 @@ function readCfg() {
   d.base = ar6Pick(d.base, ['on', 'off'], 'on');
   d.shape = ar6Pick(d.shape, ['on', 'off'], 'on');
   d.toolChan = ar6Pick(d.toolChan, ['off', 'on'], 'off');
+  d.toolLoop = d.toolLoop === true;
+  d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');
   d.think = ar6Pick(d.think, ['auto', 'low', 'medium', 'high'], 'auto');
   d.refract = ar6Pick(d.refract, ['off', 'light', 'mid'], 'off');
@@ -492,6 +497,7 @@ function readCfg() {
   d.charmLethal = d.charmLethal === true;
   d.contentOnly = ar6Pick(d.contentOnly, ['on', 'off'], 'on');
   d.presetCompat = ar6Pick(d.presetCompat, ['on', 'off'], 'on');
+  d.skin = ar6Pick(d.skin, ['ultra', 'plain', 'xianxia', 'xuanhuan', 'pink'], 'ultra');
   d.ooc = ar6Pick(d.ooc, ['off', 'on'], 'off');
   try { sanitizeFloat(d); } catch (eS) {}
   try { sanitizeTrunc(d); } catch (eT) {}
@@ -564,6 +570,7 @@ function saltKey(tag) {
 
 function saveCfg() {
   try { cfg.__sd = Date.now(); storeWriteAll(cfg); } catch (e) { STORE_FAILS += 1; }
+  try { if (typeof lkSyncStToolPostProcess === 'function') lkSyncStToolPostProcess(); } catch (ePP) {}
 }
 
 function readLog() {

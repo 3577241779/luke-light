@@ -512,8 +512,8 @@ function truncAfterFinish(ev, pre) {
   TR.at = nowMs();
 
   /* 中档自动接力：len / pause / cut（排除用户手动点击停止的情况）自动续写 */
-  var userStopped = false;
-  try { userStopped = !!(typeof ST_GEN !== 'undefined' && ST_GEN && ST_GEN.stoppedAt && (nowMs() - ST_GEN.stoppedAt < 5000)); } catch (eUS) {}
+  var userStopped = !!(ev && ev.userAborted);
+  try { if (!userStopped) userStopped = !!(typeof ST_GEN !== 'undefined' && ST_GEN && ST_GEN.stoppedAt && (nowMs() - ST_GEN.stoppedAt < 15000)); } catch (eUS) {}
   var willFix = truncLevel(cfg.trunc) === TRUNC_MEDIUM && !!TRUNC_FIX[t.code] &&
     cfg.enabled && !cfg.safe && !userStopped && ev.narrative !== false;
   if (!willFix) {

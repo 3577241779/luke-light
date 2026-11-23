@@ -665,11 +665,29 @@ function resumeSchedule(owner, j, n, max) {
   RS.turnKey = S.key || '';
   RS.turnAt = nowMs();
   banner(tag + j.note + (owner === 'pvp' ? '，自动重试（' : '，自动续写（') + n + '/' + max + '）…', 'warn');
+  var seqAtSched = Number(JL.seq || 0);
+  var stopAtSched = 0;
+  try { stopAtSched = (typeof ST_GEN !== 'undefined' && ST_GEN) ? Number(ST_GEN.stoppedAt || 0) : 0; } catch (eSA) { stopAtSched = 0; }
   var tries = 0;
   var iv = setInterval(function () {
     tries++;
+    var curSeq = Number(JL.seq || 0);
+    var curStop = 0;
+    try { curStop = (typeof ST_GEN !== 'undefined' && ST_GEN) ? Number(ST_GEN.stoppedAt || 0) : 0; } catch (eCS) { curStop = 0; }
+    if (curStop > stopAtSched) {
+      clearInterval(iv); var wiS = WATCHERS.indexOf(iv); if (wiS >= 0) WATCHERS.splice(wiS, 1);
+      S.lock = false;
+      try { banner(tag + '检测到手动停止，取消自动续写', 'gray'); } catch (eBS) {}
+      return;
+    }
+    if (curSeq !== seqAtSched) {
+      clearInterval(iv); var wiQ = WATCHERS.indexOf(iv); if (wiQ >= 0) WATCHERS.splice(wiQ, 1);
+      S.lock = false;
+      try { banner(tag + '检测到其他预设/操作已发起新请求，自动礼让取消重复续写', 'gray'); } catch (eBQ) {}
+      return;
+    }
     var busy = false;
-    try { busy = isBusy(); } catch (e) {}
+    try { busy = isBusy() || (typeof inflight === 'number' && inflight > 0); } catch (e) {}
     if (!busy) {
       clearInterval(iv); var wi = WATCHERS.indexOf(iv); if (wi >= 0) WATCHERS.splice(wi, 1);
       S.lock = false;
@@ -697,7 +715,8 @@ function jailStatLine() {
 
 function jailAfterFinish(ev) {
   if (!cfg || !cfg.enabled || cfg.jail === 'off' || cfg.safe) return;
-  if (!ev || ev.status !== 200 || ev.error) return;
+  if (!ev || ev.status !== 200 || ev.error || ev.userAborted) return;
+  try { if (typeof ST_GEN !== 'undefined' && ST_GEN && ST_GEN.stoppedAt && (nowMs() - ST_GEN.stoppedAt < 15000)) return; } catch (eJS) {}
   /* v8.29：内部请求没有聊天产物，别拿它判空回/截断 */
   if (ev.internal) return;
 

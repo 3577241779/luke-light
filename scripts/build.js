@@ -7,7 +7,7 @@ const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.71';
 const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist';
-const CHANGELOG_LATEST = 'V5.71 · 修复了部分 bug。';
+const CHANGELOG_LATEST = 'V5.71 · 更新了多款主题皮肤，并修复了部分 bug。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -40,6 +40,7 @@ const MODULE_ORDER = [
   '16_19_pvp.js',
   '17_18_live.js',
   '18_4_ui.js',
+  '18a_skins.js',
   '19_4a_render.js',
   '20_4b_logwin.js',
   '21_boot_selftest.js',

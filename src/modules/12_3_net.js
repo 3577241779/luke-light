@@ -1887,13 +1887,17 @@ function startWatcher(ev, meta, reqStart) {
       }
       var ended = EV_TICK.seq > evSeq0;
       if (ended && !evEndAt) evEndAt = EV_TICK.lastEndAt || t;
-      /* 有正文才算有结果；事件说结束了也算（此时 chat 通常已提交） */
+      /* V5.72：流还在跑或 isBusy() 仍为真时，绝不因 20 秒思考停顿抢跑结算导致误发二次 /continue！ */
+      var streamAlive = !!(ev && ev.__peekStarted && !ev.__streamDone && !ev.userAborted);
+      var busyNow = isBusy();
       var progress = ev.internal ? (ev.sawText ? 1 : 0) : lastLen;
-      var settled = progress > 0 && (!isBusy() || t - lastChange > settleMsOf(ended) || ended);
-      var stopped = !ev.internal && sawBusy && !isBusy() && progress > 0 && t - reqStart > 1200 && t - lastChange > 900;
+      var settled = progress > 0 && ((!busyNow && !streamAlive) || ended);
+      var stopped = !ev.internal && sawBusy && !busyNow && !streamAlive && progress > 0 && t - reqStart > 1200 && t - lastChange > 900;
+      var userAbortedDone = !!(ev && ev.userAborted && !busyNow && t - reqStart > 300);
       var noCtx = !stCtx() && polls >= 3;
-      var timeout = t - reqStart > 120000;
-      var wants = settled || stopped || noCtx || timeout || (ended && t - reqStart > 600);
+      /* 仅当流已断且超过 180 秒，或总时长超过 480 秒极端兜底时才强制超时结算 */
+      var timeout = (!streamAlive && t - reqStart > 180000) || (t - reqStart > 480000);
+      var wants = settled || stopped || userAbortedDone || noCtx || timeout || (ended && !streamAlive && t - reqStart > 600);
       if (wants && progress === 0 && !timeout) {
         /* 宽限复查：流式期间 chat.mes 可能还没提交，别急着判空回 */
         if (!graceUntil) graceUntil = t + 1500;
@@ -1967,27 +1971,184 @@ function desensSafeCut(s) {
   if (mArm) best = Math.min(best, mArm.index);
   return best < 0 ? 0 : best;
 }
+/* V5.72：字段级流式还原（只在解析后的 JSON 文本字段上执行，绝不在原始 SSE 字节层切分破坏帧结构） */
+function lkCreateFieldUnmasker() {
+  var cHold = '', tHold = '', reasonAccum = '', contentChars = 0, sawToolCall = false;
+  var canDesens = function () { return !!(cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false); };
+  var canArmor = function () { return !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function'); };
+  function restoreRaw(s) {
+    if (!s) return '';
+    if (canDesens()) return desensRestoreTxt(s);
+    if (canArmor()) return lkArmorRestore(s);
+    return s;
+  }
+  function feedBuf(isThink, raw, isFinal) {
+    var comb = (isThink ? tHold : cHold) + String(raw || '');
+    if (isThink) tHold = ''; else cHold = '';
+    if (!comb) return '';
+    if (!isFinal && (canDesens() || canArmor())) {
+      var cut = desensSafeCut(comb);
+      if (cut < comb.length) {
+        if (isThink) tHold = comb.slice(cut); else cHold = comb.slice(cut);
+        comb = comb.slice(0, cut);
+      }
+    }
+    var out = comb ? restoreRaw(comb) : '';
+    if (out) {
+      if (isThink) { if (reasonAccum.length < 131072) reasonAccum += out; }
+      else contentChars += out.replace(/\s+/g, '').length;
+    }
+    return out;
+  }
+  function applyObj(o, isFinalObj) {
+    if (!o || typeof o !== 'object') return o;
+    if (Array.isArray(o.choices) && o.choices.length) {
+      var ch = o.choices[0];
+      var d = ch && (ch.delta || ch.message);
+      var fin = isFinalObj || (ch && ch.finish_reason != null);
+      if (d && (Array.isArray(d.tool_calls) || d.function_call)) sawToolCall = true;
+      if (d && typeof d === 'object') {
+        if (typeof d.reasoning_content === 'string' && d.reasoning_content) d.reasoning_content = feedBuf(true, d.reasoning_content, fin);
+        if (typeof d.reasoning === 'string' && d.reasoning) d.reasoning = feedBuf(true, d.reasoning, fin);
+        if (typeof d.content === 'string' && d.content) d.content = feedBuf(false, d.content, fin);
+        if (fin) {
+          var tc = feedBuf(false, '', true);
+          if (tc) d.content = (d.content || '') + tc;
+          var tr = feedBuf(true, '', true);
+          if (tr) d.reasoning_content = (d.reasoning_content || '') + tr;
+        }
+      }
+      return o;
+    }
+    if (Array.isArray(o.candidates) && o.candidates.length) {
+      var cand = o.candidates[0];
+      var parts = cand && cand.content && cand.content.parts;
+      var gFin = isFinalObj || (cand && cand.finishReason != null);
+      if (Array.isArray(parts)) {
+        for (var i = 0; i < parts.length; i++) {
+          var pt = parts[i];
+          if (!pt || typeof pt !== 'object') continue;
+          if (pt.functionCall) sawToolCall = true;
+          if (typeof pt.text === 'string' && pt.text) pt.text = feedBuf(pt.thought === true, pt.text, gFin);
+        }
+        if (gFin) {
+          var gTr = feedBuf(true, '', true);
+          var gTc = feedBuf(false, '', true);
+          if (gTr) parts.push({ thought: true, text: gTr });
+          if (gTc) parts.push({ text: gTc });
+        }
+      }
+      return o;
+    }
+    if (o.type === 'content_block_delta' && o.delta) {
+      if (o.delta.type === 'text_delta' && typeof o.delta.text === 'string') o.delta.text = feedBuf(false, o.delta.text, false);
+      else if (o.delta.type === 'thinking_delta' && typeof o.delta.thinking === 'string') o.delta.thinking = feedBuf(true, o.delta.thinking, false);
+    } else if (o.type === 'content_block_start' && o.content_block) {
+      if (o.content_block.type === 'tool_use') sawToolCall = true;
+      else if (o.content_block.type === 'text' && typeof o.content_block.text === 'string') o.content_block.text = feedBuf(false, o.content_block.text, false);
+    }
+    return o;
+  }
+  return {
+    applyObj: applyObj,
+    flush: function () { return { content: feedBuf(false, '', true), reasoning: feedBuf(true, '', true) }; },
+    reasoningFallback: function () { return (!sawToolCall && contentChars === 0 && reasonAccum.trim()) ? reasonAccum : ''; },
+    hasContent: function () { return contentChars > 0; }
+  };
+}
+
 function desensWrapResponse(res) {
   try {
     var H = HOST || {};
-    if (typeof H.TransformStream !== 'function' || typeof H.Response !== 'function' || typeof H.TextDecoder !== 'function' || typeof H.TextEncoder !== 'function') return res;
+    var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
+    if (!RS || typeof H.Response !== 'function' || typeof H.TextDecoder !== 'function' || typeof H.TextEncoder !== 'function') return res;
+    if (!res || !res.body || typeof res.body.getReader !== 'function') return res;
+    var reader = res.body.getReader();
     var dec = new H.TextDecoder('utf-8');
     var enc = new H.TextEncoder();
-    var tail = '';
-    var ts = new H.TransformStream({
-      transform: function (chunk, ctl) {
-        var s = tail + dec.decode(chunk, { stream: true });
-        var cut = desensSafeCut(s);
-        tail = s.slice(cut);
-        var head = s.slice(0, cut);
-        if (head) ctl.enqueue(enc.encode(desensRestoreTxt(head)));
-      },
-      flush: function (ctl) {
-        var all = desensRestoreTxt(tail + dec.decode());
-        if (all) ctl.enqueue(enc.encode(all));
-        tail = '';
+    var um = lkCreateFieldUnmasker();
+    var lineBuf = '', pendingEvent = '', mode = '';
+
+    function procLine(rawLn) {
+      var ln = rawLn.replace(/\r$/, '');
+      if (!ln) return '';
+      if (ln.charAt(0) === ':') return ln + '\n\n';
+      if (/^event:/i.test(ln)) { pendingEvent += ln + '\n'; return ''; }
+      if (/^(?:id|retry):/i.test(ln)) return ln + '\n';
+      var m = /^data:\s?(.*)$/.exec(ln);
+      if (!m) return ln + '\n';
+      var evHdr = pendingEvent; pendingEvent = '';
+      var pl = String(m[1] || '').trim();
+      if (!pl) return '';
+      if (pl === '[DONE]') {
+        var fl = um.flush(), pre = '';
+        if (fl.reasoning) pre += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { reasoning_content: fl.reasoning }, finish_reason: null }] }) + '\n\n';
+        if (fl.content) pre += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: fl.content }, finish_reason: null }] }) + '\n\n';
+        return pre + 'data: [DONE]\n\n';
       }
-    });
+      try {
+        var obj = JSON.parse(pl);
+        um.applyObj(obj, false);
+        return evHdr + 'data: ' + JSON.stringify(obj) + '\n\n';
+      } catch (eJ) {
+        return evHdr + ln + '\n\n';
+      }
+    }
+
+    var stream = new RS({
+      pull: function (ctl) {
+        function step() {
+          return reader.read().then(function (r) {
+            if (r.done) {
+              lineBuf += dec.decode();
+              var out = '';
+              if (lineBuf.trim()) {
+                if (mode === 'json' || (!mode && lineBuf.trim().charAt(0) === '{' && !/^data:/m.test(lineBuf))) {
+                  try {
+                    var jObj = JSON.parse(lineBuf.trim());
+                    um.applyObj(jObj, true);
+                    out = JSON.stringify(jObj);
+                  } catch (eJ2) { out = desensRestoreTxt(lineBuf); }
+                } else {
+                  var rem = lineBuf.split('\n');
+                  for (var ri = 0; ri < rem.length; ri++) out += procLine(rem[ri]);
+                }
+                lineBuf = '';
+              }
+              if (mode !== 'json') {
+                var flEnd = um.flush();
+                if (flEnd.reasoning) out += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { reasoning_content: flEnd.reasoning }, finish_reason: null }] }) + '\n\n';
+                if (flEnd.content) out += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: flEnd.content }, finish_reason: null }] }) + '\n\n';
+              }
+              if (out) ctl.enqueue(enc.encode(out));
+              ctl.close();
+              return;
+            }
+            lineBuf += dec.decode(r.value, { stream: true });
+            if (!mode) {
+              var lead = lineBuf.replace(/^\s+/, '');
+              if (!lead) return step();
+              mode = (lead.charAt(0) === '{' && !/^data:/m.test(lead)) ? 'json' : 'sse';
+            }
+            if (mode === 'json') return step();
+            var lastNl = lineBuf.lastIndexOf('\n');
+            if (lastNl < 0) return step();
+            var comp = lineBuf.slice(0, lastNl);
+            lineBuf = lineBuf.slice(lastNl + 1);
+            var lines = comp.split('\n'), batch = '';
+            for (var i = 0; i < lines.length; i++) batch += procLine(lines[i]);
+            if (batch) { ctl.enqueue(enc.encode(batch)); return; }
+            return step();
+          }, function (err) {
+            ctl.error(err);
+          });
+        }
+        return step();
+      },
+      cancel: function (reason) {
+        try { return reader.cancel(reason); } catch (eC) {}
+      }
+    }, { highWaterMark: 0 });
     var headers = new H.Headers();
     try {
       res.headers.forEach(function (v, k) {
@@ -1996,7 +2157,7 @@ function desensWrapResponse(res) {
         headers.set(k, v);
       });
     } catch (eH2) {}
-    return new H.Response(res.body.pipeThrough(ts), { status: res.status, statusText: res.statusText, headers: headers });
+    return new H.Response(stream, { status: res.status, statusText: res.statusText, headers: headers });
   } catch (e) { return res; }
 }
 var DESENS_FIXED = 0;
@@ -2020,6 +2181,580 @@ function desensMaybeRestore(res, plan, internal) {
   } catch (e) { return res; }
 }
 
+/* ============================================================================
+ * V5.72 · 单层零死锁响应管道（合四为一：零 tee / 零 res.clone / 15s SSE 心跳 / 停止强释放 / 断流抢救 / 落盘兜底清洗）
+ * ========================================================================== */
+var LK_ACTIVE_STREAMS = [];
+var LK_LAST_RAW = null;
+var LK_HEARTBEAT_MS = 15000;
+var LK_RAW_CACHE_MAX = 4 * 1024 * 1024;
+
+function lkAbortActiveStreams(reason) {
+  var list = LK_ACTIVE_STREAMS.slice();
+  LK_ACTIVE_STREAMS.length = 0;
+  for (var i = 0; i < list.length; i++) {
+    try { if (list[i] && typeof list[i].abort === 'function') list[i].abort(reason || 'user-stopped'); } catch (eA) {}
+  }
+  /* 1.2s 兜底恢复发送按钮，避免停止后界面长期卡在生成态 */
+  try {
+    setTimeout(function () {
+      try {
+        if (DISPOSED || !DOC) return;
+        var stopBtn = DOC.getElementById && DOC.getElementById('mes_stop');
+        var sendBtn = DOC.getElementById && DOC.getElementById('send_but');
+        var isVis = function (el) {
+          if (!el) return false;
+          if (el.classList && el.classList.contains('displayNone')) return false;
+          if (el.style && el.style.display === 'none') return false;
+          try {
+            var cs = HOST && HOST.getComputedStyle ? HOST.getComputedStyle(el) : null;
+            if (cs && cs.display === 'none') return false;
+          } catch (eCs) {}
+          return true;
+        };
+        if ((stopBtn && isVis(stopBtn)) || (sendBtn && !isVis(sendBtn))) {
+          var ctx = stCtx();
+          if (ctx && typeof ctx.activateSendButtons === 'function') ctx.activateSendButtons();
+        }
+      } catch (eRec) {}
+    }, 1200);
+  } catch (eTm) {}
+}
+
+function lkCleanLatestAiFloor() {
+  try {
+    if (DISPOSED || !cfg || !cfg.enabled || cfg.safe) return false;
+    var needDesens = (cfg.desens === 'a' && cfg.desensUnmask !== false);
+    var needArmor = !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function');
+    if (!needDesens && !needArmor) return false;
+    var ctx = stCtx();
+    var chat = ctx && Array.isArray(ctx.chat) ? ctx.chat : null;
+    if (!chat || !chat.length) return false;
+    var cleanStr = function (s) {
+      if (typeof s !== 'string' || !s) return s;
+      var hit = s.indexOf('\u00a6') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
+      if (!hit) return s;
+      var out = needDesens ? desensRestoreTxt(s) : lkArmorRestore(s);
+      return out;
+    };
+    var anyChanged = false;
+    var minIdx = Math.max(0, chat.length - 2);
+    for (var i = chat.length - 1; i >= minIdx; i--) {
+      var m = chat[i];
+      if (!m || m.is_user) continue;
+      var changed = false;
+      if (typeof m.mes === 'string') {
+        var nm = cleanStr(m.mes);
+        if (nm !== m.mes) { m.mes = nm; changed = true; }
+      }
+      if (m.extra && typeof m.extra.reasoning === 'string') {
+        var nr = cleanStr(m.extra.reasoning);
+        if (nr !== m.extra.reasoning) { m.extra.reasoning = nr; changed = true; }
+      }
+      if (Array.isArray(m.swipes)) {
+        for (var si = 0; si < m.swipes.length; si++) {
+          if (typeof m.swipes[si] === 'string') {
+            var ns = cleanStr(m.swipes[si]);
+            if (ns !== m.swipes[si]) { m.swipes[si] = ns; changed = true; }
+          }
+        }
+      }
+      if (changed) {
+        anyChanged = true;
+        try { if (typeof ctx.updateMessageBlock === 'function') ctx.updateMessageBlock(i, m); } catch (eU) {}
+      }
+    }
+    if (anyChanged) {
+      try { if (typeof ctx.saveChatDebounced === 'function') ctx.saveChatDebounced(); } catch (eSv) {}
+    }
+    return anyChanged;
+  } catch (e) { return false; }
+}
+
+function lkSalvageLastRaw(writeToChat) {
+  var rec = LK_LAST_RAW;
+  if (!rec || !rec.chunks || !rec.bytes) {
+    if (writeToChat) { try { banner('🛟 暂无可抢救的响应缓存', 'warn'); } catch (eB0) {} }
+    return { ok: false, reason: 'no_cache' };
+  }
+  try {
+    var H = HOST || {};
+    var dec = new (H.TextDecoder || TextDecoder)('utf-8');
+    var rawText = '';
+    for (var i = 0; i < rec.chunks.length; i++) rawText += dec.decode(rec.chunks[i], { stream: true });
+    rawText += dec.decode();
+    var rescued = (typeof lkSalvageIncompleteText === 'function') ? lkSalvageIncompleteText(rawText, rec.toolName || '') : null;
+    if (!rescued || !rescued.text || !rescued.text.trim()) {
+      if (writeToChat) { try { banner('🛟 最近一次原始流缓存中未提取到正文', 'warn'); } catch (eB1) {} }
+      return { ok: false, reason: 'empty_salvage' };
+    }
+    var cleanText = rescued.text;
+    try { if (typeof desensRestoreTxt === 'function') cleanText = desensRestoreTxt(cleanText); } catch (eDr) {}
+    try { if (typeof lkStripCoverOnce === 'function') cleanText = lkStripCoverOnce(cleanText); } catch (eCs) {}
+    if (!cleanText || !cleanText.trim()) {
+      if (writeToChat) { try { banner('🛟 原始流缓存清洗后无有效正文', 'warn'); } catch (eB1b) {} }
+      return { ok: false, reason: 'empty_salvage' };
+    }
+    if (!writeToChat) return { ok: true, text: cleanText, chars: cleanText.length, mode: rescued.mode };
+    var ctx = stCtx();
+    if (!ctx || !Array.isArray(ctx.chat)) {
+      try { banner('🛟 未获取到聊天上下文，已提取 ' + cleanText.length + ' 字（请稍后重试）', 'warn'); } catch (eB2) {}
+      return { ok: false, reason: 'no_context', text: cleanText };
+    }
+    /* 若末条已经是 AI 楼层且为空/字数短于抢救正文，原地无损补全而非制造重复楼层 */
+    var lastIdx = ctx.chat.length - 1;
+    var lastMsg = lastIdx >= 0 ? ctx.chat[lastIdx] : null;
+    if (lastMsg && !lastMsg.is_user && !lastMsg.is_system && String(lastMsg.mes || '').trim().length < cleanText.trim().length) {
+      lastMsg.mes = cleanText;
+      if (!lastMsg.extra || typeof lastMsg.extra !== 'object') lastMsg.extra = {};
+      lastMsg.extra.lkSalvaged = true;
+      try { if (typeof ctx.updateMessageBlock === 'function') ctx.updateMessageBlock(lastIdx, lastMsg); } catch (eUpd) {}
+      try { if (typeof ctx.saveChat === 'function') ctx.saveChat(); else if (typeof ctx.saveChatDebounced === 'function') ctx.saveChatDebounced(); } catch (eSv0) {}
+      try { banner('🛟 已从原始流缓存原地抢救补全 ' + cleanText.length + ' 字！', 'ok', true); } catch (eB3a) {}
+      return { ok: true, text: cleanText, chars: cleanText.length, mode: rescued.mode, updatedInPlace: true };
+    }
+    var msg = {
+      name: ctx.name2 || 'Assistant',
+      is_user: false,
+      is_system: false,
+      send_date: Date.now(),
+      mes: cleanText,
+      extra: { lkSalvaged: true }
+    };
+    ctx.chat.push(msg);
+    try { if (typeof ctx.saveChat === 'function') ctx.saveChat(); else if (typeof ctx.saveChatDebounced === 'function') ctx.saveChatDebounced(); } catch (eSv) {}
+    try {
+      if (typeof ctx.addOneMessage === 'function') ctx.addOneMessage(msg, { scroll: true });
+      else if (typeof ctx.reloadCurrentChat === 'function') ctx.reloadCurrentChat();
+    } catch (eAdd) {}
+    try { banner('🛟 已从原始流缓存抢救写入 ' + cleanText.length + ' 字！', 'ok', true); } catch (eB3) {}
+    return { ok: true, text: cleanText, chars: cleanText.length, mode: rescued.mode, updatedInPlace: false };
+  } catch (e) {
+    return { ok: false, reason: String((e && e.message) || e) };
+  }
+}
+
+/* 统一响应管道：单次 reader.read() 同时完成统计取样、工具解包、字段脱敏还原、15s 边界心跳、断流抢救与停止强释放 */
+function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
+  var H = HOST || {};
+  var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
+  var canStream = !!(res && res.body && typeof res.body.getReader === 'function' &&
+    RS && typeof H.Response === 'function' && typeof H.TextDecoder === 'function' && typeof H.TextEncoder === 'function');
+  if (!canStream) {
+    try { res = toolMaybeWrap(res, plan, internal); } catch (eTw0) {}
+    try { res = desensMaybeRestore(res, plan, internal); } catch (eDa0) {}
+    var pkFb = peekBody(res, ev);
+    return { res: res, pk: pkFb };
+  }
+
+  var allowPeek = !!(cfg && cfg.peek && !cfg.safe && (!internal || String(cfg && cfg.contentOnly) === 'off'));
+  var ct = '';
+  try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eCt) {}
+  var useTool = !!(cfg && cfg.enabled && !internal && cfg.toolChan === 'on' && plan && plan.tool && res.status >= 200 && res.status < 300);
+  var needDesens = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.desens && cfg.desens === 'a' && cfg.desensUnmask !== false);
+  var needArmor = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.armor);
+  var useFieldUnmask = !!(needDesens || needArmor) && (!ct || /json|event-stream|text/i.test(ct));
+  if (useFieldUnmask) DESENS_FIXED += 1;
+
+  var isSseHint = /event-stream/i.test(ct);
+  var isJsonHint = !isSseHint && /\bjson\b/i.test(ct);
+  var wantHeartbeat = !!(cfg && !cfg.safe && !internal && (isSseHint || (!isJsonHint && !ct)));
+  var cacheStory = !internal && ev && ev.narrative !== false;
+
+  var c = capture318(ev);
+  var parser = allowPeek ? capture318Parser(ev) : null;
+  if (allowPeek) { ev.__peekStarted = true; ev.__peekPending = true; c.status = 'streaming'; }
+  else { c.settleReason = 'sampling-disabled'; }
+
+  var resolvePk = null;
+  var pkPromise = allowPeek ? new Promise(function (resolve) { resolvePk = resolve; }) : null;
+
+  var srcReader = res.body.getReader();
+  var dec = new H.TextDecoder('utf-8');
+  var enc = new H.TextEncoder();
+  var hbBytes = enc.encode(': keepalive\n\n');
+  var uw = useTool ? toolCreateUnwrapper() : null;
+  var fum = useFieldUnmask ? lkCreateFieldUnmasker() : null;
+
+  var rawChunks = [], rawBytes = 0, teeChars = 0, outBytes = 0;
+  var mode = isSseHint ? 'sse' : (isJsonHint ? 'json' : '');
+  var lineBuf = '', pendingEvent = '';
+  var done = false, settled = false, closed = false, outCtrl = null, outSettled = false;
+  var pendingRead = null, hbTimer = null;
+  var atBoundary = true, lineNonEmpty = false, prevCr = false;
+  var sawUpstreamBytes = false;
+  var rawStreamRec = cacheStory ? { at: nowMs(), url: String((lastReq && lastReq.url) || ''), model: String((plan && plan.model) || ''), toolName: useTool ? TOOL_NAME : '', status: res.status, bytes: 0, chunks: rawChunks } : null;
+
+  function makeAbortErr(reason) {
+    if (reason && typeof reason === 'object' && reason.name === 'AbortError') return reason;
+    try { return new (H.DOMException || DOMException)(String(reason || 'Aborted'), 'AbortError'); }
+    catch (eD) { var er = new Error(String(reason || 'Aborted')); er.name = 'AbortError'; return er; }
+  }
+
+  function updateBoundary(bytes) {
+    for (var i = 0; i < bytes.length; i++) {
+      var b = bytes[i];
+      if (prevCr && b === 10) { prevCr = false; continue; }
+      prevCr = (b === 13);
+      if (b === 10 || b === 13) { atBoundary = !lineNonEmpty; lineNonEmpty = false; }
+      else { lineNonEmpty = true; atBoundary = false; }
+    }
+  }
+
+  function feedTelemetry(outStr, byteLen) {
+    if (byteLen > 0) {
+      outBytes += byteLen;
+      if (allowPeek && c.firstByteMs == null) c.firstByteMs = Math.max(1, nowMs() - (ev.__captureStart || nowMs()));
+      try { if (allowPeek) liveBytes(byteLen); } catch (eLb) {}
+    }
+    if (outStr) {
+      teeChars += outStr.length;
+      if (parser) {
+        try { parser.feed(outStr); } catch (ePf) {}
+        try { if (allowPeek) livePeekChunk(outStr); } catch (eLp) {}
+      }
+    }
+  }
+
+  function settleStream(reason, error) {
+    if (settled) return;
+    settled = true;
+    if (hbTimer) { clearTimeout(hbTimer); hbTimer = null; }
+    if (rawStreamRec && rawBytes > 0) {
+      rawStreamRec.bytes = rawBytes;
+      LK_LAST_RAW = rawStreamRec;
+    }
+    try {
+      if (typeof LK_TEE !== 'undefined' && LK_TEE) {
+        LK_TEE.res++;
+        LK_TEE.chars += teeChars;
+      }
+    } catch (eTeeS) {}
+    if (uw) { try { uw.finalizeStats(); } catch (eUwF) {} }
+    if (ev) { ev.__streamDone = true; ev.__streamReason = reason; }
+    /* 从活跃流表移除 */
+    var ai = LK_ACTIVE_STREAMS.indexOf(activeEntry);
+    if (ai >= 0) LK_ACTIVE_STREAMS.splice(ai, 1);
+    if (reqSignal && typeof reqSignal.removeEventListener === 'function') {
+      try { reqSignal.removeEventListener('abort', onExternalAbort); } catch (eRm) {}
+    }
+    if (allowPeek) {
+      ev.__peekPending = false;
+      if (!DISPOSED) {
+        try { if (parser) parser.end(reason, error); } catch (eEnd) {}
+        try {
+          var elapsed = Math.max(1, nowMs() - (ev.__captureStart || nowMs()));
+          if (c.totalMs == null) c.totalMs = ev.totalMs || elapsed;
+          if (!ev.totalMs) ev.totalMs = c.totalMs;
+          if (c.firstContentMs == null && ev.firstMs) c.firstContentMs = ev.firstMs;
+          if (!ev.firstMs && c.firstContentMs != null) ev.firstMs = c.firstContentMs;
+          c.bodyChars = ev.chars; c.thinkChars = ev.thinkChars; c.thinkTokens = ev.thinkTokens;
+          c.settleReason = reason; c.status = error ? 'failed' : 'complete';
+          if (error) c.error = error;
+          if (ev.finishReason) { c.finishReason = String(ev.finishReason); if (!ev.finish) ev.finish = String(ev.finishReason); }
+          if (ev.blockReason) c.error = String(ev.blockReason);
+          if (c.source === 'none' || c.source === 'unavailable') c.source = 'peek';
+          ev.bodyChars = ev.chars;
+          if (!ev.outputChars || ev.outputChars < ev.chars) ev.outputChars = ev.chars;
+          if (ev.tailText && !ev.tail) ev.tail = ev.tailText;
+          var smv2 = String(ev.modelVersion || ev.respModel || '');
+          if (smv2) {
+            pushObs(ev, smv2, 'body');
+            if (!ev.__srv) {
+              ev.__srv = 1; ev.servedModel = smv2;
+              var want = String(ev.requestedModel || (lastReq && lastReq.model) || SERVED.want || '');
+              SERVED.last = smv2; SERVED.at = nowMs(); SERVED.checked = (SERVED.checked || 0) + 1;
+              if (want) {
+                SERVED.want = want;
+                if (normModelName(want) !== normModelName(smv2)) { SERVED.mismatch = (SERVED.mismatch || 0) + 1; ev.routeHit = true; }
+              }
+            }
+          }
+          if (ev.rid) PEEKS[ev.rid] = buildPeekEntry(ev, true, !!error);
+          if (ev.__record) capture318Reconcile(ev);
+          if (!ev.internal && typeof lkLimitWatch === 'function' && ev.finishReason) {
+            var bk2 = (typeof lastReqBase === 'function' && lastReqBase()) || 'default';
+            if (!lkLimitWatch(ev.outTokens, ev.finishReason, bk2) && ev.thinkTokens > 0) {
+              lkLimitWatch((ev.outTokens || 0) + ev.thinkTokens, ev.finishReason, bk2);
+            }
+          }
+        } catch (eSync) {}
+      }
+      if (resolvePk) resolvePk();
+    }
+  }
+
+  function settleDownstream(err) {
+    if (outSettled || !outCtrl) return;
+    outSettled = true;
+    try {
+      if (err) outCtrl.error(err);
+      else outCtrl.close();
+    } catch (eSd) {}
+  }
+
+  function onExternalAbort(reason) {
+    if (closed) return;
+    closed = true;
+    if (ev) ev.userAborted = true;
+    try { Promise.resolve(srcReader.cancel(reason || 'aborted')).catch(function () {}); } catch (eC) {}
+    settleStream('aborted', 'aborted');
+    settleDownstream(makeAbortErr(reason || (reqSignal && reqSignal.reason) || 'Aborted'));
+  }
+
+  var activeEntry = { ev: ev, abort: onExternalAbort };
+  LK_ACTIVE_STREAMS.push(activeEntry);
+  if (reqSignal && typeof reqSignal.addEventListener === 'function') {
+    reqSignal.addEventListener('abort', function () { onExternalAbort(reqSignal.reason || 'Aborted'); }, { once: true });
+    if (reqSignal.aborted) onExternalAbort(reqSignal.reason || 'Aborted');
+  }
+
+  function procSseLine(rawLn) {
+    var ln = rawLn.replace(/\r$/, '');
+    if (!ln) return '';
+    if (ln.charAt(0) === ':') return ln + '\n\n';
+    if (/^event:/i.test(ln)) { pendingEvent += ln + '\n'; return ''; }
+    if (/^(?:id|retry):/i.test(ln)) return ln + '\n';
+    var m = /^data:\s?(.*)$/.exec(ln);
+    if (!m) return useTool ? '' : (ln + '\n');
+    var evHdr = pendingEvent; pendingEvent = '';
+    if (uw) {
+      var uOut = uw.processDataPayload(m[1], ln);
+      if (!uOut) return '';
+      if (uOut.indexOf('\n\n') >= 0 && /data:\s*\[DONE\]$/.test(uOut)) return uOut + '\n\n';
+      return evHdr + uOut + '\n\n';
+    }
+    if (fum) {
+      var pl = String(m[1] || '').trim();
+      if (!pl) return '';
+      if (pl === '[DONE]') {
+        var fl = fum.flush(), pre = '';
+        if (fl.reasoning) pre += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { reasoning_content: fl.reasoning }, finish_reason: null }] }) + '\n\n';
+        if (fl.content) pre += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: fl.content }, finish_reason: null }] }) + '\n\n';
+        return pre + 'data: [DONE]\n\n';
+      }
+      try {
+        var obj = JSON.parse(pl);
+        fum.applyObj(obj, false);
+        return evHdr + 'data: ' + JSON.stringify(obj) + '\n\n';
+      } catch (eJ) { return evHdr + ln + '\n\n'; }
+    }
+    return evHdr + ln + '\n\n';
+  }
+
+  var transformed = !!(uw || fum);
+  var outStream = new RS({
+    start: function (ctl) { outCtrl = ctl; },
+    pull: function (ctl) {
+      if (closed) { settleDownstream(ev && ev.userAborted ? makeAbortErr('Aborted') : null); return; }
+      function nextRead() {
+        if (closed) { settleDownstream(ev && ev.userAborted ? makeAbortErr('Aborted') : null); return; }
+        if (!pendingRead) {
+          pendingRead = srcReader.read().then(
+            function (step) { return { kind: 'data', step: step }; },
+            function (err) { return { kind: 'err', err: err }; }
+          );
+        }
+        var allowHb = wantHeartbeat && (!mode || mode === 'sse') && (transformed || atBoundary || !sawUpstreamBytes);
+        var waiter = pendingRead;
+        if (allowHb) {
+          waiter = Promise.race([
+            pendingRead,
+            new Promise(function (resolve) {
+              hbTimer = setTimeout(function () { hbTimer = null; resolve({ kind: 'hb' }); }, LK_HEARTBEAT_MS);
+            })
+          ]);
+        }
+        return waiter.then(function (raced) {
+          if (hbTimer) { clearTimeout(hbTimer); hbTimer = null; }
+          if (closed) { settleDownstream(ev && ev.userAborted ? makeAbortErr('Aborted') : null); return; }
+          if (raced.kind === 'hb') {
+            if (ev) ev.localHeartbeats = (ev.localHeartbeats || 0) + 1;
+            ctl.enqueue(hbBytes);
+            return;
+          }
+          pendingRead = null;
+          if (raced.kind === 'err') {
+            var err = raced.err;
+            var isUserAbort = !!(ev && ev.userAborted) || (reqSignal && reqSignal.aborted) || (err && err.name === 'AbortError');
+            if (!isUserAbort && !internal) {
+              /* 断流残缺 JSON 流内实时抢救：尽可能保留已生成正文并补齐 [DONE] */
+              var rescue = '';
+              if (uw && lineBuf.trim() && typeof uw.salvageRawTail === 'function') {
+                var uTail = uw.salvageRawTail(lineBuf);
+                if (uTail) rescue += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: uTail }, finish_reason: null }] }) + '\n\n';
+              } else if (lineBuf.trim() && typeof lkSalvageIncompleteText === 'function') {
+                var salv = lkSalvageIncompleteText(lineBuf, useTool ? TOOL_NAME : '');
+                if (salv && salv.text) {
+                  rescue += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: salv.text }, finish_reason: null }] }) + '\n\n';
+                }
+              }
+              if (uw) { try { rescue += uw.flushLeftoverFrame(); } catch (eUf) {} }
+              if (fum) {
+                var flErr = fum.flush();
+                if (flErr.content) rescue += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: flErr.content }, finish_reason: null }] }) + '\n\n';
+              }
+              if (rescue || (ev && ev.chars > 0)) {
+                rescue += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] }) + '\n\ndata: [DONE]\n\n';
+                var rBytes = enc.encode(rescue);
+                feedTelemetry(rescue, rBytes.byteLength);
+                closed = true;
+                settleStream('salvaged', null);
+                ctl.enqueue(rBytes);
+                settleDownstream(null);
+                return;
+              }
+            }
+            closed = true;
+            settleStream(isUserAbort ? 'aborted' : 'read-error', String((err && err.message) || err));
+            settleDownstream(err);
+            return;
+          }
+
+          var step = raced.step;
+          if (step.done) {
+            closed = true;
+            var endStr = '';
+            if (!transformed) {
+              var restPlain = dec.decode();
+              if (restPlain) feedTelemetry(restPlain, 0);
+              settleStream('body-eof', null);
+              settleDownstream(null);
+              return;
+            }
+            lineBuf += dec.decode();
+            if (lineBuf.trim()) {
+              if (mode === 'json' || (!mode && lineBuf.trim().charAt(0) === '{' && !/^data:/m.test(lineBuf))) {
+                mode = 'json';
+                try {
+                  var jObj = JSON.parse(lineBuf.trim());
+                  if (uw) { if (!toolFixJson(jObj)) uw.handleObj(jObj); }
+                  else if (fum) fum.applyObj(jObj, true);
+                  endStr = JSON.stringify(jObj);
+                } catch (eJEnd) {
+                  if (uw && /^data:\s?/m.test(lineBuf)) {
+                    var remJ = lineBuf.split('\n');
+                    for (var rj = 0; rj < remJ.length; rj++) endStr += procSseLine(remJ[rj]);
+                  } else if (typeof lkSalvageIncompleteText === 'function') {
+                    var svEnd = lkSalvageIncompleteText(lineBuf, useTool ? TOOL_NAME : '');
+                    endStr = (svEnd && svEnd.text) ? JSON.stringify({ choices: [{ index: 0, message: { role: 'assistant', content: svEnd.text }, finish_reason: 'stop' }] }) : lineBuf;
+                  } else {
+                    endStr = lineBuf;
+                  }
+                }
+              } else {
+                var remL = lineBuf.split('\n');
+                for (var rl = 0; rl < remL.length; rl++) endStr += procSseLine(remL[rl]);
+              }
+              lineBuf = '';
+            }
+            if (mode !== 'json') {
+              if (uw) {
+                var uLeft = uw.flushLeftoverFrame();
+                if (uLeft) endStr += uLeft;
+                var uRsn = uw.reasoningFallback();
+                if (uRsn) endStr += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: uRsn }, finish_reason: null }] }) + '\n\n';
+              } else if (fum) {
+                var fLeft = fum.flush();
+                if (fLeft.reasoning) endStr += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { reasoning_content: fLeft.reasoning }, finish_reason: null }] }) + '\n\n';
+                if (fLeft.content) endStr += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: fLeft.content }, finish_reason: null }] }) + '\n\n';
+                var fRsn = fum.reasoningFallback();
+                if (fRsn) endStr += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: fRsn }, finish_reason: null }] }) + '\n\n';
+              }
+            }
+            if (endStr) {
+              var endBytes = enc.encode(endStr);
+              feedTelemetry(endStr, endBytes.byteLength);
+              ctl.enqueue(endBytes);
+            }
+            settleStream('body-eof', null);
+            settleDownstream(null);
+            return;
+          }
+
+          var chunk = step.value;
+          if (chunk && chunk.byteLength) {
+            sawUpstreamBytes = true;
+            if (cacheStory && rawBytes < LK_RAW_CACHE_MAX) {
+              var keep = Math.min(chunk.byteLength, LK_RAW_CACHE_MAX - rawBytes);
+              rawChunks.push(keep === chunk.byteLength ? chunk.slice() : chunk.slice(0, keep));
+              rawBytes += keep;
+            }
+            if (!transformed) {
+              updateBoundary(chunk);
+              var decTxt = dec.decode(chunk, { stream: true });
+              feedTelemetry(decTxt, chunk.byteLength);
+              ctl.enqueue(chunk);
+              return;
+            }
+            var s = dec.decode(chunk, { stream: true });
+            if (mode === 'pass') {
+              if (s) {
+                var pB = enc.encode(s);
+                feedTelemetry(s, pB.byteLength);
+                ctl.enqueue(pB);
+                return;
+              }
+              return nextRead();
+            }
+            lineBuf += s;
+            if (!mode) {
+              var lead = lineBuf.replace(/^\s+/, '');
+              if (!lead) return nextRead();
+              if (lead.charAt(0) === '{' && !/^data:/m.test(lead)) { mode = 'json'; return nextRead(); }
+              if (/^(?:data:|event:|:)/i.test(lead)) { mode = 'sse'; }
+              else if (lead.length >= 6) {
+                mode = 'pass';
+                var psOut = lineBuf; lineBuf = '';
+                var psB = enc.encode(psOut);
+                feedTelemetry(psOut, psB.byteLength);
+                ctl.enqueue(psB);
+                return;
+              } else return nextRead();
+            }
+            if (mode === 'json') return nextRead();
+            var lastNl = lineBuf.lastIndexOf('\n');
+            if (lastNl < 0) return nextRead();
+            var comp = lineBuf.slice(0, lastNl);
+            lineBuf = lineBuf.slice(lastNl + 1);
+            var lines = comp.split('\n'), batch = '';
+            for (var li = 0; li < lines.length; li++) batch += procSseLine(lines[li]);
+            if (batch) {
+              var bBytes = enc.encode(batch);
+              feedTelemetry(batch, bBytes.byteLength);
+              ctl.enqueue(bBytes);
+              return;
+            }
+          }
+          return nextRead();
+        });
+      }
+      return nextRead();
+    },
+    cancel: function (reason) {
+      closed = true;
+      outSettled = true;
+      if (ev && !ev.__streamDone) ev.userAborted = true;
+      settleStream('cancelled', null);
+      try { return srcReader.cancel(reason); } catch (eC) {}
+    }
+  }, { highWaterMark: 0 });
+
+  var headers = new H.Headers();
+  try {
+    res.headers.forEach(function (v, k) {
+      var lk = String(k).toLowerCase();
+      if (lk === 'content-length' || lk === 'content-encoding' || lk === 'transfer-encoding') return;
+      headers.set(k, v);
+    });
+  } catch (eHd) {}
+
+  return {
+    res: new H.Response(outStream, { status: res.status, statusText: res.statusText, headers: headers }),
+    pk: pkPromise
+  };
+}
+
 /* patch51-retry.js —— V4.3：503/429 自动退避重试（2s→5s→10s + 抖动，最多 3 次；不降级换模型） */
 
 /* ---- 常量与状态 ---- */
@@ -2040,6 +2775,12 @@ function grabFetch(next, thisArg, args) {
   var k = grabK();
   if (k <= 1) return retryFetch(next, thisArg, args);
   if (args && args[1] && args[1].signal) return retryFetch(next, thisArg, args);
+  /* 若存在外层非本脚本 fetch 包装器（有状态预设拦截器），自动退回单路避免多路并发副作用 */
+  try {
+    if (exposedFetch && HOST && HOST.fetch && HOST.fetch !== exposedFetch && !HOST.fetch.__ar6) {
+      return retryFetch(next, thisArg, args);
+    }
+  } catch (eGb) {}
   var acs = [], started = 0, done = 0, settled = false;
   function stopAll() { for (var i = 0; i < acs.length; i++) { try { acs[i].abort(); } catch (eA) {} } }
   var race = new HOST.Promise(function (resolve, reject) {
@@ -2087,26 +2828,89 @@ var RETRY_WAIT = [2000, 5000, 10000];
 var RETRY_MAX = 3;
 var TOKBACK = { used: 0, n: 0, retry: null };
 
+/* V5.72：从 400 报文智能提取上游真实输出上限，区分上下文总长溢出与输出上限超标，未给出数字时按阶梯降档（65536→32768→16384→8192） */
+function lkCurrentMaxTok(b) {
+  if (!b || typeof b !== 'object') return 0;
+  var best = 0;
+  var names = ['max_tokens', 'max_completion_tokens', 'maxTokens', 'max_output_tokens'];
+  var roots = [b];
+  if (b.request && typeof b.request === 'object') roots.push(b.request);
+  for (var ri = 0; ri < roots.length; ri++) {
+    var o = roots[ri];
+    for (var ni = 0; ni < names.length; ni++) {
+      var v = o[names[ni]];
+      if (typeof v === 'number' && isFinite(v) && v > best) best = v;
+    }
+    if (o.generationConfig && typeof o.generationConfig.maxOutputTokens === 'number' && o.generationConfig.maxOutputTokens > best) {
+      best = o.generationConfig.maxOutputTokens;
+    }
+  }
+  return best;
+}
+
+function lkParseTokLimitFromErr(errText) {
+  var s = String(errText || '');
+  if (!s) return 0;
+  var patterns = [
+    /(?:must\s+not\s+exceed|must\s+be\s*(?:<=|less\s+than\s+or\s+equal\s+to|at\s+most)|cannot\s+exceed|exceeds?\s+(?:the\s+)?maximum(?:\s+of)?|maximum(?:\s+allowed)?(?:\s+output)?(?:\s+tokens?)?\s*(?:is|of|:|=)?|max(?:_output|_completion)?_tokens[^\d\n]{0,24}(?:<=|is|:|=|exceed|limit(?:ed)?\s+to))\s*(\d{4,6})\b/i,
+    /\[\s*1\s*,\s*(\d{4,6})\s*\]/,
+    /(?:range|between)\s+\d+\s*(?:and|to|-|~)\s*(\d{4,6})\b/i
+  ];
+  for (var i = 0; i < patterns.length; i++) {
+    var m = patterns[i].exec(s);
+    if (m && m[1]) {
+      var n = parseInt(m[1], 10);
+      if (isFinite(n) && n >= 1024 && n <= 65536) return n;
+    }
+  }
+  return 0;
+}
+
 function lkTryTok400Clamp(res, args, internal) {
   if (!res || res.status !== 400 || internal || !args || !args[1] || typeof args[1].body !== 'string') {
     return Promise.resolve(null);
   }
   if (typeof res.clone !== 'function') return Promise.resolve(null);
   return res.clone().text().then(function (tk) {
-    if (!/max[_ ]?output[_ ]?tokens|max_completion_tokens|max_tokens|maxtokens|output[ _-]?token|token[ _-]?(?:limit|count)/i.test(String(tk || ''))) return null;
+    var s = String(tk || '');
+    if (!/max[_ ]?output[_ ]?tokens|max_completion_tokens|max_tokens|maxtokens|output[ _-]?token|token[ _-]?(?:limit|count)|context[ _-]?length/i.test(s)) return null;
     var b2;
     try { b2 = JSON.parse(String(args[1].body || '{}')); } catch (eP) { return null; }
+    var curMax = lkCurrentMaxTok(b2);
+    var isCtxOverflow = /context[ _-]?length[ _-]?exceeded|maximum\s+context\s+length|input\s+tokens?\s*\+\s*max|prompt.*too\s+long/i.test(s);
+    var parsedCap = isCtxOverflow ? 0 : lkParseTokLimitFromErr(s);
+    var nextCap = 0;
+    if (parsedCap > 0 && (!curMax || parsedCap < curMax)) {
+      nextCap = parsedCap;
+    } else if (curMax > 32768) {
+      nextCap = 32768;
+    } else if (curMax > 16384) {
+      nextCap = 16384;
+    } else if (curMax > 8192) {
+      nextCap = 8192;
+    } else {
+      return null;
+    }
     var u = '';
     try { u = urlOf(args[0]); } catch (eU) { u = ''; }
-    try { if (typeof lkRecordTokCap === 'function') lkRecordTokCap(u, b2, 8192); } catch (eRC) {}
+    /* 仅输出上限超标才记入渠道记忆表；上下文总长溢出只做本轮临时降档，不永久压死渠道 */
+    if (!isCtxOverflow) {
+      try { if (typeof lkRecordTokCap === 'function') lkRecordTokCap(u, b2, nextCap); } catch (eRC) {}
+    }
     var a2 = args.slice();
     var ni = {};
     for (var k in args[1]) if (Object.prototype.hasOwnProperty.call(args[1], k)) ni[k] = args[1][k];
-    ni.body = JSON.stringify(lkClampTok(b2, 8192));
+    ni.body = JSON.stringify(lkClampTok(b2, nextCap));
+    if (AR6_REQ_DONE_SYM) { try { ni[AR6_REQ_DONE_SYM] = true; } catch (eSm) {} }
+    if (AR6_FETCH_REENTRY) { try { AR6_FETCH_REENTRY.add(ni); } catch (eAd) {} }
     a2[1] = ni;
     TOKBACK.used = 1;
     TOKBACK.n++;
-    try { banner('上游拒了输出上限，已降到 8192 重发并记住该渠道上限', 'warn', true); } catch (eB2) {}
+    try {
+      banner(isCtxOverflow
+        ? ('上下文接近总窗上限，本轮临时降输出上限至 ' + nextCap + ' 重发')
+        : ('上游拒了输出上限，已阶梯降到 ' + nextCap + ' 重发并记住该渠道上限'), 'warn', true);
+    } catch (eB2) {}
     return a2;
   }, function () { return null; });
 }
@@ -2139,17 +2943,17 @@ function retryStatLine() {
 /* 只重发，不改任何东西：同一个 next / thisArg / args；body 是字符串所以可以原样再发。
    三条红线：① 内部请求（摘要/标题）不重试；② 4xx 里的“确定性错误”不重试（仅 token 上限 400 单轮夹到 8192 补发一次）；③ 用户中断不重试。 */
 function retryFetch(next, thisArg, args, internal) {
-  var attempt = 0, tokClamped = false;
+  var attempt = 0, tokClamps = 0;
   function loop() {
     var p;
     try { p = next.apply(thisArg, args); } catch (eThrow) { p = Promise.reject(eThrow); }
     if (!p || typeof p.then !== 'function') return p;
     return p.then(function (res) {
-      /* V5.25/V5.3：上游嫌输出上限太大（400 且提到 token 上限）→ 本次请求降到 8192 重发一次并记入渠道上限表 */
-      if (res && res.status === 400 && !tokClamped && !internal) {
+      /* V5.72：上游嫌输出上限太大（400 且提到 token 上限）→ 最多阶梯降档 2 次并记入渠道上限表 */
+      if (res && res.status === 400 && tokClamps < 2 && !internal) {
         return lkTryTok400Clamp(res, args, internal).then(function (a2) {
           if (!a2) return res;
-          tokClamped = true;
+          tokClamps++;
           args = a2;
           return loop();
         });
@@ -2355,16 +3159,17 @@ function handleFetch(next, thisArg, args) {
               var fbInit = {};
               for (var fk in init) fbInit[fk] = init[fk];
               fbInit.body = fbPlan.body;
+              if (AR6_REQ_DONE_SYM) { try { fbInit[AR6_REQ_DONE_SYM] = true; } catch (eSymFb) {} }
+              if (AR6_FETCH_REENTRY) { try { AR6_FETCH_REENTRY.add(fbInit); } catch (eAddFb) {} }
               plan = fbPlan;
               inflight++;
               return Promise.resolve(next.apply(thisArg, [input, fbInit])).then(function (res2) {
                 inflight--;
                 ev.status = res2.status;
                 if (res2.status >= 400) { ev.capture.status='failed';ev.capture.source='http';ev.capture.error='HTTP '+res2.status;ev.capture.settleReason='http-error';ev.capture.totalMs=nowMs()-started; readErrorBody(res2, ev); return res2; }
-                try { res2 = lkTee(res2); } catch (eTee2) {}
-                try { res2 = toolMaybeWrap(res2, plan, internal); } catch (eTw2) {}
-                try { res2 = desensMaybeRestore(res2, plan, internal); } catch (eDa2) {}
-                var pk2 = peekBody(res2, ev);
+                var pipe2 = lkAttachResponsePipeline(res2, ev, plan, internal, fbInit && fbInit.signal);
+                res2 = pipe2.res;
+                var pk2 = pipe2.pk;
                 var watching2 = (typeof startWatcher === 'function') ? !!startWatcher(ev, plan, started) : false;
                 if (!watching2 && pk2 && typeof pk2.then === 'function') {
                   var fbCommitTimer = setTimeout(function () { if (!DISPOSED && !ev.__committed) finish(ev, plan); }, 125000);
@@ -2389,11 +3194,10 @@ function handleFetch(next, thisArg, args) {
       }
       if (res.status === 204) { ev.capture.bodyChars=0;ev.capture.status='complete';ev.capture.source='http';ev.capture.settleReason='http-204';ev.capture.totalMs=nowMs()-started; finish(ev, plan); return res; }
       if (res.status >= 400) { ev.capture.status='failed';ev.capture.source='http';ev.capture.error='HTTP '+res.status;ev.capture.settleReason='http-error';ev.capture.totalMs=nowMs()-started; try { pvpHintIfOff(res.status, internal); } catch (ePh) {} readErrorBody(res, ev); return res; }
-      /* V5.0/V4.8 严格响应流管道顺序：先解包 lk_write 工具流 → 再还原脱敏连字符 → 最后交 peekBody 克隆采样 */
-      try { res = lkTee(res); } catch (eTee) {}
-      try { res = toolMaybeWrap(res, plan, internal); } catch (eTw) {}
-      try { res = desensMaybeRestore(res, plan, internal); } catch (eDa) {}
-      var pk = peekBody(res, ev);
+      /* V5.72 单层零死锁响应管道：单次 pull() 同步完成统计取样、工具解包、字段脱敏还原、15s 边界心跳与断流抢救，彻底消除双 tee / TransformStream 背压死锁 */
+      var pipe = lkAttachResponsePipeline(res, ev, plan, internal, init && init.signal);
+      res = pipe.res;
+      var pk = pipe.pk;
       /* Host chat polling has no request identity and can claim concurrent responses. */
       var watching = (typeof startWatcher === 'function') ? !!startWatcher(ev, plan, started) : false;
       /* v8.0.3：观察器关掉时 200 也要落一条（只算响应体证据），否则整轮不记录、破甲失联 */
@@ -2678,17 +3482,29 @@ function bindStEvents() {
       c.eventSource.on(ET.GENERATION_STOPPED, function () {
         ST_GEN.stoppedAt = Date.now();
         ST_GEN.at = 0;
+        try { lkAbortActiveStreams('generation-stopped'); } catch (eAb) {}
         bump();
       });
     }
     if (ET.GENERATION_ENDED != null) {
       c.eventSource.on(ET.GENERATION_ENDED, function () {
         ST_GEN.at = 0;
+        try { setTimeout(lkCleanLatestAiFloor, 80); } catch (eCl1) {}
         bump();
       });
     }
     if (ET.MESSAGE_SENT != null) c.eventSource.on(ET.MESSAGE_SENT, bump);
-    if (ET.MESSAGE_RECEIVED != null) c.eventSource.on(ET.MESSAGE_RECEIVED, bump);
+    if (ET.MESSAGE_RECEIVED != null) {
+      c.eventSource.on(ET.MESSAGE_RECEIVED, function () {
+        try { setTimeout(lkCleanLatestAiFloor, 80); } catch (eCl2) {}
+        bump();
+      });
+    }
+    var onPresetSync = function () {
+      try { if (typeof lkSyncStToolPostProcess === 'function') lkSyncStToolPostProcess(); } catch (ePS) {}
+    };
+    if (ET.PRESET_CHANGED != null) c.eventSource.on(ET.PRESET_CHANGED, onPresetSync);
+    if (ET.OAI_PRESET_CHANGED_AFTER != null) c.eventSource.on(ET.OAI_PRESET_CHANGED_AFTER, onPresetSync);
     DET.evtBound = true;
     return true;
   } catch (e) { return false; }
@@ -2785,10 +3601,15 @@ function detLine() {
 function ensureHooks() {
   /* 已 dispose：不得因为 pageshow/定时器/重试链把钩子重新挂回去 */
   if (DISPOSED) return false;
-  if (cfg.safe) { unhookFetch(); unhookXhr(); renderStatus(); return false; }
+  if (cfg.safe) {
+    unhookFetch(); unhookXhr();
+    try { if (typeof lkSyncStToolPostProcess === 'function') lkSyncStToolPostProcess(true); } catch (ePPS) {}
+    renderStatus(); return false;
+  }
   var ok = installFetchHook();
   if (ok && HOST.fetch.__ar6) HOOK_TARGET.fetch = HOST.fetch;
   if (cfg.xhr) installXhrHook(); else unhookXhr();
+  try { if (typeof lkSyncStToolPostProcess === 'function') lkSyncStToolPostProcess(); } catch (ePPN) {}
   renderStatus();
   return ok;
 }

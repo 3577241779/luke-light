@@ -177,7 +177,7 @@ function pvpHintIfOff(st, internal) {
 function pvpFetch(next, thisArg, args, init) {
   /* 总开关关着 / 暂停 / 手动就一次都不多发（调用点已经判过，这里是兜底） */
   if (!cfg || !cfg.enabled || !pvpAuto()) return next.apply(thisArg, args);
-  var attempt = 0, tokClamped = false;
+  var attempt = 0, tokClamps = 0;
   PVP.round = { tries: 0, last: '' };
 
   function go() {
@@ -234,10 +234,10 @@ function pvpFetch(next, thisArg, args, init) {
     return pr.then(function (res) {
       clearT();
       var st = res ? Number(res.status || 0) : 0;
-      if (st === 400 && !tokClamped && typeof lkTryTok400Clamp === 'function') {
+      if (st === 400 && tokClamps < 2 && typeof lkTryTok400Clamp === 'function') {
         return lkTryTok400Clamp(res, args, false).then(function (a2) {
           if (!a2) return res;
-          tokClamped = true;
+          tokClamps++;
           args = a2;
           attempt = Math.max(0, attempt - 1);
           return go();
@@ -283,8 +283,9 @@ function pvpAfterFinish(ev) {
   if (!pvpAuto()) return '';
   if (cfg.pvpEmpty === false) return '';
   if (cfg.jail !== 'off') return '';                    /* 交还破甲，绝不两家一起打 */
-  if (!ev || ev.status !== 200 || ev.error) return '';
+  if (!ev || ev.status !== 200 || ev.error || ev.userAborted) return '';
   if (ev.internal || ev.narrative === false || ev.selfContinuation) return '';
+  try { if (typeof ST_GEN !== 'undefined' && ST_GEN && ST_GEN.stoppedAt && (nowMs() - ST_GEN.stoppedAt < 15000)) return ''; } catch (ePS) {}
   var j = null;
   try { j = jailInspect(ev); } catch (e) { j = null; }
   if (!j || j.code !== 'empty') return '';

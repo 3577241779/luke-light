@@ -68,6 +68,9 @@ var LOGW_CSS = [
   '#ar6-logwin .ar6-lwn{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:6px;',
   'padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(148,163,184,.22);',
   'font-size:11px;color:#94A3B8;background:#0B1220;font-variant-numeric:tabular-nums;}',
+  '#ar6-logwin .ar6-lwsalv{flex:0 0 auto;padding:3px 9px;border-radius:7px;border:1px solid rgba(56,189,248,.48);',
+  'background:rgba(14,116,144,.22);color:#E0F2FE;font-size:11px;font-weight:700;cursor:pointer;line-height:1.35;}',
+  '#ar6-logwin .ar6-lwsalv:hover{border-color:#38BDF8;background:rgba(2,132,199,.36);color:#FFF;}',
   '@media (max-width:767px){#ar6-logwin{width:calc(100vw - 16px);max-height:72vh;border-radius:14px;}}',
   '@media (prefers-reduced-motion:reduce){#ar6-logwin{animation:none;}}',
   '#ar6-root .ar6-lwbtn{margin-left:auto;}',
@@ -155,7 +158,11 @@ function logListHTML() {
 
 function logFootHTML() {
   var log = readLog() || [];
-  return '<span>共 ' + log.length + ' / ' + MAX_LOG + ' 条</span><span>采样只在内存</span>';
+  var hasRaw = !!(typeof LK_LAST_RAW !== 'undefined' && LK_LAST_RAW && LK_LAST_RAW.bytes > 0);
+  var salvLbl = (typeof sk === 'function') ? sk('actSalvage', '抢救上次') : '抢救上次';
+  return '<span>共 ' + log.length + ' / ' + MAX_LOG + ' 条</span>' +
+    '<button type="button" class="ar6-lwsalv" data-ar6="lwsalvage" title="从 4MB 原始流缓存一键抢救上次未落盘正文">' +
+    '🛟 ' + esc(salvLbl) + (hasRaw ? ' (' + Math.max(1, Math.round(LK_LAST_RAW.bytes / 1024)) + 'K)' : '') + '</button>';
 }
 
 function liveLineHTML() {
@@ -292,6 +299,7 @@ function paintLogWin(full) {
       DOC.body.appendChild(node);
     }
     LOGW.bound = true;
+    try { node.setAttribute('data-skin', (typeof skinId === 'function') ? skinId() : 'ultra'); } catch (eSkLw) {}
     var keepScroll = 0;
     try { var lw = node.querySelector('.ar6-lwl'); if (lw) keepScroll = lw.scrollTop || 0; } catch (e5) {}
     node.innerHTML = logWinHTML();
@@ -372,6 +380,10 @@ function onLogWinClick(e) {
     if (!b) return;
     var act = b.getAttribute('data-ar6') || '';
     if (act === 'lwclose') { closeLogWin(false); return; }
+    if (act === 'lwsalvage') {
+      if (typeof lkSalvageLastRaw === 'function') lkSalvageLastRaw(true);
+      return;
+    }
     if (act === 'lwcard') {
       var i = Number(b.getAttribute('data-i'));
       var log = readLog() || [];
@@ -1022,6 +1034,23 @@ function onPanelClick(e) {
     cfg.jailToolKeep = !cfg.jailToolKeep;
     saveCfg(); render(); return;
   }
+  if (act === 'skin-toggle') {
+    SKIN_BAR_OPEN = !SKIN_BAR_OPEN;
+    UI_SIG = {}; render();
+    return;
+  }
+  if (act.indexOf('skin:') === 0) {
+    var skNext = act.slice(5);
+    if (typeof AR6_SKINS !== 'undefined' && AR6_SKINS[skNext]) {
+      cfg.skin = skNext;
+      SKIN_BAR_OPEN = false;
+      saveCfg(); UI_SIG = {}; render();
+      try { if (LOGW && LOGW.open) paintLogWin(true); } catch (eLwS) {}
+      var spObj = AR6_SKINS[skNext];
+      banner('🎨 皮肤已切换为「' + spObj.icon + ' ' + spObj.name + '」', 'ok', true);
+    }
+    return;
+  }
   if (act === 'logwin') { toggleLogWin(); return; }
   if (act === 'report') { openCard(null, 'human'); return; }
   if (act === 'close') {
@@ -1235,6 +1264,26 @@ function onPanelClick(e) {
     TOOL_CONFIRM = !TOOL_CONFIRM;
     render();
     if (TOOL_CONFIRM) banner('请确认下方「武装货舱」说明后再点【锁定圣柜信道】开启', 'warn');
+    return;
+  }
+  if (act === 'tool-loop') {
+    cfg.toolLoop = (cfg.toolLoop !== true);
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.toolLoop
+      ? '🔗 双轮工具链：已开启（合成读入轮 + tool_choice=auto，搭配武装货舱适配 Gemini 兼容反代）'
+      : '🔗 双轮工具链：已关闭（恢复单轮工具调用模式）', cfg.toolLoop ? 'ok' : 'gray');
+    return;
+  }
+  if (act === 'tool-cover') {
+    cfg.toolCover = (cfg.toolCover !== true);
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.toolCover
+      ? '🧥 外衣剥壳：已开启（附加原创校验头并在流式输出首包零延迟自动剥离）'
+      : '🧥 外衣剥壳：已关闭', cfg.toolCover ? 'ok' : 'gray');
+    return;
+  }
+  if (act === 'salvagelast') {
+    if (typeof lkSalvageLastRaw === 'function') lkSalvageLastRaw(true);
     return;
   }
   if (act.indexOf('gm:grab:') === 0) {

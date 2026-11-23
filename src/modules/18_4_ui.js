@@ -392,7 +392,7 @@ function ensureStyle(d) {
     var legacy = d.querySelectorAll('style#ar6-style82,style#ar6-gold-style,style#ar6-temple-style-v2');
     for (var li = 0; li < legacy.length; li++) if (legacy[li].parentNode) legacy[li].parentNode.removeChild(legacy[li]);
   } catch (eLg) {}
-  [[STYLE_ID, CSS_TEXT], ['ar6-logwin-style', LOGW_CSS], ['ar6-dock-style', AR6_DOCK_CSS]].forEach(function (pair) {
+  [[STYLE_ID, CSS_TEXT], ['ar6-skin-style', (typeof SKIN_CSS_TEXT === 'string') ? SKIN_CSS_TEXT : ''], ['ar6-logwin-style', LOGW_CSS], ['ar6-dock-style', AR6_DOCK_CSS]].forEach(function (pair) {
     var nodes = d.querySelectorAll('style#' + pair[0]), node = nodes[0];
     for (var i = 1; i < nodes.length; i++) if (nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
     if (!node) { node = d.createElement('style'); node.id = pair[0]; d.head.appendChild(node); }

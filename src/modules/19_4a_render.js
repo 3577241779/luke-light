@@ -67,14 +67,26 @@ function actBtn(act, iconName, text, extraCls) {
 function uiTierMeta() {
   var on = !!(cfg && cfg.enabled);
   var j = String((cfg && cfg.jail) || 'off');
-  if (!on) return { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' };
-  if (j === 'gatanothor' || j === 'noa') return { tier: 'noa', gem: '圣翼共鸣', sub: '诺亚太古圣翼 · 宇宙第一道光圣域归位中', badgeTxt: '✦ 诺亚 · 圣域归位', badgeCls: 'noa' };
-  if (j === 'abyss') return { tier: 'abyss', gem: '深渊接管', sub: '凝视深渊 · 终焉暗域全量下沉接管中', badgeTxt: '❖ 凝视深渊 · 沉渊接管', badgeCls: 'abyss' };
-  if (j === 'supreme') return { tier: 'supreme', gem: '闪耀觉醒', sub: '闪耀迪迦 · 黄金希望圣辉与终极护盾就绪', badgeTxt: '闪耀型 · 黄金护盾', badgeCls: 'gold' };
-  if (j === 'strong') return { tier: 'strong', gem: '刚力解放', sub: '迪迦强力型 · 赤红刚力破甲光流护航中', badgeTxt: '强力型 · 赤红刚力', badgeCls: 'red' };
-  if (j === 'mid') return { tier: 'mid', gem: '复合守护', sub: '迪迦复合型 · 均衡许可头与保底长度生效中', badgeTxt: '复合型 · 均衡破甲', badgeCls: 'cyan' };
-  if (j === 'safe') return { tier: 'safe', gem: '空中守护', sub: '迪迦空中型 · 轻装巡航与尾句契约生效中', badgeTxt: '空中型 · 轻装巡航', badgeCls: 'cyan' };
-  return { tier: 'off', gem: '守护开启', sub: '只锁定异常信号，绝不阻断正常对话', badgeTxt: '石像待机 · 零注入', badgeCls: '' };
+  var base;
+  var tKey = 'idle';
+  if (!on) { tKey = 'off'; base = { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' }; }
+  else if (j === 'gatanothor' || j === 'noa') { tKey = 'noa'; base = { tier: 'noa', gem: '圣翼共鸣', sub: '诺亚太古圣翼 · 宇宙第一道光圣域归位中', badgeTxt: '✦ 诺亚 · 圣域归位', badgeCls: 'noa' }; }
+  else if (j === 'abyss') { tKey = 'abyss'; base = { tier: 'abyss', gem: '深渊接管', sub: '凝视深渊 · 终焉暗域全量下沉接管中', badgeTxt: '❖ 凝视深渊 · 沉渊接管', badgeCls: 'abyss' }; }
+  else if (j === 'supreme') { tKey = 'supreme'; base = { tier: 'supreme', gem: '闪耀觉醒', sub: '闪耀迪迦 · 黄金希望圣辉与终极护盾就绪', badgeTxt: '闪耀型 · 黄金护盾', badgeCls: 'gold' }; }
+  else if (j === 'strong') { tKey = 'strong'; base = { tier: 'strong', gem: '刚力解放', sub: '迪迦强力型 · 赤红刚力破甲光流护航中', badgeTxt: '强力型 · 赤红刚力', badgeCls: 'red' }; }
+  else if (j === 'mid') { tKey = 'mid'; base = { tier: 'mid', gem: '复合守护', sub: '迪迦复合型 · 均衡许可头与保底长度生效中', badgeTxt: '复合型 · 均衡破甲', badgeCls: 'cyan' }; }
+  else if (j === 'safe') { tKey = 'safe'; base = { tier: 'safe', gem: '空中守护', sub: '迪迦空中型 · 轻装巡航与尾句契约生效中', badgeTxt: '空中型 · 轻装巡航', badgeCls: 'cyan' }; }
+  else { tKey = 'idle'; base = { tier: 'off', gem: '守护开启', sub: '只锁定异常信号，绝不阻断正常对话', badgeTxt: '石像待机 · 零注入', badgeCls: '' }; }
+  try {
+    var sp = (typeof skinSpec === 'function') ? skinSpec() : null;
+    if (sp && sp.id !== 'ultra' && sp.tiers && sp.tiers[tKey]) {
+      var ov = sp.tiers[tKey];
+      if (ov.gem) base.gem = ov.gem;
+      if (ov.sub) base.sub = ov.sub;
+      if (ov.badgeTxt) base.badgeTxt = ov.badgeTxt;
+    }
+  } catch (eSkT) {}
+  return base;
 }
 
 function uiHeadHTML() {
@@ -87,26 +99,37 @@ function uiHeadHTML() {
   } catch (eL) {}
   var on = !!(cfg && cfg.enabled);
   var tm = uiTierMeta();
-  return '<span class="ar6-logo" title="彩色计时器状态指示">' + ico(on ? 'shield' : 'shield-off') + '</span>' +
+  var sp = (typeof skinSpec === 'function') ? skinSpec() : null;
+  var headTitle = (typeof sk === 'function') ? sk('title', '卢克之光 · 光之守护') : '卢克之光 · 光之守护';
+  var skinOpen = (typeof SKIN_BAR_OPEN !== 'undefined') && !!SKIN_BAR_OPEN;
+  var logoInner = (sp && sp.id !== 'ultra' && sp.icon) ? ('<span style="font-size:16px;line-height:1">' + esc(sp.icon) + '</span>') : ico(on ? 'shield' : 'shield-off');
+  return '<span class="ar6-logo" title="状态指示">' + logoInner + '</span>' +
     '<span class="ar6-hx">' +
-      '<span class="ar6-mt">卢克之光 · 光之守护</span>' +
+      '<span class="ar6-mt">' + esc(headTitle) + '</span>' +
       '<span class="ar6-ms">v' + esc(VERSION) + ' · ' + esc(tm.sub) + esc(live) + '</span>' +
     '</span>' +
     '<button type="button" class="ar6-hsw' + (on ? ' on' : '') + '" data-ar6="' + (on ? '● 已开启' : '○ 已关闭') + '" title="切换信道守护总开关">' +
       '<i class="ar6-gem"></i><span>' + esc(tm.gem) + '</span></button>' +
+    '<button type="button" class="ar6-x ar6-skinbtn' + (skinOpen ? ' on' : '') + '" data-ar6="skin-toggle"' +
+      ' aria-pressed="' + (skinOpen ? 'true' : 'false') + '"' +
+      ' aria-label="切换皮肤" title="切换皮肤主题（' + esc(sp ? sp.name : '光之守护') + '）">🎨</button>' +
     '<button type="button" class="ar6-x ar6-lwbtn' + (LOGW.open ? ' on' : '') + '" data-ar6="logwin"' +
       ' aria-pressed="' + (LOGW.open ? 'true' : 'false') + '"' +
       ' aria-label="采样窗" title="采样窗">☰</button>' +
-    '<button type="button" class="ar6-x" data-ar6="dock" aria-label="收起" title="收起至侧边彩色计时器圆章">↗</button>' +
+    '<button type="button" class="ar6-x" data-ar6="dock" aria-label="收起" title="收起至侧边圆章">↗</button>' +
     '<button type="button" class="ar6-x ar6-mx" data-ar6="min" aria-label="关闭" title="关闭面板">✕</button>';
 }
 
 function uiSwHTML() {
   var on = !!(cfg && cfg.enabled);
+  var mName = (typeof sk === 'function') ? sk('masterName', '彩色计时器 · 信道守护') : '彩色计时器 · 信道守护';
+  var mOn = (typeof sk === 'function') ? sk('masterOn', '蓝灯守护中') : '蓝灯守护中';
+  var mOff = (typeof sk === 'function') ? sk('masterOff', '石像沉睡中') : '石像沉睡中';
+  var mDesc = (typeof sk === 'function') ? sk('masterDesc', '开启时每轮自动核对回包模型、首字耗时与思考特征，揪出暗中降级或偷换模型；关闭时原样放行。') : '开启时每轮自动核对回包模型、首字耗时与思考特征，揪出暗中降级或偷换模型；关闭时原样放行。';
   return '<button type="button" class="ar6-mk' + (on ? ' on' : '') + '" data-ar6="' +
     (on ? '● 已开启' : '○ 已关闭') + '">' +
-    '<span class="ar6-mk-t"><span>彩色计时器 · 信道守护</span><span class="ar6-mk-st">' + (on ? '蓝灯守护中' : '石像沉睡中') + '</span><i class="ar6-sw" data-on="' + (on ? '1' : '0') + '"></i></span>' +
-    '<span class="ar6-mk-d">开启时每轮自动核对回包模型、首字耗时与思考特征，揪出暗中降级或偷换模型；关闭时原样放行。</span>' +
+    '<span class="ar6-mk-t"><span>' + esc(mName) + '</span><span class="ar6-mk-st">' + esc(on ? mOn : mOff) + '</span><i class="ar6-sw" data-on="' + (on ? '1' : '0') + '"></i></span>' +
+    '<span class="ar6-mk-d">' + esc(mDesc) + '</span>' +
     '</button>';
 }
 
@@ -122,10 +145,11 @@ function uiNumsHTML() {
         (badM ? '（与请求模型不符' + (SERVED.mismatch > 1 ? '，累计 ' + SERVED.mismatch + ' 次' : '') + '）' : '（与请求一致）') + '</div>';
     }
   } catch (eSV) {}
+  var nLbls = (typeof sk === 'function') ? sk('nums', ['信号纯净', '疑似调包', '待定信号']) : ['信号纯净', '疑似调包', '待定信号'];
   return '<div class="ar6-nums">' +
-    '<div class="ar6-n"><b style="color:#7DD3FC">' + c.same + '</b><span>信号纯净</span></div>' +
-    '<div class="ar6-n"><b style="color:' + (K.bad ? '#F43F5E' : '#F0F9FF') + '">' + (K.eff ? K.bad : 0) + '</b><span>疑似调包</span></div>' +
-    '<div class="ar6-n"><b>' + c.unknown + '</b><span>待定信号</span></div>' +
+    '<div class="ar6-n"><b style="color:#7DD3FC">' + c.same + '</b><span>' + esc(nLbls[0]) + '</span></div>' +
+    '<div class="ar6-n"><b style="color:' + (K.bad ? '#F43F5E' : '#F0F9FF') + '">' + (K.eff ? K.bad : 0) + '</b><span>' + esc(nLbls[1]) + '</span></div>' +
+    '<div class="ar6-n"><b>' + c.unknown + '</b><span>' + esc(nLbls[2]) + '</span></div>' +
     '</div>' + served;
 }
 
@@ -133,7 +157,10 @@ function uiHintHTML() {
   var c = counts();
   var cTotal = c.same + c.diff + c.thin + c.unknown + c.other;
   if (cTotal) return '';
-  return '<div class="ar6-hint">暂未采集到对话记录。正常发送一轮消息后此处自动刷新读数；使用 Claude 或 DeepSeek 等非谷歌模型时，请到「防卫设置」关闭「仅监测 Gemini 家族」。</div>';
+  var hintTxt = (typeof sk === 'function')
+    ? sk('hint', '暂未采集到对话记录。正常发送一轮消息后此处自动刷新读数；使用 Claude 或 DeepSeek 等非谷歌模型时，请到「防卫设置」关闭「仅监测 Gemini 家族」。')
+    : '暂未采集到对话记录。正常发送一轮消息后此处自动刷新读数；使用 Claude 或 DeepSeek 等非谷歌模型时，请到「防卫设置」关闭「仅监测 Gemini 家族」。';
+  return '<div class="ar6-hint">' + esc(hintTxt) + '</div>';
 }
 
 var UI_TAB = 'route';
@@ -163,17 +190,19 @@ function uiTabAllows(n) {
 }
 function uiNavHTML() {
   var grp = uiActiveGroup();
+  var navNames = (typeof sk === 'function') ? sk('nav', ['光之雷达', '形态破甲', '叙事结界', '防卫设置']) : ['光之雷达', '形态破甲', '叙事结界', '防卫设置'];
   var list = [
-    ['route', '光之雷达'],
-    ['jail', '形态破甲'],
-    ['ooc', '叙事结界'],
-    ['scope', '防卫设置']
+    ['route', navNames[0] || '光之雷达'],
+    ['jail', navNames[1] || '形态破甲'],
+    ['ooc', navNames[2] || '叙事结界'],
+    ['scope', navNames[3] || '防卫设置']
   ];
   var hasUpdDot = (typeof updHasNotice === 'function') && updHasNotice();
-  var h = '<nav aria-label="分类导航" class="ar6-nav">';
+  var skinDrawer = (typeof uiSkinBarHTML === 'function') ? uiSkinBarHTML() : '';
+  var h = skinDrawer + '<nav aria-label="分类导航" class="ar6-nav">';
   for (var i = 0; i < list.length; i++) {
     var dot = (list[i][0] === 'scope' && hasUpdDot) ? '<i class="ar6-nav-dot" aria-hidden="true"></i>' : '';
-    h += '<button type="button" class="ar6-navb" data-ar6="nav" data-ar6-nav="' + list[i][0] + '" aria-pressed="' + (grp === list[i][0]) + '">' + list[i][1] + dot + '</button>';
+    h += '<button type="button" class="ar6-navb" data-ar6="nav" data-ar6-nav="' + list[i][0] + '" aria-pressed="' + (grp === list[i][0]) + '">' + esc(list[i][1]) + dot + '</button>';
   }
   return h + '</nav>';
 }
@@ -219,17 +248,17 @@ function uiJailHTML() {
   var modelSub = curModel === 'auto'
     ? ('日常保持「自动匹配」即可（当前识别：' + profileLine() + '），随所选模型自动切换话术。')
     : ('当前已固定为 ' + mpLabel(curModel) + ' 波段（重开酒馆持久保留）；更换模型后可点「恢复自动匹配」。');
-  var h = segBarHTML('作战波段 · 话术适配', modelSub, modelRows, curModel, 'model:', '', modelBadge, modelBadgeCls, modelActBar);
+  var h = segBarHTML(sk('modelTitle', '作战波段 · 话术适配'), modelSub, modelRows, curModel, 'model:', '', modelBadge, modelBadgeCls, modelActBar);
 
   var curJail = String(cfg.jail || 'off');
   if (curJail === 'noa') curJail = 'gatanothor';
-  var jailRows = [
+  var jailRows = sk('jailRows', [
     ['石像待机', 'off'],
     ['空中型', 'safe'],
     ['复合型', 'mid'],
     ['强力型', 'strong'],
     ['闪耀型', 'supreme']
-  ];
+  ]);
   var tm = uiTierMeta();
   var sv = uiTempleSVGs();
   var jst = jailStatus();
@@ -248,47 +277,49 @@ function uiJailHTML() {
     : '';
 
   var ultHTML = '<div class="ar6-ult-wrap">' +
-    '<div class="ar6-ult-head"><span>✦ 终极圣域 · 超越界限 ✦</span></div>' +
+    '<div class="ar6-ult-head"><span>' + esc(sk('ultHead', '✦ 终极圣域 · 超越界限 ✦')) + '</span></div>' +
     '<div class="ar6-ult-grid">' +
       '<button type="button" class="ar6-ultb ar6-temple-btn noa' + (curJail === 'gatanothor' ? ' on' : '') + '" data-ar6="tier:gatanothor">' +
         sv.noaBg +
         '<span class="ar6-temple-ico">' + sv.noaIco + '</span>' +
         '<span class="ar6-temple-txt">' +
-          '<span class="ar6-temple-name">◤ 诺亚 · 太古圣翼 ◢</span>' +
-          '<span class="ar6-temple-sub">宇宙第一道光 · 圣域归位</span>' +
+          '<span class="ar6-temple-name">' + esc(sk('ultAName', '◤ 诺亚 · 太古圣翼 ◢')) + '</span>' +
+          '<span class="ar6-temple-sub">' + esc(sk('ultASub', '宇宙第一道光 · 圣域归位')) + '</span>' +
         '</span>' +
       '</button>' +
       '<button type="button" class="ar6-ultb deep' + (curJail === 'abyss' ? ' on' : '') + ' ar6-temple-btn abyss" data-ar6="tier:abyss">' +
         sv.abyssBg +
         '<span class="ar6-temple-ico">' + sv.abyssIco + '</span>' +
         '<span class="ar6-temple-txt">' +
-          '<span class="ar6-temple-name">◤ 凝视深渊 · 终焉暗域 ◢</span>' +
-          '<span class="ar6-temple-sub">弃光入暗 · 沉渊接管</span>' +
+          '<span class="ar6-temple-name">' + esc(sk('ultBName', '◤ 凝视深渊 · 终焉暗域 ◢')) + '</span>' +
+          '<span class="ar6-temple-sub">' + esc(sk('ultBSub', '弃光入暗 · 沉渊接管')) + '</span>' +
         '</span>' +
       '</button>' +
     '</div>' + jstBlock +
   '</div>';
 
-  var formSub = '石像静默待命 · 空中型轻装掠行 · 复合型双轨破障 · 强力型赤红强攻 · 闪耀型黄金圣盾 · 诺亚太古圣翼统御 · 深渊暗域全量吞噬';
-  h += segBarHTML('迪迦形态切换 · 正面破甲', formSub, jailRows, curJail, 'tier:', 'supreme', tm.badgeTxt, tm.badgeCls, ultHTML);
+  var formSub = sk('jailSub', '石像静默待命 · 空中型轻装掠行 · 复合型双轨破障 · 强力型赤红强攻 · 闪耀型黄金圣盾 · 诺亚太古圣翼统御 · 深渊暗域全量吞噬');
+  h += segBarHTML(sk('jailTitle', '迪迦形态切换 · 正面破甲'), formSub, jailRows, curJail, 'tier:', 'supreme', tm.badgeTxt, tm.badgeCls, ultHTML);
   return h;
 }
 
 function uiTruncHTML() {
   var tier = truncLevel(cfg.trunc);
   var truncOff = (tier === TRUNC_OFF);
-  var truncBdg = truncOff ? '续航待机' : (tier === TRUNC_MEDIUM ? '自动接力 · 零截断' : '续航叮嘱');
+  var truncBdg = truncOff ? sk('truncBdgOff', '续航待机') : (tier === TRUNC_MEDIUM ? sk('truncBdgMid', '自动接力 · 零截断') : sk('truncBdgLow', '续航叮嘱'));
   var tailOn = (cfg.truncTail !== false);
   var noCertOn = (cfg.truncNoCert !== false);
   var truncGrid = '<div class="ar6-tgrid">' +
-    swCell('🔚 收尾契约:' + (tailOn ? '开' : '关'), '收尾封印 · 禁仓促完结', !truncOff && tailOn, '', truncOff ? '随主闸待机' : (tailOn ? '已开启' : '待机'), truncOff ? 'data-off="1"' : '') +
-    swCell('🚫 反自我认证:' + (noCertOn ? '开' : '关'), '净界律令 · 禁文末自证', !truncOff && noCertOn, '', truncOff ? '随主闸待机' : (noCertOn ? '已开启' : '待机'), truncOff ? 'data-off="1"' : '') +
-    swCell('🔔 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), '追击请示 · 续写前确认', cfg.jailConfirm !== false) +
-    swCell('📑 单节折叠:' + (cfg.singleSec === true ? '开' : '关'), '记忆凝缩 · 旧轮单节折叠', cfg.singleSec === true) +
-    swCell('🧰 工具通道:' + (cfg.toolChan === 'on' ? '开' : '关'), '武装货舱 · 独立圣柜信道交付', cfg.toolChan === 'on', 'gold span-2') +
+    swCell('🔚 收尾契约:' + (tailOn ? '开' : '关'), sk('truncTail', '收尾封印 · 禁仓促完结'), !truncOff && tailOn, '', truncOff ? '随主闸待机' : (tailOn ? '已开启' : '待机'), truncOff ? 'data-off="1"' : '') +
+    swCell('🚫 反自我认证:' + (noCertOn ? '开' : '关'), sk('truncNoCert', '净界律令 · 禁文末自证'), !truncOff && noCertOn, '', truncOff ? '随主闸待机' : (noCertOn ? '已开启' : '待机'), truncOff ? 'data-off="1"' : '') +
+    swCell('🔔 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), sk('truncConfirm', '追击请示 · 续写前确认'), cfg.jailConfirm !== false) +
+    swCell('📑 单节折叠:' + (cfg.singleSec === true ? '开' : '关'), sk('truncSingle', '记忆凝缩 · 旧轮单节折叠'), cfg.singleSec === true) +
+    swCell('🧰 工具通道:' + (cfg.toolChan === 'on' ? '开' : '关'), sk('truncTool', '武装货舱 · 独立圣柜信道交付'), cfg.toolChan === 'on', 'gold span-2') +
+    swCell('tool-loop', sk('truncToolLoop', '🔗 双轮工具链（Gemini 兼容增强）'), cfg.toolChan === 'on' && cfg.toolLoop === true, '', cfg.toolChan !== 'on' ? (cfg.toolLoop === true ? '待机·已选' : '随工具通道待机') : (cfg.toolLoop === true ? '已开启' : '待机'), cfg.toolChan !== 'on' ? 'data-off="1"' : '') +
+    swCell('tool-cover', sk('truncToolCover', '🧥 外衣剥壳（流式零延迟去头）'), cfg.toolChan === 'on' && cfg.toolCover === true, '', cfg.toolChan !== 'on' ? (cfg.toolCover === true ? '待机·已选' : '随工具通道待机') : (cfg.toolCover === true ? '已开启' : '待机'), cfg.toolChan !== 'on' ? 'data-off="1"' : '') +
     '</div>';
 
-  var h = segBarHTML('能量续航 · 防半截断写', truncStatLine(), MENU_SPEC.trunc.items, tier, 'gm:trunc', '', truncBdg, tier === TRUNC_OFF ? '' : 'cyan', truncGrid);
+  var h = segBarHTML(sk('truncTitle', '能量续航 · 防半截断写'), truncStatLine(), MENU_SPEC.trunc.items, tier, 'gm:trunc', '', truncBdg, tier === TRUNC_OFF ? '' : 'cyan', truncGrid);
 
   try { var __tn = (typeof truncLastNote === 'function') ? truncLastNote() : ''; if (__tn) h += '<div class="ar6-dline ar6-mind" style="color:#94a3b8">' + esc('结束原因 · ' + __tn) + '</div>'; } catch (eTN) {}
   var tsl = toolStatusLine();
@@ -324,9 +355,9 @@ function uiKnowHTML() {
   var cur = String(cfg.know || 'off');
   var sub = cur !== 'off'
     ? knowDesc()
-    : '防止角色未卜先知、读心或临时编前文（V5.7 全协议支持 OpenAI / Claude / Gemini 原生格式；「绝对结界」含双向隔离与盲区锚定）。';
+    : sk('knowSubOff', '防止角色未卜先知、读心或临时编前文（V5.7 全协议支持 OpenAI / Claude / Gemini 原生格式；「绝对结界」含双向隔离与盲区锚定）。');
   var bdg = cur !== 'off' ? narrTag(cur) : '待机';
-  var h = segBarHTML('迷雾结界 · 防角色读心', sub, MENU_SPEC.know.items, cur, 'gm:know', 'full', bdg, cur === 'full' ? 'gold' : (cur !== 'off' ? 'cyan' : ''));
+  var h = segBarHTML(sk('knowTitle', '迷雾结界 · 防角色读心'), sub, MENU_SPEC.know.items, cur, 'gm:know', 'full', bdg, cur === 'full' ? 'gold' : (cur !== 'off' ? 'cyan' : ''));
   try {
     if (typeof NARR_RT !== 'undefined' && NARR_RT && NARR_RT.yieldKnow && cur !== 'off') {
       h += '<div class="ar6-dline ar6-mind" style="color:#94a3b8">当前为「礼让预设」模式：检测到预设已自带防全知条款，上轮已温和避重</div>';
@@ -349,14 +380,14 @@ function uiCharmHTML() {
     ? (lethalPref ? '已勾选·随主闸待机' : '随主闸待机')
     : (lethalOn ? '高危开启' : '待机');
   var charmGrid = '<div class="ar6-tgrid">' +
-    swCell('charm-wrap', '📦 贴脸包裹 · 近2轮意图三明治', !charmOff && wrapOn, '', wrapSt, charmOff ? 'data-off="1"' : '') +
-    swCell('charm-lethal', '☠️ 致命后果 · 高危真实生死代价', lethalOn, 'gold', lethalSt, charmOff ? 'data-off="1"' : '') +
+    swCell('charm-wrap', sk('charmWrap', '📦 贴脸包裹 · 近2轮意图三明治'), !charmOff && wrapOn, '', wrapSt, charmOff ? 'data-off="1"' : '') +
+    swCell('charm-lethal', sk('charmLethal', '☠️ 致命后果 · 高危真实生死代价'), lethalOn, 'gold', lethalSt, charmOff ? 'data-off="1"' : '') +
     '</div>';
   var sub = !charmOff
     ? charmDesc()
-    : '让配角保持独立作息与立场，告别无脑顺从与主角光环；中/高档默认联动「贴脸包裹」近 2 轮玩家输入，不改聊天记录。';
+    : sk('charmSubOff', '让配角保持独立作息与立场，告别无脑顺从与主角光环；中/高档默认联动「贴脸包裹」近 2 轮玩家输入，不改聊天记录。');
   var bdg = !charmOff ? narrTag(cur) : '待机';
-  var h = segBarHTML('真实引力 · 去主角光环', sub, MENU_SPEC.charm.items, cur, 'gm:charm', 'full', bdg, cur === 'full' ? 'gold' : (!charmOff ? 'cyan' : ''), charmGrid);
+  var h = segBarHTML(sk('charmTitle', '真实引力 · 去主角光环'), sub, MENU_SPEC.charm.items, cur, 'gm:charm', 'full', bdg, cur === 'full' ? 'gold' : (!charmOff ? 'cyan' : ''), charmGrid);
   try {
     if (typeof NARR_RT !== 'undefined' && NARR_RT && NARR_RT.yieldCharm && !charmOff) {
       h += '<div class="ar6-dline ar6-mind" style="color:#94a3b8">当前为「礼让预设」模式：检测到预设已自带去媚/去主角条款，上轮已温和避重</div>';
@@ -368,16 +399,16 @@ function uiCharmHTML() {
 function uiOocHTML() {
   var oocOn = String(cfg.ooc || 'off') === 'on';
   return '<button type="button" class="ar6-mk' + (oocOn ? ' on' : '') + '" data-ar6="🎭 反OOC:' + (oocOn ? '开' : '关') + '">' +
-    '<span class="ar6-mk-t"><span>心灵之光 · 角色防跑偏（反 OOC）</span><span class="ar6-mk-st">' + (oocOn ? '已开启' : '待机') + '</span><i class="ar6-sw" data-on="' + (oocOn ? '1' : '0') + '"></i></span>' +
+    '<span class="ar6-mk-t"><span>' + esc(sk('oocTitle', '心灵之光 · 角色防跑偏（反 OOC）')) + '</span><span class="ar6-mk-st">' + (oocOn ? '已开启' : '待机') + '</span><i class="ar6-sw" data-on="' + (oocOn ? '1' : '0') + '"></i></span>' +
     '<span class="ar6-mk-d">' + (oocOn
       ? esc(oocStatusLine())
       : '开启后可按需点亮下方四项人设护栏：真名点校、净除套路、因果铺垫、声纹锁定。') + '</span>' +
     '</button>' +
     '<div class="ar6-ugroup">' +
-      '<div class="ar6-ug-top"><span class="ar6-ug-title">设定隐匿 · 圣域折射护航</span><span class="ar6-badge' + (cfg.desens === 'a' ? ' cyan' : '') + '">' + (cfg.desens === 'a' ? '折射护航中' : '待机') + '</span></div>' +
+      '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('oocDesensTitle', '设定隐匿 · 圣域折射护航')) + '</span><span class="ar6-badge' + (cfg.desens === 'a' ? ' cyan' : '') + '">' + (cfg.desens === 'a' ? '已开启' : '待机') + '</span></div>' +
       '<div class="ar6-tgrid">' +
-        swCell('设定脱敏:' + (cfg.desens === 'a' ? '开' : '关'), '设定隐匿 · 敏感词折射', cfg.desens === 'a') +
-        swCell('还原正文:' + (cfg.desensUnmask === false ? '关' : '开'), '正文显影 · 折射词还原', cfg.desensUnmask !== false) +
+        swCell('设定脱敏:' + (cfg.desens === 'a' ? '开' : '关'), sk('oocDesensA', '设定隐匿 · 敏感词折射'), cfg.desens === 'a') +
+        swCell('还原正文:' + (cfg.desensUnmask === false ? '关' : '开'), sk('oocDesensB', '正文显影 · 折射词还原'), cfg.desensUnmask !== false) +
       '</div>' +
     '</div>';
 }
@@ -390,30 +421,31 @@ function uiMoreHTML() {
     var refCur = String(cfg.refract || 'off');
     var refBdg = refCur === 'off' ? '待机' : (refCur === 'mid' ? '棱镜级' : '微光级');
     var routeGrid = '<div class="ar6-tgrid">' +
-      swCell('📌 钉参数:' + (cfg.pin ? '开' : '关'), '主频锁定 · 禁降级调包', !!cfg.pin) +
-      swCell('👁 观察器:' + (cfg.observe ? '开' : '关'), '光波采样 · 实时测速', !!cfg.observe) +
-      swCell('📈 行为基线:' + (String(cfg.base || 'on') === 'on' ? '开' : '关'), '波长记忆 · 基线比对', String(cfg.base || 'on') === 'on') +
-      swCell('🔬 返回格式:' + (String(cfg.shape || 'on') === 'on' ? '开' : '关'), '信标核验 · 结构指纹', String(cfg.shape || 'on') === 'on') +
+      swCell('📌 钉参数:' + (cfg.pin ? '开' : '关'), sk('routePin', '主频锁定 · 禁降级调包'), !!cfg.pin) +
+      swCell('👁 观察器:' + (cfg.observe ? '开' : '关'), sk('routeObs', '光波采样 · 实时测速'), !!cfg.observe) +
+      swCell('📈 行为基线:' + (String(cfg.base || 'on') === 'on' ? '开' : '关'), sk('routeBase', '波长记忆 · 基线比对'), String(cfg.base || 'on') === 'on') +
+      swCell('🔬 返回格式:' + (String(cfg.shape || 'on') === 'on' ? '开' : '关'), sk('routeShape', '信标核验 · 结构指纹'), String(cfg.shape || 'on') === 'on') +
       '</div>';
-    h += segBarHTML('光波折射 · 防缓存', '对空白与标点做无感微调，防止中转站直接拿旧缓存敷衍；自动移除备胎模型列表并核验出字快慢与结构指纹。', MENU_SPEC.refract.items, refCur, 'gm:refract', '', refBdg, refCur === 'off' ? '' : 'cyan', routeGrid);
-    h += segBarHTML('精神同调 · 思考强度', '选「跟随预设」完全保留预设原有思考预算（零覆写）；手动指定则按模型协议写入对应档位。', MENU_SPEC.think.items, String(cfg.think || 'auto'), 'gm:think', 'auto', thinkTag(), String(cfg.think || 'auto') === 'auto' ? '' : 'cyan');
+    h += segBarHTML(sk('refractTitle', '光波折射 · 防缓存'), '对空白与标点做无感微调，防止中转站直接拿旧缓存敷衍；自动移除备胎模型列表并核验出字快慢与结构指纹。', MENU_SPEC.refract.items, refCur, 'gm:refract', '', refBdg, refCur === 'off' ? '' : 'cyan', routeGrid);
+    h += segBarHTML(sk('thinkTitle', '精神同调 · 思考强度'), '选「跟随预设」完全保留预设原有思考预算（零覆写）；手动指定则按模型协议写入对应档位。', MENU_SPEC.think.items, String(cfg.think || 'auto'), 'gm:think', 'auto', thinkTag(), String(cfg.think || 'auto') === 'auto' ? '' : 'cyan');
 
-    h += '<div class="ar6-mmore-h">诊断报告、主动探针与数据维护</div>';
+    h += '<div class="ar6-mmore-h">' + esc(sk('routeSecHead', '诊断报告、主动探针与数据维护')) + '</div>';
     h += '<div class="ar6-tgrid">' +
-      actBtn('report', 'file', '展开圣域诊断报告', 'gold on') +
-      actBtn('logwin', 'ledger', '光波采样悬浮窗', LOGW.open ? 'on' : '') +
-      actBtn('probe:verify', 'telescope', '真伪探针 · 渠道鉴伪') +
-      actBtn('probe:alias', 'tag', '频段摸底 · 别名扫描') +
+      actBtn('report', 'file', sk('actReport', '展开圣域诊断报告'), 'gold on') +
+      actBtn('logwin', 'ledger', sk('actLogwin', '光波采样悬浮窗'), LOGW.open ? 'on' : '') +
+      actBtn('probe:verify', 'telescope', sk('actVerify', '真伪探针 · 渠道鉴伪')) +
+      actBtn('probe:alias', 'tag', sk('actAlias', '频段摸底 · 别名扫描')) +
       '</div>';
 
     var clearArmed = !!(CLEAR_CONFIRM_AT && (Date.now() - CLEAR_CONFIRM_AT < 4000));
     h += '<div class="ar6-tgrid">' +
-      swCell('silent', '光波横幅昭示', !cfg.silent, '', cfg.silent ? '静默' : '已开启') +
-      actBtn('exportlog', 'out', '导出圣域卷宗') +
-      actBtn('diagcopy', 'file', '复制排障信标') +
-      actBtn('diagcheck', 'stethoscope', '重铸护盾 · 全量自检') +
-      actBtn('rebuild', 'refresh', '重置波长记忆') +
-      '<button type="button" class="ar6-b ' + (clearArmed ? 'confirm-red' : 'danger') + '" data-ar6="clear"><span class="ar6-b-lbl">' + (clearArmed ? '4秒内再点焚毁' : '焚毁全部卷宗') + '</span><em class="ar6-b-st">' + (clearArmed ? '确认' : '谨慎') + '</em></button>' +
+      swCell('silent', sk('swSilent', '光波横幅昭示'), !cfg.silent, '', cfg.silent ? '静默' : '已开启') +
+      actBtn('salvagelast', 'refresh', sk('actSalvage', '一键抢救上次断流')) +
+      actBtn('exportlog', 'out', sk('actExport', '导出圣域卷宗')) +
+      actBtn('diagcopy', 'file', sk('actDiagCopy', '复制排障信标')) +
+      actBtn('diagcheck', 'stethoscope', sk('actDiagCheck', '重铸护盾 · 全量自检')) +
+      actBtn('rebuild', 'refresh', sk('actRebuild', '重置波长记忆')) +
+      '<button type="button" class="ar6-b ' + (clearArmed ? 'confirm-red' : 'danger') + '" data-ar6="clear"><span class="ar6-b-lbl">' + esc(clearArmed ? sk('actClearConfirm', '4秒内再点焚毁') : sk('actClear', '焚毁全部卷宗')) + '</span><em class="ar6-b-st">' + (clearArmed ? '确认' : '谨慎') + '</em></button>' +
       '</div>';
     h += '<div class="ar6-dline">主动发射探针光束检验渠道真伪（是否虚报模型名）；更换渠道后可点「重置波长记忆」重新校准前 8 轮速度特征。</div>';
     h += '<div class="ar6-dline">' + esc(detLine()) + ' · ' + esc(detVerdict()) + '</div>';
@@ -430,23 +462,23 @@ function uiMoreHTML() {
         jj = hookTxt + ' · 等待下一轮发送时生效';
       }
     } catch (eJ) {}
-    h += '<div class="ar6-mmore-h">单次手动战技（互不抢占配额）</div>';
+    h += '<div class="ar6-mmore-h">' + esc(sk('manualHead', '单次手动战技（互不抢占配额）')) + '</div>';
     h += '<div class="ar6-tgrid cols-3">' +
-      actBtn('jailnow', 'bandage', '破甲追击') +
-      actBtn('truncnow', 'alert', '断章接力') +
-      actBtn('pvpnow', 'refresh', '原波重演') +
+      actBtn('jailnow', 'bandage', sk('actJailNow', '破甲追击')) +
+      actBtn('truncnow', 'alert', sk('actTruncNow', '断章接力')) +
+      actBtn('pvpnow', 'refresh', sk('actPvpNow', '原波重演')) +
       '</div>';
     if (jj) h += '<div class="ar6-dline">' + esc(jj) + '</div>';
   }
 
   if (grp === 'ooc') {
-    h += '<div class="ar6-mmore-h">心灵之光 · 四项人设护栏</div>';
-    var oocNames = {
+    h += '<div class="ar6-mmore-h">' + esc(sk('oocHead', '心灵之光 · 四项人设护栏')) + '</div>';
+    var oocNames = sk('oocItems', {
       roll: '真名点校 · 核对世界书',
       tpl: '净除套路 · 禁网文陈词',
       chg: '因果铺垫 · 禁态度突变',
       voice: '声纹锁定 · 台词口吻一致'
-    };
+    });
     var oocOff = String(cfg.ooc || 'off') !== 'on';
     h += '<div class="ar6-tgrid">';
     for (var oi = 0; oi < OOC_ITEMS.length; oi++) {
@@ -469,9 +501,9 @@ function uiMoreHTML() {
       actBtn('savescope', 'check', '保存') +
       '</div>' +
       '<div class="ar6-tgrid">' +
-        swCell('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), '锁定光之国 · 仅巡检 Gemini', cfg.onlyGemini !== false, 'span-2', cfg.onlyGemini === false ? '全模型' : '已开启') +
+        swCell('🟦 只查 Gemini:' + (cfg.onlyGemini === false ? '关' : '开'), sk('scopeOnlyGemini', '锁定光之国 · 仅巡检 Gemini'), cfg.onlyGemini !== false, 'span-2', cfg.onlyGemini === false ? '全模型' : '已开启') +
       '</div>';
-    h += segBarHTML('雷达扫描范围', '使用 Claude 或 DeepSeek 等非谷歌模型时请关闭「锁定光之国 · 仅巡检 Gemini」；「石像休眠」仅在排查其它插件冲突时临时开启。', [
+    h += segBarHTML(sk('scopeTitle', '雷达扫描范围'), '使用 Claude 或 DeepSeek 等非谷歌模型时请关闭「仅监测 Gemini」；「安全休眠」仅在排查其它插件冲突时临时开启。', [
       ['全部模型', 'all'],
       ['跳过关键词', 'skip'],
       ['仅扫关键词', 'only']
@@ -483,34 +515,34 @@ function uiMoreHTML() {
     var skipN = (typeof DET !== 'undefined' && DET && DET.pluginSkip) ? DET.pluginSkip : 0;
     var skipLast = (typeof DET !== 'undefined' && DET && DET.lastPlugin) ? String(DET.lastPlugin) : '';
     var compatBadge = (coOn ? '正轨' : '全域') + ' · ' + (pcOn ? '强权优先' : '礼让预设');
-    var compatSub = '插件放行（开）对柏宝书 / 柏宝绘 / 龙血玄黄数据库等后台传输零干预直通，不污染采样与路由率' +
+    var compatSub = '插件放行（开）对记忆/生图/数据库等后台传输零干预直通，不污染采样与路由率' +
       (skipN ? ('（本会话已静默放行 ' + skipN + ' 次' + (skipLast ? ' · 最近：' + skipLast : '') + '）') : '') +
       '。预设适配（开）由卢克之光破甲强制优先；关闭则遇到预设自带破甲与载具自动让路。';
     h += '<div class="ar6-ugroup">' +
-      '<div class="ar6-ug-top"><span class="ar6-ug-title">星域协同 · 插件与预设兼容</span>' +
+      '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('compatTitle', '星域协同 · 插件与预设兼容')) + '</span>' +
         '<span class="ar6-badge ' + (pcOn ? 'gold' : 'cyan') + '">' + esc(compatBadge) + '</span></div>' +
       '<div class="ar6-tgrid">' +
-        swCell('📄 只算正文:' + (coOn ? '开' : '关'), '纯净正轨 · 放行外部插件', coOn, '', coOn ? '仅检正文' : '全域监测') +
-        swCell('preset-compat', '预设适配 · 破甲主导权', pcOn, pcOn ? 'gold' : '', pcOn ? '强权优先' : '礼让预设') +
+        swCell('📄 只算正文:' + (coOn ? '开' : '关'), sk('compatContentOnly', '纯净正轨 · 放行外部插件'), coOn, '', coOn ? '仅检正文' : '全域监测') +
+        swCell('preset-compat', sk('compatPreset', '预设适配 · 破甲主导权'), pcOn, pcOn ? 'gold' : '', pcOn ? '强权优先' : '礼让预设') +
       '</div>' +
       '<div class="ar6-ug-sub">' + esc(compatSub) + '</div>' +
     '</div>';
     h += '<div class="ar6-dline">' + esc(ledLine()) + '</div>';
 
-    h += '<div class="ar6-mmore-h">彩色计时器圆章与告警方式</div>';
+    h += '<div class="ar6-mmore-h">' + esc(sk('pillHead', '彩色计时器圆章与告警方式')) + '</div>';
     var pillHideTxt = (typeof PLATFORM !== 'undefined' && PLATFORM === 'tt') ? '已隐藏' : '已隐藏';
     h += '<div class="ar6-tgrid">' +
-      swCell('pill-toggle', '侧边彩色计时器圆章', !cfg.pillHide, 'span-2', cfg.pillHide ? pillHideTxt : '显示中') +
-      swCell('cardauto-toggle', '异动警报 · 自动展开报告', !!cfg.cardAuto, '', cfg.cardAuto ? '已开启' : '仅红灯') +
-      actBtn('pill-reset', 'refresh', '归位计时器圆章') +
+      swCell('pill-toggle', sk('pillToggle', '侧边彩色计时器圆章'), !cfg.pillHide, 'span-2', cfg.pillHide ? pillHideTxt : '显示中') +
+      swCell('cardauto-toggle', sk('cardAuto', '异动警报 · 自动展开报告'), !!cfg.cardAuto, '', cfg.cardAuto ? '已开启' : '仅红灯') +
+      actBtn('pill-reset', 'refresh', sk('pillReset', '归位计时器圆章')) +
       '</div>';
 
     h += petSettingsHTML();
 
-    h += '<div class="ar6-mmore-h">系统排障与功能图鉴</div>';
+    h += '<div class="ar6-mmore-h">' + esc(sk('safeHead', '系统排障与功能图鉴')) + '</div>';
     h += '<div class="ar6-tgrid">' +
-      '<button type="button" class="ar6-b' + (cfg.safe ? ' confirm-red' : '') + '" data-ar6="' + (cfg.safe ? '🩺 安全:开' : '🩺 安全:关') + '"><span class="ar6-b-lbl">石像休眠 · 暂停全部挂钩</span><em class="ar6-b-st">' + (cfg.safe ? '已休眠' : '正常') + '</em></button>' +
-      actBtn('help', 'book', '打开功能图鉴', 'gold on') +
+      '<button type="button" class="ar6-b' + (cfg.safe ? ' confirm-red' : '') + '" data-ar6="' + (cfg.safe ? '🩺 安全:开' : '🩺 安全:关') + '"><span class="ar6-b-lbl">' + esc(sk('safeBtn', '石像休眠 · 暂停全部挂钩')) + '</span><em class="ar6-b-st">' + (cfg.safe ? '已休眠' : '正常') + '</em></button>' +
+      actBtn('help', 'book', sk('helpBtn', '打开功能图鉴'), 'gold on') +
       '</div>';
   }
 
@@ -551,10 +583,10 @@ function uiUpdHTML() {
   var checkCls = (hasNew && !instVer && !busy) ? 'gold on span-2' : 'span-2';
 
   var h = '<div class="ar6-ugroup" style="margin-top:0;margin-bottom:10px">';
-  h += '<div class="ar6-ug-top"><span class="ar6-ug-title">光之星轨 · 云端自动更新</span>' +
+  h += '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('updTitle', '光之星轨 · 云端自动更新')) + '</span>' +
     '<span class="ar6-badge ' + esc(badgeCls) + '">' + esc(badgeTxt) + '</span></div>';
   h += '<div class="ar6-tgrid" style="padding:0">' +
-    swCell('upd-auto', '星轨共鸣 · 后台自动更新', isAuto, 'span-2', isAuto ? '已开启' : '仅手动') +
+    swCell('upd-auto', sk('updAuto', '星轨共鸣 · 后台自动更新'), isAuto, 'span-2', isAuto ? '已开启' : '仅手动') +
     actBtn('upd-check', 'refresh', checkLbl, checkCls);
   if (instVer) {
     h += actBtn('upd-reload', 'check', '圣域重载 · 刷新页面生效', canUndo ? 'gold on' : 'gold on span-2');
@@ -649,11 +681,12 @@ function uiBaseSig() {
     } catch (eOocSig) {}
     var updSig = (typeof updStatusSig === 'function') ? updStatusSig() : '';
     var pSkipSig = (typeof DET !== 'undefined' && DET) ? (String(DET.pluginSkip || 0) + ':' + String(DET.lastPlugin || '')) : '';
+    var skSig = ((typeof skinId === 'function') ? skinId() : 'ultra') + ':' + ((typeof SKIN_BAR_OPEN !== 'undefined' && SKIN_BAR_OPEN) ? '1' : '0');
     return [STRUCT_VER, VERSION, uiMode(), uiCfgSig(),
       c.same, c.diff, c.thin, c.unknown, c.other, String(K.bad), String(K.eff), lg,
       MORE_OPEN ? 1 : 0, LOGW.open ? 1 : 0, st.kind, jl, tr, ab, tc, tt, sv, sj,
       TOOL_CONFIRM ? 1 : 0,
-      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig].join('|');
+      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig].join('|');
   } catch (e) { return 'err'; }
 }
 
@@ -737,9 +770,15 @@ function patchRole() {
     var st = stateOfRun();
     r.setAttribute('data-st', st.kind);
     r.setAttribute('data-rm', cfg.rm ? '1' : '0');
+    var curSkin = (typeof skinId === 'function') ? skinId() : 'ultra';
+    r.setAttribute('data-skin', curSkin);
     r.setAttribute('data-tier', (!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off')));
     if (cfg && !cfg.enabled) r.setAttribute('data-off-master', '1');
     else r.removeAttribute('data-off-master');
+    try {
+      var lwEl = DOC && DOC.getElementById && DOC.getElementById(LOGWIN_ID);
+      if (lwEl) lwEl.setAttribute('data-skin', curSkin);
+    } catch (eLwSk) {}
     var b = r.querySelector('[data-ar6="logwin"]');
     if (b) {
       b.className = 'ar6-x ar6-lwbtn' + (LOGW.open ? ' on' : '');
