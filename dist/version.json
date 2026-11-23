@@ -1,0 +1,10 @@
+{
+  "version": "5.5",
+  "releasedAt": "2026-11-23T09:26:04.188Z",
+  "changelog": "新增「光之星轨 · 云端自动更新」：默认开启后台静默追新，支持手动巡检一键升级与刷新前时空回溯，全部个人开关与锁定波段 100% 无损保留。",
+  "packages": {
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-desktop.json"
+  }
+}
