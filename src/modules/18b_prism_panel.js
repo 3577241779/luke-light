@@ -60,9 +60,11 @@ function registerSibling(spec) {
   var id = String(spec.id);
   var isNew = !AR6_SIBLINGS[id];
   AR6_SIBLINGS[id] = spec;
-  if (isNew) AR6_SIB_ORDER.push(id);
-  try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS) {}
-  try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eR) {}
+  if (isNew) {
+    AR6_SIB_ORDER.push(id);
+    try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS) {}
+    try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eR) {}
+  }
   return function unregisterSibling() {
     if (AR6_SIBLINGS[id] !== spec) return;
     if (AR6_SIB_MOUNTED && AR6_SIB_MOUNTED.id === id) unmountActiveSibling();
@@ -1571,7 +1573,9 @@ function prismBindStHooks() {
       onPrismPresetSwitch();
     };
     var sibChgFn = function () {
+      var prevOrd = AR6_SIB_ORDER.join(',');
       syncGlobalSiblings();
+      if (AR6_SIB_ORDER.join(',') === prevOrd) return;
       try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS0) {}
       try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eS1) {}
     };

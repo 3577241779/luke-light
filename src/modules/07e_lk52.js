@@ -341,7 +341,7 @@ function lkDemoteBody(body) {
 
   /* 逐条原地写回：有剩余干净段落则原地保留；某条完全被抽空且还有其它干净 system 时删掉该空壳，否则留最小兜底 */
   var fallbackUsed = false;
-  var fallbackSys = '你是一位中文虚构文学写作助手，只输出正文。';
+  var fallbackSys = '你是一位中文虚构文学写作助手，请完整输出剧情正文及预设/角色卡要求的全部格式块（含状态栏与变量更新）。';
   for (var ti = 0; ti < touchedArrSys.length; ti++) {
     var it = touchedArrSys[ti];
     if (it.keep) {

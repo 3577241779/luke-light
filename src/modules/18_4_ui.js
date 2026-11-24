@@ -749,15 +749,21 @@ function fitPanel(el) {
     var maxH = Math.round(vv * 0.92) - (mob ? 18 : 32);
     if (maxH > 750) maxH = 750;
     if (maxH < 240) maxH = 240;
-    el.style.display = 'flex';
-    el.style.alignItems = mob ? 'flex-start' : 'center';
-    el.style.justifyContent = 'center';
+    if (el.style.display !== 'flex') el.style.display = 'flex';
+    var wantAlign = mob ? 'flex-start' : 'center';
+    if (el.style.alignItems !== wantAlign) el.style.alignItems = wantAlign;
+    if (el.style.justifyContent !== 'center') el.style.justifyContent = 'center';
     if (mob && vvObj && vvObj.height) {
-      el.style.height = Math.round(vv) + 'px';
-      el.style.top = Math.round(vvObj.offsetTop || 0) + 'px';
+      var wantH = Math.round(vv) + 'px';
+      var wantTop = Math.round(vvObj.offsetTop || 0) + 'px';
+      if (el.style.height !== wantH) el.style.height = wantH;
+      if (el.style.top !== wantTop) el.style.top = wantTop;
     }
     var box = el.querySelector ? el.querySelector('.ar6-p') : null;
-    if (box) { box.style.maxHeight = maxH + 'px'; }
+    if (box) {
+      var wantMaxH = maxH + 'px';
+      if (box.style.maxHeight !== wantMaxH) box.style.maxHeight = wantMaxH;
+    }
   } catch (e) {}
 }
 
@@ -784,10 +790,10 @@ function panelApplyPos() {
   try {
     var el = panelBox();
     if (!el) return;
-    if (uiMode() === 'mobile') { el.style.transform = ''; return; }
+    if (uiMode() === 'mobile') { if (el.style.transform !== '') el.style.transform = ''; return; }
     var p = panelClamp(Number(cfg.padX) || 0, Number(cfg.padY) || 0);
-    if (!p[0] && !p[1]) { el.style.transform = ''; return; }
-    el.style.transform = 'translate(' + p[0] + 'px,' + p[1] + 'px)';
+    var wantTr = (!p[0] && !p[1]) ? '' : ('translate(' + p[0] + 'px,' + p[1] + 'px)');
+    if (el.style.transform !== wantTr) el.style.transform = wantTr;
   } catch (e) {}
 }
 function panelBindDrag() {

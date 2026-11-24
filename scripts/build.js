@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.75/dist';
-const CHANGELOG_LATEST = 'V5.75 · 四皮肤高燃流光弹窗与全屏觉醒特效 + 8态全新3D雕像桌宠 + 三生合体单窗并入（支持《光域·镜影》ST-LightLens 无缝托管与事件联动）+ V0.2/V0.3 全链路联调修复。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist';
+const CHANGELOG_LATEST = 'V5.76 · 修复与《光域·镜影》共存死循环 + 修复高档破甲/工具通道顶掉状态栏与正文的问题 + 重新优化多预设与角色卡格式适配性。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -86,10 +86,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.75·ST酒馆适配.json',
+    fileName: '卢克之光 V5.76·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.75·ST酒馆适配',
-    info: '卢克之光 V5.75「光之守护」· 手机 ST 酒馆适配（五皮肤全套3D雕像桌宠与高燃觉醒弹窗 / 双生协同单窗 / 叙述结界与贴脸包裹 / 断流抢救与武装货舱）',
+    name: '卢克之光 V5.76·ST酒馆适配',
+    info: '卢克之光 V5.76「光之守护」· 手机 ST 酒馆适配（五皮肤3D雕像桌宠 / 三生合体防死循环 / 全档破甲状态栏与格式适配 / 叙述结界与断流抢救）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -97,10 +97,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.75·TT酒馆适配.json',
+    fileName: '卢克之光 V5.76·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.75·TT酒馆适配',
-    info: '卢克之光 V5.75「光之守护」· TT 酒馆适配（五皮肤全套3D雕像桌宠与高燃觉醒弹窗 / 双生协同单窗 / TT 双入口 / 叙述结界与贴脸包裹 / 断流抢救）',
+    name: '卢克之光 V5.76·TT酒馆适配',
+    info: '卢克之光 V5.76「光之守护」· TT 酒馆适配（五皮肤3D雕像桌宠 / 三生合体防死循环 / 全档破甲状态栏与格式适配 / TT 双入口 / 断流抢救）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -108,10 +108,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.75·桌面版.json',
+    fileName: '卢克之光 V5.76·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.75·桌面版',
-    info: '卢克之光 V5.75「光之守护」· 电脑桌面版（五皮肤全套3D雕像桌宠与高燃觉醒弹窗 / 双生协同单窗 / 桌面宽屏拖拽 / 叙述结界与贴脸包裹 / 断流抢救）',
+    name: '卢克之光 V5.76·桌面版',
+    info: '卢克之光 V5.76「光之守护」· 电脑桌面版（五皮肤3D雕像桌宠 / 三生合体防死循环 / 全档破甲状态栏与格式适配 / 桌面宽屏拖拽 / 断流抢救）',
     scoredHost: false,
     buttonEnabled: false,
   },

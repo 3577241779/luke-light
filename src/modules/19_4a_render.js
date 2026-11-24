@@ -807,26 +807,47 @@ function paintSections(names, force) {
   return true;
 }
 
+function ar6SetAttrIfDiff(el, k, v) {
+  if (!el || !el.setAttribute) return false;
+  var next = String(v);
+  if (el.getAttribute && el.getAttribute(k) === next) return false;
+  el.setAttribute(k, next);
+  return true;
+}
+
+function ar6RmAttrIfHas(el, k) {
+  if (!el || !el.removeAttribute) return false;
+  if (el.hasAttribute) {
+    if (!el.hasAttribute(k)) return false;
+  } else if (el.getAttribute && el.getAttribute(k) === null) {
+    return false;
+  }
+  el.removeAttribute(k);
+  return true;
+}
+
 function patchRole() {
   try {
     var r = DOC && DOC.getElementById(ROOT_ID);
     if (!r) return false;
     var st = stateOfRun();
-    r.setAttribute('data-st', st.kind);
-    r.setAttribute('data-rm', cfg.rm ? '1' : '0');
+    ar6SetAttrIfDiff(r, 'data-st', st.kind);
+    ar6SetAttrIfDiff(r, 'data-rm', cfg.rm ? '1' : '0');
     var curSkin = (typeof skinId === 'function') ? skinId() : 'ultra';
-    r.setAttribute('data-skin', curSkin);
-    r.setAttribute('data-tier', (!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off')));
-    if (cfg && !cfg.enabled) r.setAttribute('data-off-master', '1');
-    else r.removeAttribute('data-off-master');
+    ar6SetAttrIfDiff(r, 'data-skin', curSkin);
+    var nextTier = (!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off'));
+    ar6SetAttrIfDiff(r, 'data-tier', nextTier);
+    if (cfg && !cfg.enabled) ar6SetAttrIfDiff(r, 'data-off-master', '1');
+    else ar6RmAttrIfHas(r, 'data-off-master');
     try {
       var lwEl = DOC && DOC.getElementById && DOC.getElementById(LOGWIN_ID);
-      if (lwEl) lwEl.setAttribute('data-skin', curSkin);
+      if (lwEl) ar6SetAttrIfDiff(lwEl, 'data-skin', curSkin);
     } catch (eLwSk) {}
     var b = r.querySelector('[data-ar6="logwin"]');
     if (b) {
-      b.className = 'ar6-x ar6-lwbtn' + (LOGW.open ? ' on' : '');
-      b.setAttribute('aria-pressed', LOGW.open ? 'true' : 'false');
+      var nextLwCls = 'ar6-x ar6-lwbtn' + (LOGW.open ? ' on' : '');
+      if (b.className !== nextLwCls) b.className = nextLwCls;
+      ar6SetAttrIfDiff(b, 'aria-pressed', LOGW.open ? 'true' : 'false');
     }
     try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (ePetS) {}
     return true;
@@ -844,15 +865,15 @@ function mountAll() {
   if (minimized) {
     if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
     PANEL_SHOWN = false;
-    r.className = '';
+    if (r.className !== '') r.className = '';
     UI_SIG = {};
     /* V5.0/V4.8：右上角 ↗ 与点空白统一收起至唯一悬浮圆章 #ar6-pill；保留死分支供 T37 源码契约自检通过 */
     if (false && cfg.docked) {
       r.innerHTML = dockedHTML();
     }
-    r.setAttribute('data-min', '1');
-    r.innerHTML = '';
-    try { r.style.display = 'none'; } catch (eMn) {}
+    ar6SetAttrIfDiff(r, 'data-min', '1');
+    if (r.innerHTML !== '') r.innerHTML = '';
+    try { if (r.style.display !== 'none') r.style.display = 'none'; } catch (eMn) {}
     return true;
   }
 
@@ -873,15 +894,23 @@ function mountAll() {
   var scTop = 0;
   try { var oldBody = r.querySelector('.ar6-body'); if (oldBody && !wsmodeChanged) scTop = oldBody.scrollTop || 0; } catch (eSc) {}
 
-  r.className = mode === 'mobile' ? 'ar6-mobile' : '';
-  try { r.removeAttribute('data-min'); } catch (eR0) {}
-  try { r.setAttribute('style', panelStyle(mode, false)); } catch (eSt) {}
+  var nextRootCls = mode === 'mobile' ? 'ar6-mobile' : '';
+  if (r.className !== nextRootCls) r.className = nextRootCls;
+  var wasMin = false;
+  try { wasMin = ar6RmAttrIfHas(r, 'data-min'); } catch (eR0) {}
+  try {
+    var nextBaseStyle = panelStyle(mode, false);
+    if (wasMin || needSkel || r.__ar6BaseStyle !== nextBaseStyle) {
+      ar6SetAttrIfDiff(r, 'style', nextBaseStyle);
+      r.__ar6BaseStyle = nextBaseStyle;
+    }
+  } catch (eSt) {}
 
   if (needSkel) {
     if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
     r.innerHTML = uiSkeletonHTML();
-    r.setAttribute('data-struct', String(STRUCT_VER));
-    r.setAttribute('data-ar6-wsmode', wantMode);
+    ar6SetAttrIfDiff(r, 'data-struct', String(STRUCT_VER));
+    ar6SetAttrIfDiff(r, 'data-ar6-wsmode', wantMode);
     UI_SIG = {};
   }
 

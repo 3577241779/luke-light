@@ -299,7 +299,11 @@ function paintLogWin(full) {
       DOC.body.appendChild(node);
     }
     LOGW.bound = true;
-    try { node.setAttribute('data-skin', (typeof skinId === 'function') ? skinId() : 'ultra'); } catch (eSkLw) {}
+    try {
+      var lwSk = (typeof skinId === 'function') ? skinId() : 'ultra';
+      if (typeof ar6SetAttrIfDiff === 'function') ar6SetAttrIfDiff(node, 'data-skin', lwSk);
+      else if (node.getAttribute('data-skin') !== lwSk) node.setAttribute('data-skin', lwSk);
+    } catch (eSkLw) {}
     var keepScroll = 0;
     try { var lw = node.querySelector('.ar6-lwl'); if (lw) keepScroll = lw.scrollTop || 0; } catch (e5) {}
     node.innerHTML = logWinHTML();

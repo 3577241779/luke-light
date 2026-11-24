@@ -1,10 +1,10 @@
 {
-  "version": "5.75",
-  "releasedAt": "2026-11-24T13:34:55.907Z",
-  "changelog": "V5.75 · 四皮肤高燃流光弹窗与全屏觉醒特效 + 8态全新3D雕像桌宠 + 三生合体单窗并入（支持《光域·镜影》ST-LightLens 无缝托管与事件联动）+ V0.2/V0.3 全链路联调修复。",
+  "version": "5.76",
+  "releasedAt": "2026-11-24T15:41:22.100Z",
+  "changelog": "V5.76 · 修复与《光域·镜影》共存死循环 + 修复高档破甲/工具通道顶掉状态栏与正文的问题 + 重新优化多预设与角色卡格式适配性。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.75/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.75/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.75/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-desktop.json"
   }
 }

@@ -99,7 +99,7 @@ function syncPill() {
     var allowDbl = !!(p.__ar6AllowDblUntil && Date.now() < p.__ar6AllowDblUntil);
     /* 全屏最多一个悬浮物：桌宠展开且实际已挂载、用户主动隐藏、或主面板打开时（除双击宽限窗口外）隐藏圆章 */
     if ((cfg && cfg.pillHide) || hasLivePet || (panelOpen() && !allowDbl)) {
-      p.style.display = 'none';
+      if (p.style.display !== 'none') p.style.display = 'none';
       if (hasLivePet) { try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (ePSy) {} }
       return;
     }
@@ -114,11 +114,11 @@ function syncPill() {
       var pDockConf = (skDock !== 'ultra' && typeof lkSkinPetConf === 'function') ? lkSkinPetConf(skDock) : null;
       baseTip += ' · ✦ ' + (pDockConf ? pDockConf.petName : '闪耀迪迦') + '已合入圆章（双击或长按重新召唤立绘）';
     }
-    p.setAttribute('title', baseTip);
+    if (p.getAttribute('title') !== baseTip) p.setAttribute('title', baseTip);
 
     var tierNow = on ? String((cfg && cfg.jail) || 'off') : 'off';
     if (tierNow === 'gatanothor') tierNow = 'noa';
-    p.setAttribute('data-tier', tierNow);
+    if (p.getAttribute('data-tier') !== tierNow) p.setAttribute('data-tier', tierNow);
     var coreGrad = !on
       ? 'radial-gradient(circle at 35% 32%,#94a3b8 0%,#475569 55%,#1e293b 100%)'
       : (alertBad
@@ -149,13 +149,18 @@ function syncPill() {
       ? '<span data-pet-star="1" style="position:absolute;right:-3px;top:-3px;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#fef08a,#d97706);border:1.5px solid #0f172a;color:#0f172a;font-size:9px;font-weight:900;line-height:11px;text-align:center;box-shadow:0 0 8px rgba(252,211,77,.85);pointer-events:none;">✦</span>'
       : '';
 
-    p.innerHTML = '<span style="display:block;width:22px;height:22px;border-radius:50%;pointer-events:none;background:' + coreGrad + ';box-shadow:inset 0 1px 3px rgba(255,255,255,.85);"></span>' + starBadge;
-    p.style.cssText = 'position:fixed;left:' + pos.left + 'px;top:' + pos.top + 'px;width:38px;height:38px;padding:0;' +
+    var pillHtml = '<span style="display:block;width:22px;height:22px;border-radius:50%;pointer-events:none;background:' + coreGrad + ';box-shadow:inset 0 1px 3px rgba(255,255,255,.85);"></span>' + starBadge;
+    if (p.innerHTML !== pillHtml) p.innerHTML = pillHtml;
+    var pillCss = 'position:fixed;left:' + pos.left + 'px;top:' + pos.top + 'px;width:38px;height:38px;padding:0;' +
       'display:flex;align-items:center;justify-content:center;border-radius:50%;z-index:2147483002;' +
       'background:' + (tierNow === 'abyss' ? 'linear-gradient(145deg,#19040b,#050408)' : 'linear-gradient(145deg,#334155,#0f172a)') + ';border:2px solid ' + pillBorder + ';' +
       'box-shadow:' + ringGlow + ';' + (alertBad ? 'animation:ar6TimerRed 1.2s ease-in-out infinite;' : '') +
       'cursor:pointer;touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent;opacity:.94;transition:opacity .15s;';
-    p.style.display = 'flex';
+    if (p.__ar6PillCss !== pillCss || p.style.display === 'none') {
+      p.style.cssText = pillCss;
+      p.__ar6PillCss = pillCss;
+    }
+    if (p.style.display !== 'flex') p.style.display = 'flex';
 
     if (!p.__ar6pl) {
       p.__ar6pl = 1;
@@ -298,8 +303,13 @@ function render() {
   try {
     var r = DOC && DOC.getElementById(ROOT_ID);
     if (r) {
-      if (cfg && !cfg.enabled) r.setAttribute('data-off-master', '1');
-      else r.removeAttribute('data-off-master');
+      if (cfg && !cfg.enabled) {
+        if (typeof ar6SetAttrIfDiff === 'function') ar6SetAttrIfDiff(r, 'data-off-master', '1');
+        else if (r.getAttribute('data-off-master') !== '1') r.setAttribute('data-off-master', '1');
+      } else {
+        if (typeof ar6RmAttrIfHas === 'function') ar6RmAttrIfHas(r, 'data-off-master');
+        else if (r.hasAttribute ? r.hasAttribute('data-off-master') : r.getAttribute('data-off-master') !== null) r.removeAttribute('data-off-master');
+      }
     }
   } catch (eM0) {}
   try { mountAll(); } catch (e) { try { HOST.console.warn('[AR6] render error', e); } catch (e2) {} }
@@ -313,8 +323,12 @@ function renderStatus() {
     if (!r) return;
     var st = stateOfRun();
     var dot = r.querySelector('.ar6-dot');
-    r.setAttribute('data-st', st.kind);
-    if (dot) dot.className = 'ar6-dot ' + st.kind;
+    if (typeof ar6SetAttrIfDiff === 'function') ar6SetAttrIfDiff(r, 'data-st', st.kind);
+    else if (r.getAttribute('data-st') !== st.kind) r.setAttribute('data-st', st.kind);
+    if (dot) {
+      var nextDotCls = 'ar6-dot ' + st.kind;
+      if (dot.className !== nextDotCls) dot.className = nextDotCls;
+    }
   } catch (e) {}
 }
 
@@ -2048,7 +2062,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.75') throw new Error('VERSION 应为 5.75，实际 ' + VERSION);
+      if (VERSION !== '5.76') throw new Error('VERSION 应为 5.76，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
