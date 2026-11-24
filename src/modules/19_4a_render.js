@@ -419,14 +419,22 @@ function uiMoreHTML() {
 
   if (grp === 'route') {
     var refCur = String(cfg.refract || 'off');
-    var refBdg = refCur === 'off' ? '待机' : (refCur === 'mid' ? '棱镜级' : '微光级');
+    var refSuite = (typeof refractSuiteCode === 'function') ? refractSuiteCode() : '';
+    var refBdgBase = refCur === 'off' ? '待机' : (refCur === 'heavy' ? '万花筒·强' : (refCur === 'mid' ? '棱镜·中' : '微光·轻'));
+    var refBdg = (refCur !== 'off' && refSuite && refSuite !== '随机待生成') ? (refBdgBase + ' · #' + String(refSuite).slice(0, 4)) : refBdgBase;
+    var refRandOn = cfg.refractMode === 'random';
+    var refAutoOn = !!cfg.refractAutoRotate;
     var routeGrid = '<div class="ar6-tgrid">' +
+      swCell('refract:mode', sk('refractModeLabel', '每轮真随机 · 打散跨轮关联'), refRandOn, '', refRandOn ? '每轮随机' : '同套缓存') +
+      swCell('refract:auto', sk('refractAutoLabel', '异常自动换套 · 降级即切'), refAutoOn) +
+      actBtn('refract:roll', 'refresh', sk('refractRollBtn', '🎲 立即换套'), refCur !== 'off' ? 'gold on' : '') +
       swCell('📌 钉参数:' + (cfg.pin ? '开' : '关'), sk('routePin', '主频锁定 · 禁降级调包'), !!cfg.pin) +
       swCell('👁 观察器:' + (cfg.observe ? '开' : '关'), sk('routeObs', '光波采样 · 实时测速'), !!cfg.observe) +
       swCell('📈 行为基线:' + (String(cfg.base || 'on') === 'on' ? '开' : '关'), sk('routeBase', '波长记忆 · 基线比对'), String(cfg.base || 'on') === 'on') +
       swCell('🔬 返回格式:' + (String(cfg.shape || 'on') === 'on' ? '开' : '关'), sk('routeShape', '信标核验 · 结构指纹'), String(cfg.shape || 'on') === 'on') +
-      '</div>';
-    h += segBarHTML(sk('refractTitle', '光波折射 · 防缓存'), '对空白与标点做无感微调，防止中转站直接拿旧缓存敷衍；自动移除备胎模型列表并核验出字快慢与结构指纹。', MENU_SPEC.refract.items, refCur, 'gm:refract', '', refBdg, refCur === 'off' ? '' : 'cyan', routeGrid);
+      '</div>' +
+      ((typeof refractStatusLine === 'function') ? ('<div class="ar6-dline" style="margin-top:6px">' + esc(refractStatusLine()) + '</div>') : '');
+    h += segBarHTML(sk('refractTitle', '光波折射 · 随机微扰'), '四轨随机排列组合微扰（空白/语篇词/锚点/随机数）+ 一键换套，大幅打散公共预设前缀指纹，规避路由偷换与旧缓存敷衍。', MENU_SPEC.refract.items, refCur, 'gm:refract', '', refBdg, refCur === 'off' ? '' : 'cyan', routeGrid);
     h += segBarHTML(sk('thinkTitle', '精神同调 · 思考强度'), '选「跟随预设」完全保留预设原有思考预算（零覆写）；手动指定则按模型协议写入对应档位。', MENU_SPEC.think.items, String(cfg.think || 'auto'), 'gm:think', 'auto', thinkTag(), String(cfg.think || 'auto') === 'auto' ? '' : 'cyan');
 
     h += '<div class="ar6-mmore-h">' + esc(sk('routeSecHead', '诊断报告、主动探针与数据维护')) + '</div>';
@@ -682,11 +690,12 @@ function uiBaseSig() {
     var updSig = (typeof updStatusSig === 'function') ? updStatusSig() : '';
     var pSkipSig = (typeof DET !== 'undefined' && DET) ? (String(DET.pluginSkip || 0) + ':' + String(DET.lastPlugin || '')) : '';
     var skSig = ((typeof skinId === 'function') ? skinId() : 'ultra') + ':' + ((typeof SKIN_BAR_OPEN !== 'undefined' && SKIN_BAR_OPEN) ? '1' : '0');
+    var refSig = String(cfg.refract || 'off') + ':' + String(cfg.refractMode || 'stable') + ':' + (cfg.refractAutoRotate ? '1' : '0') + ':' + String(cfg.refractSeed || '') + ':' + ((typeof LAST_REFRACT !== 'undefined' && LAST_REFRACT) ? (String(LAST_REFRACT.suite || '') + ':' + String(LAST_REFRACT.at || 0)) : '');
     return [STRUCT_VER, VERSION, uiMode(), uiCfgSig(),
       c.same, c.diff, c.thin, c.unknown, c.other, String(K.bad), String(K.eff), lg,
       MORE_OPEN ? 1 : 0, LOGW.open ? 1 : 0, st.kind, jl, tr, ab, tc, tt, sv, sj,
       TOOL_CONFIRM ? 1 : 0,
-      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig].join('|');
+      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig, refSig].join('|');
   } catch (e) { return 'err'; }
 }
 

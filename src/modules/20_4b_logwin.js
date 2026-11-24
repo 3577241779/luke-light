@@ -588,6 +588,7 @@ function ar6Diag() {
 function profileLabel() {
   if (cfg.refract === 'light') return '轻';
   if (cfg.refract === 'mid') return '中';
+  if (cfg.refract === 'heavy') return '强';
   return '关';
 }
 
@@ -1474,8 +1475,34 @@ function onPanelClick(e) {
   if (act.indexOf('🚫 反模板:') === 0) { oocToggle('tpl'); return; }
   if (act.indexOf('🔒 变更门槛:') === 0) { oocToggle('chg'); return; }
   if (act.indexOf('🗣 口吻一致:') === 0) { oocToggle('voice'); return; }
+  if (act === 'refract:mode') {
+    cfg.refractMode = (cfg.refractMode === 'random') ? 'stable' : 'random';
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.refractMode === 'random'
+      ? '🎲 微扰已切为「每轮真随机」：每发一轮都重新摇随机数与排列组合'
+      : '🧊 微扰已切为「同套保缓存」：本会话固定当前套号，可点「立即换套」手动刷新', 'ok');
+    return;
+  }
+  if (act === 'refract:auto') {
+    cfg.refractAutoRotate = !cfg.refractAutoRotate;
+    saveCfg(); UI_SIG = {}; render();
+    banner(cfg.refractAutoRotate
+      ? '🎲 异常自动换套已开启：监测到被换/无思考/速度异常时自动切换新随机套号'
+      : '🎲 异常自动换套已关闭', cfg.refractAutoRotate ? 'ok' : 'gray');
+    return;
+  }
+  if (act === 'refract:roll') {
+    var nextSuite = (typeof refractRollSuite === 'function') ? refractRollSuite('manual') : '';
+    if (cfg.refract === 'off') {
+      cfg.refract = 'mid';
+      saveCfg();
+    }
+    UI_SIG = {}; render();
+    banner('🎲 微扰已换套 → #' + (nextSuite || 'NEW') + '（下轮发送即启用全新随机数排列组合）', 'ok');
+    return;
+  }
   if (act.indexOf('🪶 微扰') === 0) {
-    cfg.refract = cfg.refract === 'off' ? 'light' : (cfg.refract === 'light' ? 'mid' : 'off');
+    cfg.refract = cfg.refract === 'off' ? 'light' : (cfg.refract === 'light' ? 'mid' : (cfg.refract === 'mid' ? 'heavy' : 'off'));
     saveCfg(); render();
     banner('🪶 微扰档位：' + profileLabel(), cfg.refract === 'off' ? 'gray' : 'ok');
     return;

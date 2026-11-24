@@ -15,11 +15,11 @@ const path = require('path');
 const vm = require('vm');
 const { TextEncoder, TextDecoder } = require('util');
 
-const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.72';
+const DESKTOP_OUT_DIR = 'c:\\Users\\23548\\Desktop\\卢克之光 V5.73';
 const TARGETS = [
-  '卢克之光 V5.72·ST酒馆适配.json',
-  '卢克之光 V5.72·TT酒馆适配.json',
-  '卢克之光 V5.72·桌面版.json',
+  '卢克之光 V5.73·ST酒馆适配.json',
+  '卢克之光 V5.73·TT酒馆适配.json',
+  '卢克之光 V5.73·桌面版.json',
 ];
 
 let totalPass = 0, totalFail = 0;
@@ -189,7 +189,7 @@ async function runSuite(fileName) {
   const api = loadBundle(fullPath, win);
 
   try {
-    check(api && api.VERSION === '5.72', 'VERSION 为 5.72', `got=${api && api.VERSION}`);
+    check(api && api.VERSION === '5.73', 'VERSION 为 5.73', `got=${api && api.VERSION}`);
 
     // =========================================================================
     // 1. 路由雷达页全按键实效校验（微扰 / 钉参数 / 思考档 / 总开关）

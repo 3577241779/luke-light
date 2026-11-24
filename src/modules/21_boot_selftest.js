@@ -2044,7 +2044,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.72') throw new Error('VERSION 应为 5.72，实际 ' + VERSION);
+      if (VERSION !== '5.73') throw new Error('VERSION 应为 5.73，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2725,6 +2725,12 @@ var AR6_API = {
   uiMode: uiMode,
   planRequest: planRequest,
   refractZone: refractZone,
+  refractRollSuite: refractRollSuite,
+  refractSuiteCode: refractSuiteCode,
+  refractStatusLine: refractStatusLine,
+  refractEntropy: refractEntropy,
+  PROFILE: PROFILE,
+  getLastRefract: function () { return LAST_REFRACT; },
   collectSpans: collectSpans,
   isProtected: isProtected,
   staticScore: staticScore,

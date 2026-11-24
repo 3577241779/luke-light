@@ -594,7 +594,7 @@ var MENU_SPEC = {
             get: function () { return String(cfg.know || 'off'); }, set: function (v) { cfg.know = v; } },
   charm:  { label: '真实引力', items: [['关闭', 'off'], ['角色独立作息', 'lite'], ['允许干脆拒绝', 'mid'], ['世界自主运转', 'full']],
             get: function () { return String(cfg.charm || 'off'); }, set: function (v) { cfg.charm = v; } },
-  refract:{ label: '光波折射', items: [['关闭', 'off'], ['微光级', 'light'], ['棱镜级', 'mid']],
+  refract:{ label: '随机微扰', items: [['关闭', 'off'], ['微光·轻', 'light'], ['棱镜·中', 'mid'], ['万花筒·强', 'heavy']],
             get: function () { return String(cfg.refract || 'off'); }, set: function (v) { cfg.refract = v; } },
   think:  { label: '精神同调', items: [['跟随预设', 'auto'], ['低维', 'low'], ['均衡', 'medium'], ['深度同调', 'high']],
             get: function () { return String(cfg.think || 'auto'); }, set: function (v) { cfg.think = v; } },

@@ -1,55 +1,100 @@
 /* ===== 2_refract.js ===== */
 /* ============================================================================
- * Anti-Route v6.0 — 2/4 Refraction
- * 三轨微扰（W 空白 / L 语篇词 / A 锚点）+ 预算裁剪 + 块级签名守卫 + 幂等
+ * Anti-Route v6.0 → 卢克之光 V5.73 — 2/4 Refraction v2
+ * 四轨随机排列组合微扰（W 空白 / L 语篇词 / A 锚点 / R 随机数排列）
+ * + 真随机换套（Suite Rotation）+ 预算裁剪 + 块级签名守卫 + 幂等
  * ========================================================================== */
 
 var PROFILE = {
-  off:   { tokens: 0,  w: 0, l: 0, a: 0, zones: 0 },
-  light: { tokens: 18, w: 3, l: 1, a: 1, zones: 1 },
-  mid:   { tokens: 56, w: 6, l: 2, a: 2, zones: 2 }
+  off:   { tokens: 0,   w: 0, l: 0, a: 0, r: 0, zones: 0 },
+  light: { tokens: 24,  w: 3, l: 1, a: 1, r: 1, zones: 1 },
+  mid:   { tokens: 64,  w: 6, l: 3, a: 2, r: 2, zones: 2 },
+  heavy: { tokens: 108, w: 9, l: 4, a: 2, r: 3, zones: 3 }
 };
 var HARD_TOKEN_CAP = 120;
 
-var ANCHOR_TOPICS = ['rules', 'context', 'section', 'layout', 'style', 'frame', 'notes', 'spec'];
-var ANCHOR_KINDS = ['part', 'block', 'node', 'unit', 'seg', 'item'];
+var REFRACT_SEQ = 0;
+var LAST_REFRACT = null;
 
-/* 语篇连接词：零力度变化，绝不碰模态/否定/义务词 */
+var ANCHOR_TOPICS = ['rules', 'context', 'section', 'layout', 'style', 'frame', 'notes', 'spec', 'folio', 'draft', 'chapter', 'margin'];
+var ANCHOR_KINDS = ['part', 'block', 'node', 'unit', 'seg', 'item', 'slot', 'chunk', 'slice', 'entry'];
+var REFRACT_TAGS = ['ctx', 'ref', 'doc', 'arc', 'idx', 'seg'];
+var REFRACT_DOMAINS = ['doc', 'manuscript', 'folio', 'draft', 'ledger', 'sheet', 'archive', 'edition', 'issue', 'record', 'catalog', 'volume'];
+var REFRACT_SEPS = [' · ', ' | ', ' / ', ' ; ', ' - '];
+var REFRACT_SHELLS = ['slash_hash', 'slash_angle', 'lkr_hash', 'r0_hash', 'tilde_hash', 'html'];
+var REFRACT_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+/* 语篇连接词（25 组）：零力度变化，绝不碰模态/否定/义务词 */
 var DISCOURSE = [
-  [/(^|[，。；：！？\n\s])(此外，|另外，)/g, ['此外，', '另外，']],
-  [/(^|[，。；：！？\n\s])(因此，|所以，|因而，)/g, ['因此，', '所以，', '因而，']],
-  [/(^|[，。；：！？\n\s])(总之，|总的来说，|简言之，)/g, ['总之，', '总的来说，', '简言之，']],
-  [/(^|[，。；：！？\n\s])(例如，|比如，|譬如，)/g, ['例如，', '比如，', '譬如，']],
-  [/(^|[，。；：！？\n\s])(同时，|与此同时，)/g, ['同时，', '与此同时，']],
-  [/(^|[，。；：！？\n\s])(换言之，|换句话说，)/g, ['换言之，', '换句话说，']],
-  [/(\b)(For example,)/g, ['For example,', 'For instance,']],
-  [/(\b)(Therefore,)/g, ['Therefore,', 'Thus,', 'Hence,']],
-  [/(\b)(However,)/g, ['However,', 'Nevertheless,']]
+  [/(^|[，。；：！？\n\s])(此外，|另外，|再者，)/g, ['此外，', '另外，', '再者，']],
+  [/(^|[，。；：！？\n\s])(因此，|所以，|因而，|由此，)/g, ['因此，', '所以，', '因而，', '由此，']],
+  [/(^|[，。；：！？\n\s])(总之，|总的来说，|简言之，|总而言之，)/g, ['总之，', '总的来说，', '简言之，', '总而言之，']],
+  [/(^|[，。；：！？\n\s])(例如，|比如，|譬如，|诸如，)/g, ['例如，', '比如，', '譬如，', '诸如，']],
+  [/(^|[，。；：！？\n\s])(同时，|与此同时，|同步地，)/g, ['同时，', '与此同时，', '同步地，']],
+  [/(^|[，。；：！？\n\s])(换言之，|换句话说，|也就是说，)/g, ['换言之，', '换句话说，', '也就是说，']],
+  [/(^|[，。；：！？\n\s])(然而，|不过，|但是，)/g, ['然而，', '不过，', '但是，']],
+  [/(^|[，。；：！？\n\s])(其次，|接着，|随后，)/g, ['其次，', '接着，', '随后，']],
+  [/(^|[，。；：！？\n\s])(首先，|第一，|起初，)/g, ['首先，', '第一，', '起初，']],
+  [/(^|[，。；：！？\n\s])(最后，|最终，|末了，)/g, ['最后，', '最终，', '末了，']],
+  [/(^|[，。；：！？\n\s])(具体而言，|具体来说，|详细来看，)/g, ['具体而言，', '具体来说，', '详细来看，']],
+  [/(^|[，。；：！？\n\s])(一般而言，|通常来说，|一般来说，)/g, ['一般而言，', '通常来说，', '一般来说，']],
+  [/(^|[，。；：！？\n\s])(相应地，|对应地，|据此，)/g, ['相应地，', '对应地，', '据此，']],
+  [/(^|[，。；：！？\n\s])(尤其，|特别是，|尤其是，)/g, ['尤其，', '特别是，', '尤其是，']],
+  [/(^|[，。；：！？\n\s])(同理，|同样地，|类似地，)/g, ['同理，', '同样地，', '类似地，']],
+  [/(^|[，。；：！？\n\s])(在此基础上，|基于此，|在此前提下，)/g, ['在此基础上，', '基于此，', '在此前提下，']],
+  [/(\b)(For example,|For instance,)/g, ['For example,', 'For instance,']],
+  [/(\b)(Therefore,|Thus,|Hence,|Consequently,)/g, ['Therefore,', 'Thus,', 'Hence,', 'Consequently,']],
+  [/(\b)(However,|Nevertheless,|Nonetheless,)/g, ['However,', 'Nevertheless,', 'Nonetheless,']],
+  [/(\b)(Furthermore,|Moreover,|Additionally,)/g, ['Furthermore,', 'Moreover,', 'Additionally,']],
+  [/(\b)(Meanwhile,|Simultaneously,)/g, ['Meanwhile,', 'Simultaneously,']],
+  [/(\b)(In summary,|In brief,|Overall,)/g, ['In summary,', 'In brief,', 'Overall,']],
+  [/(\b)(Specifically,|In particular,|Namely,)/g, ['Specifically,', 'In particular,', 'Namely,']],
+  [/(\b)(Similarly,|Likewise,)/g, ['Similarly,', 'Likewise,']],
+  [/(\b)(In addition,|Besides,)/g, ['In addition,', 'Besides,']]
 ];
 
-var ANCHOR_STRIP = /(?:^|\n)[ \t]*(?:<!--[ \t]*(?:ctx|ref):[^>]*-->|\[\/\/\]:[ \t]*#[ \t]*\((?:ctx|ref):[^)]*\))[ \t]*(?=\n|$)/g;
+var ANCHOR_STRIP = /(?:^|\n)[ \t]*(?:<!--[ \t]*(?:ctx|ref|doc|arc|idx|seg):[^>]*-->|\[(?:\/\/|lk-r|r[0-9]|~)\]:[ \t]*(?:#|<>)[ \t]*\((?:ctx|ref|doc|arc|idx|seg):[^)]*\))[ \t]*(?=\n|$)/g;
+var REFRACT_LINE_RE = /^[ \t]*(?:<!--[ \t]*(?:ctx|ref|doc|arc|idx|seg):[^>]*-->|\[(?:\/\/|lk-r|r[0-9]|~)\]:[ \t]*(?:#|<>)[ \t]*\((?:ctx|ref|doc|arc|idx|seg):[^)]*\))[ \t]*$/;
 
-var W_STRIP_LIST = /^([ \t]*(?:[-*+]|\d+\.|>))[ \t]{2,}/gm;
-var W_STRIP_GAP = /\n[ \t]{1,3}\n/g;
+var W_STRIP_LIST = /^([ \t]*(?:#{1,6}|[-*+]|\d{1,4}[.)]|>))[ \t]{2,}/gm;
+var W_STRIP_GAP = /\n[ \t]{1,4}\n/g;
 
 function stripArtifacts(text) {
   if (typeof text !== 'string') return text;
 
-  /* 1) 整行删除锚点（连同它带来的换行），避免首行残留空行 */
+  /* 1) 整行删除锚点与随机数标记（连同它带来的换行），避免首行残留空行 */
   var lines = text.split('\n');
   var kept = [];
   for (var i = 0; i < lines.length; i++) {
-    if (/^[ \t]*(?:<!--[ \t]*(?:ctx|ref):[^>]*-->|\[\/\/\]:[ \t]*#[ \t]*\((?:ctx|ref):[^)]*\))[ \t]*$/.test(lines[i])) continue;
+    if (REFRACT_LINE_RE.test(lines[i])) continue;
     kept.push(lines[i]);
   }
   var out = kept.join('\n');
 
-  /* 2) 还原空白轨：段落间隙与列表标记后的多余空格回到 1 个 */
+  /* 2) 还原空白轨：段落间隙与标题/列表/引用标记后的多余空格回到 1 个 */
   out = out.replace(W_STRIP_GAP, '\n\n').replace(W_STRIP_LIST, '$1 ');
   return out;
 }
 
-/* ---------------- 随机源（seeded LCG，可复现） ---------------- */
+/* ---------------- 真随机熵源 / 种子 RNG / 洗牌与换套 ---------------- */
+
+function refractEntropy() {
+  REFRACT_SEQ = (REFRACT_SEQ + 1) >>> 0;
+  var a = 0, b = 0;
+  try {
+    var cr = (typeof HOST !== 'undefined' && HOST && HOST.crypto) || (typeof crypto !== 'undefined' ? crypto : null);
+    if (cr && typeof cr.getRandomValues === 'function') {
+      var u = new Uint32Array(2);
+      cr.getRandomValues(u);
+      a = u[0] >>> 0;
+      b = u[1] >>> 0;
+    }
+  } catch (eC) {}
+  if (!a) a = ((Date.now() & 0xffffffff) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  if (!b) b = Math.floor(Math.random() * 0xffffffff) >>> 0;
+  var mixed = (a ^ ((b << 13) | (b >>> 19)) ^ (REFRACT_SEQ * 2654435761)) >>> 0;
+  return mixed || 0x9e3779b9;
+}
 
 function makeRng(seed) {
   var s = (seed >>> 0) || 0x20261101;
@@ -57,6 +102,75 @@ function makeRng(seed) {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 4294967296;
   };
+}
+
+function refractShuffle(arr, rng) {
+  var out = arr.slice();
+  for (var i = out.length - 1; i > 0; i--) {
+    var j = Math.floor(rng() * (i + 1));
+    var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+  }
+  return out;
+}
+
+function refractMakeCode(rng) {
+  var r = rng || makeRng(refractEntropy());
+  var s = '';
+  for (var i = 0; i < 8; i++) {
+    if (i === 4) s += '-';
+    s += REFRACT_ALPHABET.charAt(Math.floor(r() * REFRACT_ALPHABET.length));
+  }
+  return s;
+}
+
+function refractRollSuite(reason) {
+  var code = refractMakeCode(makeRng(refractEntropy()));
+  try {
+    if (typeof cfg === 'object' && cfg) {
+      cfg.refractSeed = code;
+      if (typeof saveCfg === 'function') saveCfg();
+    }
+  } catch (e0) {}
+  LAST_REFRACT = {
+    suite: code,
+    mode: (cfg && cfg.refractMode === 'random') ? 'random' : 'stable',
+    level: (cfg && cfg.refract) || 'off',
+    zones: 0,
+    tracks: { W: 0, L: 0, A: 0, R: 0 },
+    added: 0,
+    edits: 0,
+    reason: String(reason || 'manual'),
+    at: Date.now()
+  };
+  return code;
+}
+
+function refractSuiteCode() {
+  try {
+    if (cfg && cfg.refractMode === 'random') {
+      return (LAST_REFRACT && LAST_REFRACT.suite) ? LAST_REFRACT.suite : '随机待生成';
+    }
+    var seed = String((cfg && cfg.refractSeed) || '').trim();
+    if (seed) return seed;
+    var derived = hashStr('suite|' + (typeof chatTag === 'function' ? chatTag() : 'chat') + '|' + (typeof saltKey === 'function' ? saltKey('refract') : 'free'));
+    return refractMakeCode(makeRng(derived));
+  } catch (e) { return 'AUTO'; }
+}
+
+function refractStatusLine() {
+  var lv = String((cfg && cfg.refract) || 'off');
+  if (lv === 'off') return '当前待机：开启后将对系统提示静态区执行四轨随机微扰（空白/语篇词/锚点/随机数排列）。';
+  var modeTxt = (cfg && cfg.refractMode === 'random') ? '每轮真随机' : '同套保缓存';
+  var autoTxt = (cfg && cfg.refractAutoRotate) ? ' · 异常自动换套' : '';
+  var code = refractSuiteCode();
+  var tail = '';
+  if (LAST_REFRACT && LAST_REFRACT.edits > 0) {
+    var t = LAST_REFRACT.tracks || {};
+    tail = ' · 上轮 ' + (LAST_REFRACT.zones || 0) + '区 W' + (t.W || 0) + '·L' + (t.L || 0) + '·A' + (t.A || 0) + '·R' + (t.R || 0) + ' (+' + (LAST_REFRACT.added || 0) + 'tok)';
+  } else {
+    tail = ' · 下轮发送生效';
+  }
+  return '套号 #' + code + ' · ' + modeTxt + autoTxt + tail;
 }
 
 /* ---------------- 块级签名 ---------------- */
@@ -67,7 +181,8 @@ function blockSignature(text) {
   for (var i = 0; i < lines.length; i++) {
     var ln = lines[i];
     if (!ln.trim()) continue;
-    if (/^[ \t]*(?:<!--|\/\/\]:[ \t]*#)/.test(ln)) continue;
+    if (REFRACT_LINE_RE.test(ln)) continue;
+    if (/^[ \t]*(?:<!--|\[?\/\/\]:[ \t]*#)/.test(ln)) continue;
     var mh = /^[ \t]*(#{1,6})[ \t]+\S/.exec(ln);
     if (mh) { h[mh[1].length - 1]++; continue; }
     if (/^[ \t]*(?:[-+*]|\d{1,4}[.)])[ \t]+\S/.test(ln)) { li++; continue; }
@@ -78,7 +193,7 @@ function blockSignature(text) {
   return h.join(',') + '|' + li + '|' + q + '|' + tb + '|' + fence;
 }
 
-/* ---------------- W 轨：块级结构空白 ---------------- */
+/* ---------------- W 轨：块级结构空白（洗牌 + 1~2 空格随机组合） ---------------- */
 
 function findWSites(text, spans) {
   var sites = [];
@@ -114,25 +229,26 @@ function planW(text, spans, max, rng) {
   if (max <= 0) return [];
   var sites = findWSites(text, spans);
   if (!sites.length) return [];
+  var order = refractShuffle(sites, rng);
   var picked = [];
-  var startIdx = Math.floor(rng() * sites.length);
-  for (var step = 0; step < sites.length && picked.length < max; step++) {
-    var s = sites[(startIdx + step) % sites.length];
+  for (var step = 0; step < order.length && picked.length < max; step++) {
+    var s = order[step];
     var clash = false;
-    for (var k = 0; k < picked.length; k++) if (Math.abs(picked[k].pos - s.pos) < 36) { clash = true; break; }
+    for (var k = 0; k < picked.length; k++) if (Math.abs(picked[k].pos - s.pos) < 32) { clash = true; break; }
     if (clash) continue;
     picked.push(s);
   }
   return picked.map(function (s) {
+    var pad = rng() < 0.35 ? '  ' : ' ';
     return {
       track: 'W', start: s.pos, end: s.pos,
-      text: s.kind === 'gap' ? ' ' : ' ',
+      text: pad,
       weight: 1
     };
   });
 }
 
-/* ---------------- L 轨：语篇连接词轮换 ---------------- */
+/* ---------------- L 轨：语篇连接词洗牌轮换 ---------------- */
 
 function planL(text, spans, max, rng) {
   if (max <= 0) return [];
@@ -156,12 +272,12 @@ function planL(text, spans, max, rng) {
     }
   }
   if (!cands.length) return [];
+  var order = refractShuffle(cands, rng);
   var picked = [];
-  var offset = Math.floor(rng() * cands.length);
-  for (var s = 0; s < cands.length && picked.length < max; s++) {
-    var c = cands[(offset + s) % cands.length];
+  for (var s = 0; s < order.length && picked.length < max; s++) {
+    var c = order[s];
     var clash2 = false;
-    for (var p = 0; p < picked.length; p++) if (Math.abs(picked[p].start - c.start) < 60) { clash2 = true; break; }
+    for (var p = 0; p < picked.length; p++) if (Math.abs(picked[p].start - c.start) < 52) { clash2 = true; break; }
     if (clash2) continue;
     picked.push(c);
   }
@@ -170,16 +286,36 @@ function planL(text, spans, max, rng) {
   });
 }
 
+/* ---------------- 壳封装（规避 foreignShield 的 <=1 条 HTML 注释约束） ---------------- */
+
+function wrapRefractLine(tag, body, rng, state) {
+  var shells = REFRACT_SHELLS.slice();
+  if (state && state.htmlUsed >= 1) {
+    shells = shells.filter(function (x) { return x !== 'html'; });
+  }
+  var pick = shells[Math.floor(rng() * shells.length)];
+  var payload = tag + ': ' + body;
+  if (pick === 'html') {
+    if (state) state.htmlUsed++;
+    return '<!-- ' + payload + ' -->';
+  }
+  if (pick === 'slash_angle') return '[//]: <> (' + payload + ')';
+  if (pick === 'lkr_hash') return '[lk-r]: # (' + payload + ')';
+  if (pick === 'r0_hash') return '[r' + Math.floor(rng() * 10) + ']: # (' + payload + ')';
+  if (pick === 'tilde_hash') return '[~]: # (' + payload + ')';
+  return '[//]: # (' + payload + ')';
+}
+
 /* ---------------- A 轨：块级安全锚点 ---------------- */
 
-function buildAnchor(rng, html) {
+function buildAnchor(rng, state) {
   var topic = ANCHOR_TOPICS[Math.floor(rng() * ANCHOR_TOPICS.length)];
   var kind = ANCHOR_KINDS[Math.floor(rng() * ANCHOR_KINDS.length)];
   var hex = Math.floor(rng() * 0xffff).toString(16);
   while (hex.length < 4) hex = '0' + hex;
   var tag = rng() < 0.5 ? 'ctx' : 'ref';
-  return html ? '<!-- ' + tag + ': ' + topic + ' / ' + kind + ' ' + hex + ' -->'
-              : '[//]: # (' + tag + ': ' + topic + ' / ' + kind + ' ' + hex + ')';
+  var sep = rng() < 0.5 ? ' / ' : ' · ';
+  return wrapRefractLine(tag, topic + sep + kind + ' ' + hex, rng, state);
 }
 
 function isBlockLine(line) {
@@ -211,52 +347,142 @@ function findAnchorSites(text, spans) {
   return out;
 }
 
-function planA(text, spans, isHead, max, rng) {
+function planA(text, spans, isHead, max, rng, state) {
   if (max <= 0) return [];
   var sites = findAnchorSites(text, spans);
-  var html = rng() < 0.5;
   var acts = [];
   if (isHead && !isProtected(spans, 0, 1)) {
-    var a0 = buildAnchor(rng, html) + '\n';
+    var a0 = buildAnchor(rng, state) + '\n';
     acts.push({ track: 'A', start: 0, end: 0, text: a0, weight: estimateTokens(a0) });
-    return acts;
+    if (max <= 1 || !sites.length) return acts;
   }
   if (!sites.length) return acts;
   var pool = [];
   for (var i = 0; i < sites.length; i++) {
-    if (sites[i] >= 4 && sites[i] <= 320) pool.push(sites[i]);
+    if (sites[i] >= 4 && sites[i] <= 480) pool.push(sites[i]);
   }
-  var target = pool.length ? pool[Math.floor(rng() * pool.length)] : sites[0];
-  var ins = '\n' + buildAnchor(rng, !html);
+  var cands = refractShuffle(pool.length ? pool : sites, rng);
+  var target = cands[0];
+  var ins = '\n' + buildAnchor(rng, state);
   acts.push({ track: 'A', start: target, end: target, text: ins, weight: estimateTokens(ins) });
   return acts;
 }
 
-/* ---------------- 应用（含预算裁剪与签名守卫） ---------------- */
+/* ---------------- R 轨：高熵随机数排列组合（多槽洗牌 + 多形态编码） ---------------- */
+
+function buildRandomCode(rng) {
+  var mode = Math.floor(rng() * 4);
+  if (mode === 0) {
+    var h1 = Math.floor(rng() * 0xffff).toString(16);
+    var h2 = Math.floor(rng() * 0xffff).toString(16);
+    while (h1.length < 4) h1 = '0' + h1;
+    while (h2.length < 4) h2 = '0' + h2;
+    return h1 + h2;
+  }
+  if (mode === 1) {
+    var s = '';
+    for (var i = 0; i < 7; i++) s += REFRACT_ALPHABET.charAt(Math.floor(rng() * REFRACT_ALPHABET.length));
+    return s;
+  }
+  if (mode === 2) {
+    var n1 = 1000 + Math.floor(rng() * 9000);
+    var n2 = 100 + Math.floor(rng() * 900);
+    return String(n1) + '-' + String(n2);
+  }
+  var p = REFRACT_ALPHABET.charAt(Math.floor(rng() * REFRACT_ALPHABET.length));
+  var d = Math.floor(rng() * 9) + 1;
+  var hx = Math.floor(rng() * 0xfffff).toString(16).toUpperCase();
+  while (hx.length < 5) hx = '0' + hx;
+  return p + d + '-' + hx;
+}
+
+function buildRandomPermLine(rng, state) {
+  var tag = REFRACT_TAGS[Math.floor(rng() * REFRACT_TAGS.length)];
+  var dom = REFRACT_DOMAINS[Math.floor(rng() * REFRACT_DOMAINS.length)];
+  var code = buildRandomCode(rng);
+  var revKinds = ['v', 'rev-', 'sec-', 'p.', 'ch-', 'b.'];
+  var rev = revKinds[Math.floor(rng() * revKinds.length)] + String(1 + Math.floor(rng() * 99));
+  var chkKinds = ['chk:', 'id:', 'sig:', 'no:'];
+  var chkVal = Math.floor(rng() * 0xffff).toString(16);
+  while (chkVal.length < 4) chkVal = '0' + chkVal;
+  var chk = chkKinds[Math.floor(rng() * chkKinds.length)] + chkVal;
+
+  var slots = refractShuffle([dom, code, rev, chk], rng);
+  var take = rng() < 0.45 ? 3 : 4;
+  var sep = REFRACT_SEPS[Math.floor(rng() * REFRACT_SEPS.length)];
+  return wrapRefractLine(tag, slots.slice(0, take).join(sep), rng, state);
+}
+
+function planR(text, spans, isHead, max, rng, state) {
+  if (max <= 0) return [];
+  var acts = [];
+  var sites = findAnchorSites(text, spans);
+  var usedPos = [];
+  function tooClose(pos) {
+    for (var i = 0; i < usedPos.length; i++) if (Math.abs(usedPos[i] - pos) < 40) return true;
+    return false;
+  }
+
+  /* 头部或末尾也可作为安全位点，与段落边界共同参与排列抽选 */
+  var pool = [];
+  if (!isProtected(spans, 0, 1)) pool.push({ pos: 0, head: true });
+  for (var s = 0; s < sites.length; s++) pool.push({ pos: sites[s], head: false });
+  if (!isProtected(spans, Math.max(0, text.length - 1), text.length)) pool.push({ pos: text.length, tail: true });
+
+  var shuffled = refractShuffle(pool, rng);
+  /* 如果是首区且允许头部插入，优先保证至少一条靠近前部以打散前缀哈希 */
+  if (isHead && !isProtected(spans, 0, 1) && rng() < 0.72) {
+    var line0 = buildRandomPermLine(rng, state) + '\n';
+    acts.push({ track: 'R', start: 0, end: 0, text: line0, weight: estimateTokens(line0) });
+    usedPos.push(0);
+  }
+  for (var k = 0; k < shuffled.length && acts.length < max; k++) {
+    var item = shuffled[k];
+    if (tooClose(item.pos)) continue;
+    var line = buildRandomPermLine(rng, state);
+    var ins = item.head ? (line + '\n') : ('\n' + line);
+    acts.push({ track: 'R', start: item.pos, end: item.pos, text: ins, weight: estimateTokens(ins) });
+    usedPos.push(item.pos);
+  }
+  return acts;
+}
+
+/* ---------------- 应用（四轨随机排列组合 + 预算裁剪 + 签名守卫） ---------------- */
 
 function refractZone(text, opt, rng) {
-  var empty = { changed: false, text: text, added: 0, edits: 0, tracks: { W: 0, L: 0, A: 0 } };
+  var empty = { changed: false, text: text, added: 0, edits: 0, tracks: { W: 0, L: 0, A: 0, R: 0 } };
   var cleaned = stripArtifacts(text);
   if (typeof cleaned !== 'string' || cleaned.replace(/\s/g, '').length < 40) return empty;
 
   var spans = collectSpans(cleaned);
   if (spans.length === 1 && spans[0][0] === 0 && spans[0][1] >= cleaned.length) return empty;
 
+  var state = { htmlUsed: (cleaned.match(/<!--/g) || []).length };
+  var rMax = typeof opt.r === 'number' ? opt.r : 0;
+  var budgetCap = (typeof opt.budget === 'number' && opt.budget > 0) ? opt.budget : (typeof opt.tokens === 'number' && opt.tokens > 0 ? opt.tokens : HARD_TOKEN_CAP);
+
+  /* 四轨本身也按随机数洗牌顺序规划，避免固定模板分布 */
+  var trackOrder = refractShuffle(['W', 'L', 'A', 'R'], rng);
   var acts = [];
-  if (opt.w > 0) acts = acts.concat(planW(cleaned, spans, opt.w, rng));
-  if (opt.l > 0) acts = acts.concat(planL(cleaned, spans, opt.l, rng));
-  if (opt.a > 0) acts = acts.concat(planA(cleaned, spans, opt.isHead, opt.a, rng));
+  for (var ti = 0; ti < trackOrder.length; ti++) {
+    var tkName = trackOrder[ti];
+    if (tkName === 'W' && opt.w > 0) acts = acts.concat(planW(cleaned, spans, opt.w, rng));
+    else if (tkName === 'L' && opt.l > 0) acts = acts.concat(planL(cleaned, spans, opt.l, rng));
+    else if (tkName === 'A' && opt.a > 0) acts = acts.concat(planA(cleaned, spans, opt.isHead, opt.a, rng, state));
+    else if (tkName === 'R' && rMax > 0) acts = acts.concat(planR(cleaned, spans, opt.isHead, rMax, rng, state));
+  }
   if (!acts.length) return empty;
 
   var total = 0;
   for (var i = 0; i < acts.length; i++) total += acts[i].weight;
-  while (total > opt.budget && acts.length) {
-    var dropA = -1, dropL = -1;
+  while (total > budgetCap && acts.length) {
+    var dropA = -1, dropL = -1, dropR = -1, rCnt = 0;
     for (var j = 0; j < acts.length; j++) {
+      if (acts[j].track === 'R') { rCnt++; if (dropR < 0) dropR = j; }
       if (acts[j].track === 'A' && dropA < 0) dropA = j;
       if (acts[j].track === 'L' && dropL < 0) dropL = j;
     }
-    var di = dropA >= 0 ? dropA : (dropL >= 0 ? dropL : acts.length - 1);
+    var di = dropA >= 0 ? dropA : (dropL >= 0 ? dropL : (rCnt > 1 ? dropR : acts.length - 1));
     total -= acts[di].weight;
     acts.splice(di, 1);
   }
@@ -266,11 +492,11 @@ function refractZone(text, opt, rng) {
   var out = cleaned;
   var lastStart = 1e9;
   var applied = 0;
-  var tracks = { W: 0, L: 0, A: 0 };
+  var tracks = { W: 0, L: 0, A: 0, R: 0 };
   for (var k = 0; k < acts.length; k++) {
     var act = acts[k];
     if (act.end > lastStart) continue;
-    if (act.start > 0 && isProtected(spans, act.start, act.end)) continue;
+    if (act.start > 0 && act.start < cleaned.length && isProtected(spans, act.start, act.end)) continue;
     out = out.slice(0, act.start) + act.text + out.slice(act.end);
     lastStart = act.start;
     applied++;
@@ -505,16 +731,18 @@ function planRequest(rawBody, url, internal) {
     var inner = body;
     if (body.request && typeof body.request === 'object' && !Array.isArray(body.request)) inner = body.request;
     var zones = pickZones(inner, '', prof.zones);
+    var isRand = cfg.refractMode === 'random';
     var seedStr = 'refract|' + normModel(out.model) + '|' + saltKey('refract') + '|' + String(cfg.refractSeed || '') + '|' + refractChatKey(inner);
-    var seedNum = (cfg.refractMode === 'random') ? (Date.now() ^ 0x5f3759df) : hashStr(seedStr);
+    var seedNum = isRand ? refractEntropy() : hashStr(seedStr);
+    var suiteTag = isRand ? refractMakeCode(makeRng(seedNum >>> 0)) : refractSuiteCode();
     var rng = makeRng(seedNum >>> 0);
-    var touched = 0, tk = { W: 0, L: 0, A: 0 };
+    var touched = 0, tk = { W: 0, L: 0, A: 0, R: 0 };
     var budget = Math.min(prof.tokens, HARD_TOKEN_CAP);
     for (var i = 0; i < zones.length; i++) {
       if (budget <= 0) break;
       var before = zones[i].get();
       var res = refractZone(before, {
-        w: prof.w, l: prof.l, a: prof.a, isHead: i === 0, budget: budget
+        w: prof.w, l: prof.l, a: prof.a, r: prof.r, isHead: i === 0, budget: budget
       }, rng);
       if (!res.changed) continue;
       zones[i].set(res.text);
@@ -522,10 +750,20 @@ function planRequest(rawBody, url, internal) {
       added += res.added;
       edits += res.edits;
       budget -= res.added;
-      tk.W += res.tracks.W; tk.L += res.tracks.L; tk.A += res.tracks.A;
+      tk.W += res.tracks.W; tk.L += res.tracks.L; tk.A += res.tracks.A; tk.R += (res.tracks.R || 0);
     }
     if (touched > 0) {
-      out.changed.push('微扰' + touched + '区/W' + tk.W + '·L' + tk.L + '·A' + tk.A + '/+' + added + 'tok');
+      LAST_REFRACT = {
+        suite: suiteTag,
+        mode: isRand ? 'random' : 'stable',
+        level: cfg.refract,
+        zones: touched,
+        tracks: { W: tk.W, L: tk.L, A: tk.A, R: tk.R },
+        added: added,
+        edits: edits,
+        at: Date.now()
+      };
+      out.changed.push('微扰[' + suiteTag + ']' + touched + '区/W' + tk.W + '·L' + tk.L + '·A' + tk.A + '·R' + tk.R + '/+' + added + 'tok');
     }
   }
 

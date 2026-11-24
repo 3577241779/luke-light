@@ -142,6 +142,7 @@ function makeManifest(ver, changelog = '测试更新说明') {
     ok('updCmp("5.70", "5.65") === 1（V5.65 平滑追新至 V5.7/5.70）', U.updCmp('5.70', '5.65') === 1);
     ok('updCmp("5.71", "5.70") === 1（V5.70 平滑追新至 V5.71）', U.updCmp('5.71', '5.70') === 1);
     ok('updCmp("5.72", "5.71") === 1（V5.71 平滑追新至 V5.72）', U.updCmp('5.72', '5.71') === 1);
+    ok('updCmp("5.73", "5.72") === 1（V5.72 平滑追新至 V5.73）', U.updCmp('5.73', '5.72') === 1);
     ok('updCmp("5.10", "5.5") === 1（数字分段非字典序）', U.updCmp('5.10', '5.5') === 1);
     ok('updCmp("5.5.0", "5.5") === 0', U.updCmp('5.5.0', '5.5') === 0);
     ok('updCmp("v5.6", "5.5") === 1', U.updCmp('v5.6', '5.5') === 1);
@@ -168,6 +169,22 @@ function makeManifest(ver, changelog = '测试更新说明') {
     ok('主 CDN 失败自动切换 raw.githubusercontent 成功', rM.ok === true && rM.latest === '5.6' && rM.newer === true);
     const mirrorsAfter = U.updMirrorList('https://cdn.jsdelivr.net/gh/3577241779/luke-light@main/dist/luke-light-tt.json');
     ok('后续拉包自动优先使用刚刚成功的 raw 节点', mirrorsAfter[0].includes('raw.githubusercontent.com'));
+
+    // V5.73：主 CDN @main 还在 12h 边缘缓存吐旧版 5.72，但 data.jsdelivr.com tag API 已发现 v5.73 → 立即命中 5.73
+    env.setFetch((u) => {
+      if (u.includes('data.jsdelivr.com/v1/packages/gh/')) {
+        return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ versions: [{ version: '5.73' }, { version: '5.72' }] })) });
+      }
+      if (u.includes('@v5.73/dist/version.json')) {
+        return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(makeManifest('5.73', 'V5.73 tag 直出')) });
+      }
+      if (u.includes('raw.githubusercontent.com')) {
+        return Promise.reject(new TypeError('raw blocked in CN'));
+      }
+      return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(makeManifest('5.72', '旧缓存')) });
+    });
+    const rTag = await U.updCheck(true);
+    ok('CDN @main 吐旧缓存且 raw 不可达时，通过 data.jsdelivr tag API 秒发现 5.73', rTag.ok === true && rTag.latest === '5.73' && rTag.changelog === 'V5.73 tag 直出');
   }
 
   console.log('\n【2. 通道一：酒馆助手官方脚本树 API（支持子文件夹 + script_id + 幂等 + 撤回）】');

@@ -333,6 +333,39 @@ function updParseManifest(text, plat) {
   return out;
 }
 
+function updLatestTagManifest(ttl) {
+  var apiUrl = 'https://data.jsdelivr.com/v1/packages/gh/' + UPD_REPO + '?t=' + Date.now();
+  return updGetOnce(apiUrl, ttl).then(function (r) {
+    if (!r || !r.ok || !r.text) return { ok: false, err: 'net' };
+    var bestTag = '', bestVer = '';
+    try {
+      var o = JSON.parse(String(r.text));
+      var vers = o && Array.isArray(o.versions) ? o.versions : [];
+      for (var i = 0; i < vers.length; i++) {
+        var it = vers[i];
+        var raw = typeof it === 'string' ? it : (it && (it.version || it.name || ''));
+        var tagStr = String(raw || '').trim();
+        var clean = tagStr.replace(/^v/i, '');
+        if (!UPD_VER_RE.test(clean)) continue;
+        if (!bestVer || updCmp(clean, bestVer) > 0) {
+          bestVer = clean;
+          bestTag = tagStr;
+        }
+      }
+    } catch (eJ) { return { ok: false, err: 'parse' }; }
+    if (!bestTag) return { ok: false, err: 'parse' };
+    var tagRef = /^v/i.test(bestTag) ? bestTag : ('v' + bestTag);
+    var mUrl = 'https://cdn.jsdelivr.net/gh/' + UPD_REPO + '@' + tagRef + '/' + UPD_MANIFEST_PATH;
+    return updGetOnce(mUrl, ttl).then(function (r2) {
+      if (r2 && r2.ok) return r2;
+      if (tagRef !== bestTag) {
+        return updGetOnce('https://cdn.jsdelivr.net/gh/' + UPD_REPO + '@' + bestTag + '/' + UPD_MANIFEST_PATH, ttl);
+      }
+      return r2 || { ok: false, err: 'net' };
+    });
+  })['catch'](function () { return { ok: false, err: 'net' }; });
+}
+
 function updCheck(force) {
   return new Promise(function (fin) {
     try {
@@ -340,23 +373,35 @@ function updCheck(force) {
       var u = updManifestUrl();
       UPD_RT.checking = true;
       try { UI_SIG = {}; if (typeof render === 'function') render(); } catch (eR0) {}
-      updGet(u, UPD_TTL).then(function (r) {
+      var rawDirectUrl = 'https://raw.githubusercontent.com/' + UPD_REPO + '/' + UPD_BRANCH + '/' + UPD_MANIFEST_PATH + '?t=' + Date.now();
+      Promise.all([
+        updGet(u, UPD_TTL),
+        updLatestTagManifest(UPD_TTL),
+        updGetOnce(rawDirectUrl, UPD_TTL)
+      ]).then(function (list) {
         UPD_RT.checking = false;
-        if (!r || !r.ok) {
-          UPD_RT.lastErr = (r && r.err) || 'net';
-          try { UI_SIG = {}; if (typeof render === 'function') render(); } catch (eR1) {}
-          fin({ ok: false, err: (r && r.err) || 'net', status: r && r.status, cross: r && r.cross, timeout: r && r.timeout });
-          return;
-        }
+        var r0 = list[0];
         var plat = updPlatform();
-        var full = updParseManifest(r.text, plat);
-        var v = full && full.v;
-        if (!v) {
-          UPD_RT.lastErr = 'parse';
-          try { UI_SIG = {}; if (typeof render === 'function') render(); } catch (eR2) {}
-          fin({ ok: false, err: 'parse' });
+        var best = null;
+        for (var i = 0; i < list.length; i++) {
+          var ri = list[i];
+          if (!ri || !ri.ok) continue;
+          var parsed = updParseManifest(ri.text, plat);
+          if (!parsed || !parsed.v) continue;
+          if (!best || updCmp(parsed.v, best.full.v) > 0) {
+            best = { r: ri, full: parsed };
+          }
+        }
+        if (!best) {
+          var anyOk = (r0 && r0.ok) || (list[1] && list[1].ok) || (list[2] && list[2].ok);
+          var errCode = anyOk ? 'parse' : ((r0 && r0.err) || 'net');
+          UPD_RT.lastErr = errCode;
+          try { UI_SIG = {}; if (typeof render === 'function') render(); } catch (eR1) {}
+          fin({ ok: false, err: errCode, status: r0 && r0.status, cross: r0 && r0.cross, timeout: r0 && r0.timeout });
           return;
         }
+        var full = best.full;
+        var v = full.v;
         UPD_RT.lastErr = '';
         var prev = updState();
         var nextSt = {

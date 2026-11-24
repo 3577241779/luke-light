@@ -786,6 +786,20 @@ function finish(ev, meta) {
   } else {
     banner('⚪ ' + rec.verdict + '：' + v.note, kind);
   }
+  /* V5.73 四轨随机微扰 · 异常自动换套：监测到被换 / 无思考 / 行为基线异常时自动切换新随机套号 */
+  try {
+    if (cfg && cfg.enabled && cfg.refract && cfg.refract !== 'off' && cfg.refractAutoRotate && !ev.internal && typeof refractRollSuite === 'function') {
+      var badRoute = (rec.code === 'diff' || rec.code === 'thin');
+      if (!badRoute && rec.code === 'same') {
+        try { var bjRot = baseJudge(rec); if (bjRot && bjRot.why !== 'slow') badRoute = true; } catch (eBjR) {}
+      }
+      if (badRoute) {
+        var newSuite = refractRollSuite('auto:' + rec.code);
+        try { UI_SIG = {}; render(); } catch (eRr) {}
+        if (!cfg.silent) banner('🎲 异常触发微扰自动换套 → #' + newSuite, 'warn');
+      }
+    }
+  } catch (eAutoRot) {}
   /* v7.1 破甲：事后补救挂在这里——每次生成收尾都必经这一点 */
   /* v0.6 抗截断：破甲之前先判截断归属——轻档只提示，中档补一次（返回值决定破甲还管不管） */
   var tCode = '';

@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.72';
+var VERSION = '5.73';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -97,7 +97,7 @@ var CFG_DEFAULT = {
   jailToolKeep: false,   /* 4.6：与文本破甲共存（默认关；关着时开工具破甲会自动把文本破甲设成 off） */
   grab: 0,        // 4.3：503/429/408/5xx 自动退避重试（2s→5s→10s + 抖动，共 3 次）
   modelProfile: 'auto',
-  refract: 'off',         // off | light | mid（三轨微扰档位）
+  refract: 'off',         // off | light | mid | heavy（四轨随机排列组合微扰档位）
   observe: true,          // 零锁观察器
   dualBase: '',           // 双通道指纹：base url
   min: false,             // 面板是否收起（关闭态）
@@ -110,8 +110,9 @@ var CFG_DEFAULT = {
   my: null,               // 移动端悬浮窗 top
   keep: 30,
   alias: '',              /* 别名钉死：非空时把请求的 model 改写成本值 */
-  refractMode: 'stable',  /* stable=同会话固定变形（保前缀缓存）| random=每轮随机（实验） */
-  refractSeed: '',        /* 用户盐：改一下，变形结果就换一套 */
+  refractMode: 'stable',  /* stable=同套保缓存 | random=每轮真随机 */
+  refractSeed: '',        /* 当前套号/用户盐：换套即切换整套随机排列组合 */
+  refractAutoRotate: false, /* 异常自动换套：监测到被换/无思考/速度异常时自动切新套号 */
   saltWin: 0,             /* 窗口盐：同一聊天在 N 分钟内保持同一套变形（0=关，V4.6.9 默认关） */
   /* v7.1→V5.0 迪迦五形态破甲：off | safe | mid | strong | supreme + 独立神光一言 jailWord */
   jail: 'off',
@@ -489,7 +490,10 @@ function readCfg() {
   d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');
   d.think = ar6Pick(d.think, ['auto', 'low', 'medium', 'high'], 'auto');
-  d.refract = ar6Pick(d.refract, ['off', 'light', 'mid'], 'off');
+  d.refract = ar6Pick(d.refract, ['off', 'light', 'mid', 'heavy'], 'off');
+  d.refractMode = ar6Pick(d.refractMode, ['stable', 'random'], 'stable');
+  d.refractAutoRotate = d.refractAutoRotate === true;
+  d.refractSeed = String(d.refractSeed == null ? '' : d.refractSeed).slice(0, 48);
   d.scope = ar6Pick(d.scope, ['all', 'only', 'skip'], 'all');
   d.know = ar6Pick(d.know, ['off', 'lite', 'mid', 'full'], 'off');
   d.charm = ar6Pick(d.charm, ['off', 'lite', 'mid', 'full'], 'off');
