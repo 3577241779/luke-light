@@ -1,10 +1,10 @@
 {
-  "version": "5.76",
-  "releasedAt": "2026-11-24T15:41:22.100Z",
-  "changelog": "V5.76 · 修复与《光域·镜影》共存死循环 + 修复高档破甲/工具通道顶掉状态栏与正文的问题 + 重新优化多预设与角色卡格式适配性。",
+  "version": "5.77",
+  "releasedAt": "2026-11-24T16:51:22.404Z",
+  "changelog": "V5.77 · 光鉴引擎全面升级：四维上游硬指纹验真（V1~V4，抓出无硬证+零思考极速掉包且零误杀真4H）+ 离线防篡改一码通诊断码（OFF/LOC/SLF/AGG/RLP/RLO + 4位匿名域哈希 + 标准报错归因）+ 内置离线解码器与本机私有公益站白名单。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.76/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-desktop.json"
   }
 }

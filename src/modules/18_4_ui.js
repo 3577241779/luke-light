@@ -515,12 +515,13 @@ function banner(msg, kind, force) {
 
 function counts() {
   var log = readLog();
-  var c = { same: 0, diff: 0, thin: 0, unknown: 0, other: 0 };
+  var c = { same: 0, diff: 0, thin: 0, suspect: 0, unknown: 0, other: 0 };
   for (var i = 0; i < log.length; i++) {
     var k = log[i].code;
     if (k === 'same') c.same++;
     else if (k === 'diff') c.diff++;
     else if (k === 'thin') c.thin++;
+    else if (k === 'suspect') c.suspect++;
     else if (k === 'unknown') c.unknown++;
     else c.other++;
   }

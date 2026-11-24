@@ -7,6 +7,7 @@ var CARD = { open: false, rid: 0 };
 
 var CARD_COLOR = {
   diff: '#f43f5e',
+  suspect: '#f97316',
   thin: '#fcd34d',
   echo: '#94a3b8',
   unknown: '#94a3b8',
@@ -146,12 +147,15 @@ function cardOneLine(rec) {
   var tail = '';
   if (rec.code === 'diff') {
     tail = obs ? ('请求 ' + req + ' → 上游回 ' + obs) : ('请求 ' + req + '，但证据与请求不符');
+  } else if (rec.code === 'suspect') {
+    tail = '请求 ' + req + ' → 触发特征倒挂（' + (rec.fpGrade || 'V3') + '），高度疑似后台降级/偷换';
   } else if (rec.code === 'thin') {
     tail = '请求 ' + req + '，正文 ' + reportValue(reportCapture(rec).bodyChars, ' 字') + '，思考 token：' + reportValue(reportCapture(rec).thinkTokens);
   } else if (rec.code === 'echo') {
     tail = '请求 ' + req + '，返回标签与请求不同，但该渠道不读 model（回显）';
   } else if (rec.code === 'same') {
-    tail = '请求 ' + req + ' → 实测 ' + (obs || req) + '（一致）';
+    var gTag = rec.fpGrade === 'V1' ? '硬证验真 V1' : (rec.fpGrade === 'V2' ? '仅回显无硬证 V2' : '一致');
+    tail = '请求 ' + req + ' → 实测 ' + (obs || req) + '（' + gTag + '）';
   } else if (rec.code === 'skip') {
     tail = '请求 ' + req + '，当前已按扫描范围规则跳过（' + (rec.note || '范围外') + '）';
   } else if (rec.code === 'aux') {
@@ -159,8 +163,56 @@ function cardOneLine(rec) {
   } else {
     tail = '请求 ' + req + '，暂未取得上游模型字段（' + (rec.verdict || '未知') + '）';
   }
-  if (pk && pk.modelVersion && tail.indexOf(pk.modelVersion) < 0) tail += '｜modelVersion: ' + pk.modelVersion;
+  if (pk && pk.nativeModelVersion && tail.indexOf(pk.nativeModelVersion) < 0) tail += '｜原生 modelVersion: ' + pk.nativeModelVersion;
   return tail;
+}
+
+function cardDiagCodeOf(rec) {
+  try {
+    if (rec && rec.diagCode) return String(rec.diagCode);
+    if (typeof lkBuildDiagCode === 'function') return lkBuildDiagCode(rec, null);
+  } catch (e) {}
+  return '';
+}
+
+function cardChannelSummary(rec) {
+  var ch = (rec && rec.ch) || null;
+  if (!ch && typeof lkClassifyChannel === 'function') {
+    try { ch = lkClassifyChannel((typeof lastReq !== 'undefined' && lastReq && lastReq.url) || '', null, null); } catch (e0) {}
+  }
+  if (!ch) return { text: '未识别通道', color: '#94a3b8', code: 'OFF', hash: '0000', wlHit: null };
+  var meta = (typeof LK_CH_META !== 'undefined' && LK_CH_META[ch.code]) || { label: ch.code, short: ch.code, color: '#94a3b8' };
+  var wlHit = (typeof lkMatchPubWhitelist === 'function') ? lkMatchPubWhitelist(ch.hash) : null;
+  if (wlHit) {
+    return { text: '✅ 公益站 · ' + wlHit.label + '（' + meta.short + ' #' + ch.hash + '）', color: '#34d399', code: ch.code, hash: ch.hash, wlHit: wlHit };
+  }
+  if (ch.code === 'OFF') return { text: '🟢 官方直连 (OFF)', color: '#34d399', code: ch.code, hash: '0000', wlHit: null };
+  return { text: meta.label + ' (' + ch.code + (ch.hash && ch.hash !== '0000' ? (' #' + ch.hash) : '') + ')', color: meta.color, code: ch.code, hash: ch.hash || '0000', wlHit: null };
+}
+
+function cardDiagBoxHTML(rec) {
+  var dCode = cardDiagCodeOf(rec);
+  var chInfo = cardChannelSummary(rec);
+  var grade = (rec && rec.fpGrade) || 'V0';
+  var gMeta = (typeof LK_FP_GRADE_META !== 'undefined' && LK_FP_GRADE_META[grade]) || { label: '未定级', color: '#94a3b8' };
+  var errCode = (rec && rec.errCode) || ((typeof lkClassifyErrorCode === 'function') ? lkClassifyErrorCode(null, rec) : 'E000');
+  var eMeta = (typeof LK_ERR_META !== 'undefined' && LK_ERR_META[errCode]) || { label: errCode };
+  var h = '<div style="margin:10px 16px 6px;padding:10px 12px;border-radius:10px;background:rgba(12,45,72,.38);border:1px solid rgba(56,189,248,.34)">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:6px">' +
+    '<span style="font-size:11px;font-weight:700;color:' + chInfo.color + '">' + esc(chInfo.text) + '</span>' +
+    '<span style="font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:' + gMeta.color + '22;color:' + gMeta.color + ';border:1px solid ' + gMeta.color + '55">' + esc(grade + ' · ' + gMeta.label) + '</span>' +
+    '</div>';
+  if (dCode) {
+    h += '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#e0f2fe;background:#080d18;border:1px solid rgba(56,189,248,.28);border-radius:7px;padding:6px 8px;word-break:break-all;letter-spacing:.02em">' + esc(dCode) + '</div>';
+  }
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;font-size:10.5px;color:#94a3b8">' +
+    '<span>报错归因：<b style="color:#e2e8f0">' + esc(errCode + ' · ' + eMeta.label) + '</b></span>' +
+    '<span style="display:inline-flex;gap:5px">' +
+      '<button type="button" data-ar6-card="copycode" style="padding:3px 8px;border-radius:6px;border:1px solid #38bdf8;background:#0c2d48;color:#f0f9ff;font-size:11px;font-weight:700;cursor:pointer">复制一码通</button>' +
+      '<button type="button" data-ar6-card="decode" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(148,163,184,.4);background:#162032;color:#cbd5e1;font-size:11px;cursor:pointer">解码/白名单</button>' +
+    '</span></div>';
+  h += '</div>';
+  return h;
 }
 
 function cardText(rec) {
@@ -170,17 +222,20 @@ function cardText(rec) {
   var ts = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' +
     pad(d.getHours()) + ':' + pad(d.getMinutes());
   var pk = cardPeek(rec);
+  var dCode = cardDiagCodeOf(rec);
+  var chInfo = cardChannelSummary(rec);
   var lines = [];
   lines.push('【卢克之光 · 诊断证据卡】' + ts);
+  if (dCode) lines.push('一码通：' + dCode);
+  lines.push('通道：' + chInfo.text + ' ｜ 真伪定级：' + (rec.fpGrade || 'V0') + ' ｜ 报错码：' + (rec.errCode || 'E000'));
   lines.push('判定：' + (rec.verdict || '') + '（证据等级 ' + (rec.conf || 'C') + '）');
   lines.push(cardOneLine(rec));
   lines.push('原因：' + (rec.note || '—'));
   lines.push(reportTimelineText(rec));
-  if (pk && (pk.model || pk.modelVersion)) {
-    lines.push('上游自述：model=' + (pk.model || '—') + ' modelVersion=' + (pk.modelVersion || '—'));
+  if (pk) {
+    lines.push('硬指纹：原生modelVersion=' + (pk.nativeModelVersion || '无') + ' ｜ 回显model=' + (pk.respModel || pk.model || '无') + ' ｜ thoughtSignature=' + (pk.hasThoughtSig ? '有' : '无') + ' ｜ 响应ID=' + (pk.idKind || 'none') + (pk.sysFp ? ('/' + pk.sysFp) : ''));
   }
   if (pk && pk.raw) lines.push('原始片段：' + pk.raw.slice(0, 240));
-  lines.push('渠道：' + (rec.base || '—'));
   lines.push('版本：卢克之光 V' + VERSION + '（光之守护）');
   return lines.join('\n');
 }
@@ -254,9 +309,15 @@ function cardTabBar(tab) {
 
 function cardHumanVerdict(rec) {
   var c = rec.code;
-  if (c === 'diff') return { t: '检测到疑似更换/降级模型', s: '请求模型与上游实测返回模型不一致，可直接复制或截图留存证据。', c: '#f43f5e' };
-  if (c === 'thin') return { t: '模型名一致，但未观测到思考输出', s: '该渠道此前存在思考输出而本轮思考 token 为 0，疑似思考预算被压缩或切到非思考链路。', c: '#fcd34d' };
-  if (c === 'same') return { t: '本轮模型核验一致', s: '上游返回的模型标识与你请求的模型一致，未发现明显跨代或降档特征。', c: '#34d399' };
+  if (c === 'diff') return { t: '检测到疑似更换/降级模型（V4）', s: '请求模型与上游实测返回模型不一致，可直接复制一码通或截图留存证据。', c: '#f43f5e' };
+  if (c === 'suspect') return { t: '触发特征倒挂 · 高度疑似后台掉包（V3）', s: (rec.fpNote || '高档模型零思考且瞬出/极速、且渠道未提供任何厂商原生硬指纹（modelVersion / thoughtSignature），高度疑似暗中切到快模型或劣质套壳。'), c: '#f97316' };
+  if (c === 'thin') return { t: '模型名一致，但未观测到思考输出（V3）', s: '该渠道此前存在思考输出而本轮思考 token 为 0，疑似思考预算被压缩或切到非思考链路。', c: '#fcd34d' };
+  if (c === 'same') {
+    if (rec.fpGrade === 'V2') {
+      return { t: '模型名一致，但缺少原生硬指纹（V2 软一致）', s: '中转回包里的模型名与请求一致且节律未见明显倒挂，但未采到原生 modelVersion / thoughtSignature 等硬证（可能是网关仅原样回显名称），建议点「真伪探针」复核。', c: '#fcd34d' };
+    }
+    return { t: '本轮模型核验一致' + (rec.fpGrade === 'V1' ? '（V1 原生硬证验真）' : ''), s: (rec.fpNote || '上游返回的模型标识与你请求的模型一致，且命中厂商原生特征，未发现明显跨代或降档特征。'), c: '#34d399' };
+  }
   if (c === 'echo') return { t: '渠道仅原样回显模型名', s: '经探针核验该网关不校验请求的 model 字段，因此返回同名仅作参考、不作硬证据。', c: '#94a3b8' };
   if (c === 'skip') {
     if (/只查 Gemini/i.test(String(rec.note || ''))) {
@@ -315,7 +376,28 @@ function cardEvidenceItems(rec) {
   it.push({ k: '首字节 / 首思考 / 首正文', v: reportValue(cp.firstByteMs, ' ms') + ' / ' + reportValue(cp.firstThinkMs, ' ms') + ' / ' + reportValue(cp.firstContentMs, ' ms'), lv: (cp.firstContentMs != null || cp.firstByteMs != null) ? '形态' : '缺失' });
   it.push({ k: '采样状态 / 来源', v: reportValue(cp.status) + ' / ' + reportValue(cp.source), lv: cp.status != null || cp.source != null ? '形态' : '缺失' });
   it.push({ k: '收尾原因 / 晚到合并', v: reportValue(cp.settleReason) + ' / ' + (cp.lateReconciled == null ? '未知' : (cp.lateReconciled ? '是' : '否')), lv: cp.settleReason != null || cp.lateReconciled != null ? '形态' : '缺失' });
-  it.push({ k: '原生 modelVersion', v: (pk && pk.modelVersion) ? pk.modelVersion : '未取得', lv: (pk && pk.modelVersion) ? '强' : '缺失' });
+  var chInfo = cardChannelSummary(rec);
+  it.push({
+    k: '接入通道与匿名域哈希',
+    v: chInfo.text,
+    lv: (chInfo.code === 'OFF' || chInfo.wlHit) ? '强' : '形态'
+  });
+  var natMv = (pk && pk.nativeModelVersion) || '';
+  it.push({
+    k: '原生 modelVersion（防回显伪造）',
+    v: natMv ? natMv : (shownModel ? ('未返回（仅收到 OpenAI 回显 model=' + shownModel + '）') : '未取得'),
+    lv: natMv ? '强' : '缺失'
+  });
+  it.push({
+    k: '思考加密签名 (thoughtSignature)',
+    v: (pk && pk.hasThoughtSig) ? '已采到厂商原生思考签名（极难伪造）' : '未返回',
+    lv: (pk && pk.hasThoughtSig) ? '强' : '缺失'
+  });
+  it.push({
+    k: '响应 ID 拓扑 / 系统指纹',
+    v: (pk && (pk.respId || pk.sysFp)) ? ((pk.idKind || 'none') + (pk.respId ? (' · ' + String(pk.respId).slice(0, 28)) : '') + (pk.sysFp ? (' · ' + pk.sysFp) : '')) : '未取得',
+    lv: (pk && (pk.idKind === 'gem_nat' || pk.idKind === 'anth_msg' || pk.sysFp)) ? '强' : ((pk && pk.respId) ? '形态' : '缺失')
+  });
   return it;
 }
 
@@ -333,7 +415,7 @@ function cardTally(items) {
 
 function cardCodeLabel(code) {
   var m = {
-    diff: '疑似调包', thin: '未见思考', empty: '0字空回', same: '核验一致',
+    diff: '疑似调包', suspect: '高疑掉包', thin: '未见思考', empty: '0字空回', same: '核验一致',
     echo: '标签回显', unknown: '未回传模型名', skip: '范围外跳过', aux: '辅助请求',
     quota: '配额限流', blocked: '安全拦截', gate: '网关异常', error: '请求失败'
   };
@@ -358,6 +440,7 @@ function cardEngineHTML(rec) {
   h += '<div id="ar6-card" style="' + cardOverlayCss() + 'z-index:2147483600;background:rgba(4,8,18,.84);font-family:system-ui,-apple-system,\'Microsoft YaHei\',sans-serif">';
   h += '<div style="width:420px;max-width:calc(100vw - 18px);max-height:' + cardBoxMaxH(92) + ';overflow-x:hidden;overflow-y:auto;background:linear-gradient(180deg,#0f182b 0%,#080d18 100%);color:#f0f9ff;border:1.5px solid rgba(148,163,184,.42);border-radius:16px;box-shadow:0 20px 56px rgba(2,6,23,.85)">';
   h += cardTabBar('engine');
+  h += cardDiagBoxHTML(rec);
   h += reportTimelineHTML(rec);
 
   h += '<div style="background:' + col + '1f;border-bottom:2px solid ' + col + ';padding:12px 16px">';
@@ -449,6 +532,8 @@ function cardHumanHTML(rec) {
     h += '<div style="margin-top:8px;padding:7px 10px;border-radius:8px;background:rgba(12,45,72,.45);border:1px solid rgba(56,189,248,.25);font-size:11.8px;color:#e2e8f0;line-height:1.5">本轮详情：' + esc(rec.note) + '</div>';
   }
   h += '</div>';
+
+  h += cardDiagBoxHTML(rec);
 
   /* 请求模型 vs 实测模型 直观对照栏 */
   h += '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 16px 4px">';
@@ -564,10 +649,247 @@ function openCard(rec, tab) {
       if (!btn) return;
       var act = btn.getAttribute('data-ar6-card') || '';
       if (act === 'copy') { cardCopy(rec); return; }
+      if (act === 'copycode') { diagCopyCode(rec); return; }
+      if (act === 'decode') { openDiagModal(cardDiagCodeOf(rec), 'decode'); return; }
       if (act === 'tab') { openCard(rec, btn.getAttribute('data-tab')); return; }
       if (act === 'close') closeCard();
     });
   } catch (e) {
     try { banner('诊断报告渲染失败：' + String(e && e.message || e), 'bad', true); } catch (e2) {}
   }
+}
+
+/* ============================================================================
+ * V5.77 — 一键复制一码通 + 离线解码器 & 本机私有公益站白名单弹窗
+ * ========================================================================== */
+
+function diagCopyRaw(txt, okMsg) {
+  var s = String(txt || '');
+  if (!s) return false;
+  var copied = false;
+  try {
+    if (DOC && DOC.body && DOC.createElement) {
+      var ta = DOC.createElement('textarea');
+      ta.value = s;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;font-size:16px;pointer-events:none';
+      DOC.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { ta.setSelectionRange(0, s.length); } catch (eSel) {}
+      copied = !!(DOC.execCommand && DOC.execCommand('copy'));
+      DOC.body.removeChild(ta);
+    }
+  } catch (e0) { copied = false; }
+  if (copied) {
+    try { banner(okMsg || '一码通已复制', 'ok', true); } catch (eB0) {}
+    return true;
+  }
+  try {
+    if (HOST && HOST.navigator && HOST.navigator.clipboard && HOST.navigator.clipboard.writeText) {
+      HOST.navigator.clipboard.writeText(s).then(function () {
+        try { banner(okMsg || '一码通已复制', 'ok', true); } catch (eB1) {}
+      })['catch'](function () {
+        try { banner('复制失败，请手动选中一码通复制', 'warn', true); } catch (eB2) {}
+      });
+      return true;
+    }
+  } catch (e1) {}
+  try { banner('复制失败，请手动选中一码通复制', 'warn', true); } catch (eB3) {}
+  return false;
+}
+
+function diagCopyCode(rec) {
+  var code = cardDiagCodeOf(rec);
+  if (!code) {
+    try { banner('暂无可生成的一码通诊断码', 'warn', true); } catch (e0) {}
+    return '';
+  }
+  diagCopyRaw(code, '一码通已复制：' + code);
+  return code;
+}
+
+var DIAG_MODAL = { open: false, tab: 'decode', input: '', decoded: null };
+
+function closeDiagModal() {
+  DIAG_MODAL.open = false;
+  try {
+    var el = DOC && DOC.getElementById && DOC.getElementById('ar6-diag-modal');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  } catch (e) {}
+}
+
+function diagDecodeResultHTML(res) {
+  if (!res) return '<div style="font-size:12px;color:#94a3b8;padding:8px 0">在上方粘贴任意 <b>LK77-...</b> 一码通（可直接粘贴整段群聊消息，自动提取），点「立即解码」即可离线验签并展开全部字段。</div>';
+  if (!res.ok && !res.tamper) {
+    return '<div style="padding:10px 12px;border-radius:9px;background:rgba(244,63,94,.14);border:1px solid rgba(244,63,94,.45);color:#fda4af;font-size:12.5px">' + esc(res.error) + '</div>';
+  }
+  var h = '';
+  if (res.tamper) {
+    h += '<div style="margin-bottom:8px;padding:9px 11px;border-radius:9px;background:rgba(244,63,94,.2);border:1px solid #f43f5e;color:#fda4af;font-size:12px;font-weight:700">❌ ' + esc(res.error) + '</div>';
+  } else {
+    h += '<div style="margin-bottom:8px;padding:7px 11px;border-radius:9px;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.45);color:#6ee7b7;font-size:12px;font-weight:700">✓ 防伪校验通过（未篡改） · V' + esc(res.version) + ' · ' + esc(res.platform) + '</div>';
+  }
+  var row = function (k, v, col) {
+    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed rgba(148,163,184,.2);font-size:12px">' +
+      '<span style="color:#94a3b8;flex:0 0 auto">' + esc(k) + '</span>' +
+      '<span style="color:' + (col || '#f0f9ff') + ';font-weight:700;text-align:right;overflow-wrap:anywhere">' + esc(v) + '</span></div>';
+  };
+  h += '<div style="background:#111b2e;border:1px solid rgba(148,163,184,.28);border-radius:10px;padding:6px 11px">';
+  h += row('接入通道', res.channelVerdict, res.channelColor);
+  h += row('请求 → 实测模型', res.reqModel + ' → ' + res.obsModel + (res.modelMismatch ? '（不符）' : (res.obsOmitted ? '（未回传）' : '（同名）')), res.modelMismatch ? '#fda4af' : '#7dd3fc');
+  h += row('四维真伪定级', res.grade + ' · ' + res.gradeMeta.label, res.gradeMeta.color);
+  h += row('首字 / 速率 / 思考', (res.ttftSec ? (res.ttftSec.toFixed(1) + 's') : '未知') + ' · ' + (res.netCps ? (res.netCps + ' 字/s') : '未知') + ' · ' + res.thinkDesc, '#e2e8f0');
+  h += row('报错归因', res.errCode + ' · ' + res.errMeta.label, res.errCode === 'E000' ? '#34d399' : '#fcd34d');
+  h += '</div>';
+  h += '<div style="margin-top:8px;padding:8px 10px;border-radius:9px;background:#080d18;border:1px solid rgba(56,189,248,.22);font-size:11.5px;color:#cbd5e1;line-height:1.55">';
+  h += '<div><b style="color:#7dd3fc">硬证清单：</b>' + esc(res.proofs.length ? res.proofs.join(' ｜ ') : '无任何厂商原生硬证（仅回显或未上报）') + '</div>';
+  if (res.flags.length) h += '<div style="color:#fda4af;margin-top:4px"><b>异常告警：</b>' + esc(res.flags.join(' ｜ ')) + '</div>';
+  h += '<div style="color:#94a3b8;margin-top:4px">' + esc(res.gradeMeta.desc) + '</div>';
+  h += '</div>';
+  return h;
+}
+
+function diagWhitelistHTML() {
+  var list = (typeof lkPubWlRead === 'function') ? lkPubWlRead() : [];
+  var curCh = cardChannelSummary(null);
+  var h = '<div style="font-size:11.8px;color:#cbd5e1;line-height:1.55;margin-bottom:8px;padding:8px 10px;border-radius:9px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.28)">' +
+    '<b>隐私承诺：</b>公益站白名单<b>仅存你自己的浏览器 localStorage</b>，开源代码零硬编码域名；输入网址后会自动转为 <b>4 位不可逆加盐哈希</b>，连本机都不存明文网址。</div>';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;padding:7px 10px;border-radius:8px;background:#162032;border:1px solid rgba(148,163,184,.28);font-size:11.5px">' +
+    '<span style="color:#cbd5e1;overflow-wrap:anywhere">当前渠道：<b>' + esc(curCh.text) + '</b></span>' +
+    ((curCh.hash && curCh.hash !== '0000' && !curCh.wlHit)
+      ? '<button type="button" data-ar6-dm="regcur" style="flex:0 0 auto;padding:4px 8px;border-radius:6px;border:1px solid #34d399;background:rgba(52,211,153,.16);color:#6ee7b7;font-size:11px;font-weight:700;cursor:pointer">登记当前为公益站</button>'
+      : '') +
+    '</div>';
+  h += '<textarea data-ar6-dm-in="wl" rows="3" placeholder="每行一条，支持：\n类脑公益1号=https://你的公益站域名\n或直接按哈希：类脑公益2号=#7K2M" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(148,163,184,.36);background:#080d18;color:#f0f9ff;font-size:12px;font-family:ui-monospace,Consolas,monospace;resize:vertical"></textarea>';
+  h += '<div style="display:flex;gap:8px;margin:8px 0 10px">' +
+    '<button type="button" data-ar6-dm="wladd" style="flex:1;min-height:36px;border-radius:8px;border:1px solid #34d399;background:rgba(52,211,153,.18);color:#6ee7b7;font-size:12.5px;font-weight:700;cursor:pointer">转为哈希并存入本机白名单</button>' +
+    '</div>';
+  h += '<div style="font-size:11.5px;font-weight:700;color:#7dd3fc;margin-bottom:5px">本机已登记公益站（' + list.length + ' 个）</div>';
+  if (!list.length) {
+    h += '<div style="font-size:11.5px;color:#94a3b8;padding:8px 0">暂未登记任何公益站。添加后，解码一码通或查看报告时会自动高亮标注「✅ 已登记公益站」。</div>';
+  } else {
+    for (var i = 0; i < list.length; i++) {
+      h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 9px;margin-bottom:5px;border-radius:8px;background:#162032;border:1px solid rgba(148,163,184,.24);font-size:12px">' +
+        '<span><b style="color:#6ee7b7">' + esc(list[i].label) + '</b> <code style="color:#7dd3fc">#' + esc(list[i].hash) + '</code></span>' +
+        '<button type="button" data-ar6-dm="wldel" data-hash="' + esc(list[i].hash) + '" style="padding:2px 7px;border-radius:6px;border:1px solid rgba(244,63,94,.45);background:rgba(244,63,94,.14);color:#fda4af;font-size:11px;cursor:pointer">删除</button>' +
+        '</div>';
+    }
+  }
+  return h;
+}
+
+function diagModalHTML() {
+  var on = 'background:linear-gradient(135deg,#0284c7,#0c2d48);border:1px solid #38bdf8;color:#f0f9ff;font-weight:700';
+  var off = 'background:#162032;border:1px solid rgba(148,163,184,.34);color:#94a3b8;font-weight:600';
+  var isWl = DIAG_MODAL.tab === 'whitelist';
+  var h = '<div id="ar6-diag-modal" style="' + cardOverlayCss() + 'z-index:2147483605;background:rgba(4,8,18,.86);font-family:system-ui,-apple-system,\'Microsoft YaHei\',sans-serif">';
+  h += '<div style="width:440px;max-width:calc(100vw - 18px);max-height:' + cardBoxMaxH(92) + ';overflow-x:hidden;overflow-y:auto;background:linear-gradient(180deg,#0f182b 0%,#080d18 100%);color:#f0f9ff;border:1.5px solid rgba(56,189,248,.45);border-radius:16px;box-shadow:0 20px 56px rgba(2,6,23,.88);padding:14px 16px">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+    '<div style="font-size:15.5px;font-weight:700;color:#7dd3fc">光鉴一码通 · 离线解码与公益站名单</div>' +
+    '<button type="button" data-ar6-dm="close" style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(148,163,184,.38);background:#162032;color:#cbd5e1;cursor:pointer">✕</button>' +
+    '</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' +
+    '<button type="button" data-ar6-dm="tab" data-tab="decode" style="min-height:34px;border-radius:8px;font-size:12.5px;cursor:pointer;' + (isWl ? off : on) + '">一码通解码器</button>' +
+    '<button type="button" data-ar6-dm="tab" data-tab="whitelist" style="min-height:34px;border-radius:8px;font-size:12.5px;cursor:pointer;' + (isWl ? on : off) + '">本机公益站白名单</button>' +
+    '</div>';
+  if (!isWl) {
+    h += '<textarea data-ar6-dm-in="code" rows="2" placeholder="粘贴 LK77-... 诊断码（或整段含码聊天文本）" style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(56,189,248,.38);background:#080d18;color:#e0f2fe;font-size:12px;font-family:ui-monospace,Consolas,monospace;resize:vertical">' + esc(DIAG_MODAL.input || '') + '</textarea>';
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0 10px">' +
+      '<button type="button" data-ar6-dm="run" style="min-height:34px;border-radius:8px;border:1px solid #38bdf8;background:#0c2d48;color:#f0f9ff;font-size:12px;font-weight:700;cursor:pointer">立即解码</button>' +
+      '<button type="button" data-ar6-dm="fillcur" style="min-height:34px;border-radius:8px;border:1px solid rgba(148,163,184,.36);background:#162032;color:#cbd5e1;font-size:12px;cursor:pointer">填入本轮码</button>' +
+      '<button type="button" data-ar6-dm="copydec" style="min-height:34px;border-radius:8px;border:1px solid rgba(148,163,184,.36);background:#162032;color:#cbd5e1;font-size:12px;cursor:pointer">复制解码文本</button>' +
+      '</div>';
+    h += diagDecodeResultHTML(DIAG_MODAL.decoded);
+  } else {
+    h += diagWhitelistHTML();
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function openDiagModal(initialCode, tab) {
+  try {
+    closeDiagModal();
+    DIAG_MODAL.tab = (tab === 'whitelist') ? 'whitelist' : 'decode';
+    if (typeof initialCode === 'string') {
+      DIAG_MODAL.input = initialCode;
+      DIAG_MODAL.decoded = (initialCode.trim() && typeof lkDecodeDiagCode === 'function') ? lkDecodeDiagCode(initialCode) : null;
+    }
+    var wrap = DOC.createElement('div');
+    wrap.innerHTML = diagModalHTML();
+    var node = wrap.firstChild;
+    if (!node) return false;
+    DOC.body.appendChild(node);
+    DIAG_MODAL.open = true;
+    node.addEventListener('click', function (ev) {
+      var t = ev && ev.target;
+      if (t === node) { closeDiagModal(); return; }
+      var btn = null, cur = t;
+      while (cur && cur !== node) {
+        if (cur.getAttribute && cur.getAttribute('data-ar6-dm')) { btn = cur; break; }
+        cur = cur.parentNode;
+      }
+      if (!btn) return;
+      var act = btn.getAttribute('data-ar6-dm') || '';
+      if (act === 'close') { closeDiagModal(); return; }
+      if (act === 'tab') {
+        var cIn = node.querySelector && node.querySelector('[data-ar6-dm-in="code"]');
+        if (cIn) DIAG_MODAL.input = String(cIn.value || '');
+        openDiagModal(DIAG_MODAL.input, btn.getAttribute('data-tab'));
+        return;
+      }
+      if (act === 'run') {
+        var inp = node.querySelector && node.querySelector('[data-ar6-dm-in="code"]');
+        var raw = inp ? String(inp.value || '') : DIAG_MODAL.input;
+        openDiagModal(raw, 'decode');
+        return;
+      }
+      if (act === 'fillcur') {
+        var curCode = (typeof lkBuildDiagCode === 'function') ? lkBuildDiagCode(null, null) : '';
+        openDiagModal(curCode, 'decode');
+        return;
+      }
+      if (act === 'copydec') {
+        if (DIAG_MODAL.decoded && typeof lkDiagDecodeText === 'function') {
+          diagCopyRaw(lkDiagDecodeText(DIAG_MODAL.decoded), '解码报告已复制');
+        } else {
+          banner('请先粘贴一码通并点「立即解码」', 'warn', true);
+        }
+        return;
+      }
+      if (act === 'regcur') {
+        var curCh = cardChannelSummary(null);
+        if (curCh && curCh.hash && curCh.hash !== '0000' && typeof lkPubWlAdd === 'function') {
+          lkPubWlAdd('当前公益站=#' + curCh.hash);
+          banner('已将当前渠道 #' + curCh.hash + ' 存入本机公益站白名单', 'ok', true);
+          openDiagModal(DIAG_MODAL.input, 'whitelist');
+        }
+        return;
+      }
+      if (act === 'wladd') {
+        var wIn = node.querySelector && node.querySelector('[data-ar6-dm-in="wl"]');
+        var wRaw = wIn ? String(wIn.value || '') : '';
+        if (typeof lkPubWlAdd === 'function') {
+          var r = lkPubWlAdd(wRaw);
+          if (r.added || r.updated) {
+            banner('白名单已更新：新增 ' + r.added + '，更新 ' + r.updated + '（共 ' + r.total + ' 个）', 'ok', true);
+          } else {
+            banner('未识别到有效域名或 4 位哈希，请检查格式', 'warn', true);
+          }
+          openDiagModal(DIAG_MODAL.input, 'whitelist');
+        }
+        return;
+      }
+      if (act === 'wldel') {
+        var dh = btn.getAttribute('data-hash') || '';
+        if (dh && typeof lkPubWlRemove === 'function') {
+          lkPubWlRemove(dh);
+          banner('已移除 #' + dh, 'ok', true);
+          openDiagModal(DIAG_MODAL.input, 'whitelist');
+        }
+      }
+    });
+    return true;
+  } catch (e) { return false; }
 }

@@ -405,7 +405,7 @@ function kpi() {
     if (r.code === 'aux') continue;    /* 辅助请求不是正文，不进分母 */
     if (r.code === 'unknown' || r.code === 'empty' || r.code === 'error') continue;
     eff++;
-    if (r.code === 'diff' || r.code === 'thin' || r.code === 'echo') bad++;
+    if (r.code === 'diff' || r.code === 'thin' || r.code === 'suspect' || r.code === 'echo') bad++;
   }
   var w = wilson(bad, eff);
   return { bad: bad, eff: eff, pct: eff ? Math.round(w.p * 1000) / 10 : 0, lo: Math.round(w.lo * 1000) / 10, hi: Math.round(w.hi * 1000) / 10, verifiable: verifiableCode() };

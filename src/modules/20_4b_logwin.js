@@ -100,7 +100,7 @@ function logWinRoot() {
 function logFilterOf(r) {
   var c = String((r && r.code) || 'other');
   if (c === 'same') return 'ok';
-  if (c === 'diff' || c === 'thin' || c === 'unknown') return 'bad';
+  if (c === 'diff' || c === 'thin' || c === 'suspect' || c === 'unknown') return 'bad';
   return 'err';
 }
 
@@ -131,7 +131,15 @@ function logRecCardHTML(r, i) {
   var think = cp.thinkChars;
   var edits = Number(r && r.edits) || 0;
   var added = Number(r && r.added) || 0;
+  var fpTag = '';
+  try {
+    var g0 = r && r.fpGrade ? String(r.fpGrade) : '';
+    var ch0 = r && r.ch && r.ch.code ? String(r.ch.code) : '';
+    var wl0 = (r && r.ch && r.ch.hash && typeof lkMatchPubWhitelist === 'function') ? lkMatchPubWhitelist(r.ch.hash) : null;
+    if (g0 || ch0) fpTag = ' · ' + (wl0 ? ('公益站:' + wl0.label) : ch0) + (g0 ? ((ch0 ? '/' : '') + g0) : '');
+  } catch (eFpTag) {}
   var meta = (secs == null ? '未知' : secs + 's') + ' · ' + chars + ' 字' + (think ? ' · 思考 ' + think : '') +
+    fpTag +
     (edits || added ? ' · 注入 +' + added + '/改' + edits : '');
   return '<button class="ar6-lwc" data-ar6="lwcard" data-i="' + i + '">' +
     '<span class="ar6-lwch"><span class="ar6-lwt2">' + esc(hh) + ' · ' + esc(String(code)) + '</span>' +
@@ -1068,6 +1076,14 @@ function onPanelClick(e) {
     var okc = false;
     try { okc = detCopy(); } catch (eDC) { okc = false; }
     try { banner(okc ? '诊断已复制，粘贴发我' : '复制失败：手选报告页文字发我也行', okc ? 'ok' : 'warn', true); } catch (eB) {}
+    return;
+  }
+  if (act === 'diagcode') {
+    try { if (typeof diagCopyCode === 'function') diagCopyCode(null); } catch (eDC2) {}
+    return;
+  }
+  if (act === 'diagdecode') {
+    try { if (typeof openDiagModal === 'function') openDiagModal('', 'decode'); } catch (eDM) {}
     return;
   }
   if (act === 'diagcheck') {

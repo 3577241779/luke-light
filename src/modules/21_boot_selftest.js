@@ -42,7 +42,7 @@ function pillHasAlert() {
     var lg = readLog();
     if (!lg || !lg.length) return false;
     var r0 = lg[0];
-    return !!(r0 && (r0.code === 'diff' || r0.code === 'thin'));
+    return !!(r0 && (r0.code === 'diff' || r0.code === 'thin' || r0.code === 'suspect'));
   } catch (e) { return false; }
 }
 
@@ -2062,7 +2062,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.76') throw new Error('VERSION 应为 5.76，实际 ' + VERSION);
+      if (VERSION !== '5.77') throw new Error('VERSION 应为 5.77，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2468,6 +2468,51 @@ function runSelfTest() {
     }
   });
 
+  T('T115 V5.77 光鉴引擎（通道分类 / 公益站匿名白名单 / 四维硬指纹V1~V4不误杀真4H / 一码通防篡改编解码）', function () {
+    var bkWl = null;
+    try { bkWl = ar6LsGet(LK_PUB_WL_KEY); } catch (eW0) {}
+    try {
+      /* 1. 通道客观分类 + 零域名泄露域哈希 */
+      var cOff = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'makersuite' });
+      var cLoc = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'custom', custom_url: 'http://127.0.0.1:7860/v1' });
+      var cSlf = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'makersuite', reverse_proxy: 'https://my-proxy.workers.dev' });
+      var cAgg = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'openrouter' });
+      var cRlp = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'makersuite', reverse_proxy: 'https://welfare-station.example.org' });
+      var cRlo = lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'custom', custom_url: 'https://wild-relay.example.net/v1' });
+      if (cOff.code !== 'OFF' || cLoc.code !== 'LOC' || cSlf.code !== 'SLF' || cAgg.code !== 'AGG' || cRlp.code !== 'RLP' || cRlo.code !== 'RLO') return false;
+      if (cOff.hash !== '0000' || cRlp.hash === '0000' || cRlo.hash === '0000' || cRlp.hash === cRlo.hash) return false;
+
+      /* 2. 真 4H 高速投机解码（带原生 modelVersion + thoughtSignature + 思考）=> V1 零误杀 */
+      var evReal4h = newEvidence('gemini-4-hydrogen', 200, 'sse');
+      evReal4h.ch = cRlp; evReal4h.sawText = true; evReal4h.hasThink = true; evReal4h.thinkTokens = 1600;
+      evReal4h.chars = 1800; evReal4h.outputChars = 1800; evReal4h.firstMs = 3600; evReal4h.totalMs = 14000;
+      evReal4h.fp.nativeModelVersion = 'gemini-4-hydrogen'; evReal4h.fp.hasThoughtSig = true; evReal4h.fp.idKind = 'gem_nat'; evReal4h.fp.usageProto = 'gemini_um';
+      var fpReal = lkEvalFingerprint(evReal4h, { code: 'same', chars: 1800, ttft: 3600, total: 14000, think: 1, req: 'gemini-4-hydrogen' }, { code: 'same' });
+      if (fpReal.grade !== 'V1' || fpReal.cadenceAlert) return false;
+
+      /* 3. 假 4H 外部兼容中转（仅回显 model，无原生指纹 + 0思考 + 0.7s瞬出 + 180字/s）=> V3 特征倒挂立即抓出 */
+      var evFake4h = newEvidence('gemini-4-hydrogen', 200, 'sse');
+      evFake4h.ch = cRlo; evFake4h.sawText = true; evFake4h.hasThink = false; evFake4h.thinkTokens = 0;
+      evFake4h.chars = 900; evFake4h.outputChars = 900; evFake4h.firstMs = 700; evFake4h.totalMs = 5700;
+      evFake4h.fp.respModel = 'gemini-4-hydrogen'; evFake4h.fp.idKind = 'oai_cmpl';
+      var fpFake = lkEvalFingerprint(evFake4h, { code: 'same', chars: 900, ttft: 700, total: 5700, think: 0, req: 'gemini-4-hydrogen' }, { code: 'same' });
+      if (fpFake.grade !== 'V3' || !fpFake.cadenceAlert) return false;
+
+      /* 4. 离线一码通编解码 + 防篡改 CRC + 本地私有公益站白名单匹配 */
+      ar6LsDel(LK_PUB_WL_KEY);
+      lkPubWlAdd('示例公益站=https://welfare-station.example.org');
+      var codeReal = lkBuildDiagCode({ req: 'gemini-4-hydrogen', obs: 'gemini-4-hydrogen', ch: cRlp, fpGrade: fpReal.grade, fpMask: fpReal.mask, ttft: 3600, total: 14000, chars: 1800, think: 1, errCode: 'E000' }, evReal4h);
+      var decOk = lkDecodeDiagCode('群友贴的码：' + codeReal + ' 帮看下');
+      if (!decOk.ok || decOk.tamper || !decOk.wlHit || decOk.wlHit.label !== '示例公益站' || decOk.grade !== 'V1' || decOk.reqModel !== 'gemini-4-hydrogen') return false;
+      var tampered = codeReal.replace('RLP', 'OFF');
+      var decBad = lkDecodeDiagCode(tampered);
+      if (decBad.ok || !decBad.tamper) return false;
+      return true;
+    } finally {
+      try { if (bkWl != null) ar6LsSet(LK_PUB_WL_KEY, bkWl); else ar6LsDel(LK_PUB_WL_KEY); } catch (eW1) {}
+    }
+  });
+
   try { if (__bkLog != null) ar6LsSet(LOG_KEY, __bkLog); else ar6LsDel(LOG_KEY); } catch (eRs0) {}
   try { if (__hasHostLog && HOST && HOST.localStorage && __hostLogRaw != null && __bkLog == null) HOST.localStorage.setItem(LOG_KEY, __hostLogRaw); } catch (eRs4) {}
   try { if (__bkLed != null) ar6LsSet(LED_KEY, __bkLed); else ar6LsDel(LED_KEY); } catch (eRs1) {}
@@ -2661,6 +2706,7 @@ function dispose() {
     try { if (typeof closeSparklence === 'function') closeSparklence(false); } catch (eSpD) {}
     try { if (typeof clearAwakenFx === 'function') clearAwakenFx(); } catch (eFx) {}
     try { closeCard(); } catch (eC) {}
+    try { if (typeof closeDiagModal === 'function') closeDiagModal(); } catch (eDm) {}
     try { closeHelp(); } catch (eCH) {}
     var tcfx = DOC && DOC.getElementById('ar6-tcfx');
     if (tcfx && tcfx.parentNode) tcfx.parentNode.removeChild(tcfx);
@@ -3307,6 +3353,25 @@ var AR6_API = {
   listSiblings: (typeof listSiblings === 'function') ? listSiblings : null,
   unmountActiveSibling: (typeof unmountActiveSibling === 'function') ? unmountActiveSibling : null,
   syncGlobalSiblings: (typeof syncGlobalSiblings === 'function') ? syncGlobalSiblings : null,
+  /* ---- V5.77 光鉴引擎：四维上游硬指纹 / 离线一码通 / 本机私有公益站白名单 ---- */
+  lkClassifyChannel: (typeof lkClassifyChannel === 'function') ? lkClassifyChannel : null,
+  lkDomainHash: (typeof lkDomainHash === 'function') ? lkDomainHash : null,
+  lkDiagCrc: (typeof lkDiagCrc === 'function') ? lkDiagCrc : null,
+  lkNewFp: (typeof lkNewFp === 'function') ? lkNewFp : null,
+  lkClassifyRespId: (typeof lkClassifyRespId === 'function') ? lkClassifyRespId : null,
+  lkDetectReqThinkOff: (typeof lkDetectReqThinkOff === 'function') ? lkDetectReqThinkOff : null,
+  lkClassifyErrorCode: (typeof lkClassifyErrorCode === 'function') ? lkClassifyErrorCode : null,
+  lkEvalFingerprint: (typeof lkEvalFingerprint === 'function') ? lkEvalFingerprint : null,
+  lkBuildDiagCode: (typeof lkBuildDiagCode === 'function') ? lkBuildDiagCode : null,
+  lkDecodeDiagCode: (typeof lkDecodeDiagCode === 'function') ? lkDecodeDiagCode : null,
+  lkDiagDecodeText: (typeof lkDiagDecodeText === 'function') ? lkDiagDecodeText : null,
+  lkPubWlRead: (typeof lkPubWlRead === 'function') ? lkPubWlRead : null,
+  lkPubWlAdd: (typeof lkPubWlAdd === 'function') ? lkPubWlAdd : null,
+  lkPubWlRemove: (typeof lkPubWlRemove === 'function') ? lkPubWlRemove : null,
+  lkMatchPubWhitelist: (typeof lkMatchPubWhitelist === 'function') ? lkMatchPubWhitelist : null,
+  diagCopyCode: (typeof diagCopyCode === 'function') ? diagCopyCode : null,
+  openDiagModal: (typeof openDiagModal === 'function') ? openDiagModal : null,
+  closeDiagModal: (typeof closeDiagModal === 'function') ? closeDiagModal : null,
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}

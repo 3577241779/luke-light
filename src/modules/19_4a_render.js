@@ -167,7 +167,7 @@ function uiNumsHTML() {
 
 function uiHintHTML() {
   var c = counts();
-  var cTotal = c.same + c.diff + c.thin + c.unknown + c.other;
+  var cTotal = c.same + c.diff + c.thin + (c.suspect || 0) + c.unknown + c.other;
   if (cTotal) return '';
   var hintTxt = (typeof sk === 'function')
     ? sk('hint', '暂未采集到对话记录。正常发送一轮消息后此处自动刷新读数；使用 Claude 或 DeepSeek 等非谷歌模型时，请到「防卫设置」关闭「仅监测 Gemini 家族」。')
@@ -462,6 +462,8 @@ function uiMoreHTML() {
     h += '<div class="ar6-mmore-h">' + esc(sk('routeSecHead', '诊断报告、主动探针与数据维护')) + '</div>';
     h += '<div class="ar6-tgrid">' +
       actBtn('report', 'file', sk('actReport', '展开圣域诊断报告'), 'gold on') +
+      actBtn('diagcode', 'file', sk('actDiagCode', '复制一码通 · 验真短码'), 'gold on') +
+      actBtn('diagdecode', 'telescope', sk('actDiagDecode', '解码一码通 / 公益站名单')) +
       actBtn('logwin', 'ledger', sk('actLogwin', '光波采样悬浮窗'), LOGW.open ? 'on' : '') +
       actBtn('probe:verify', 'telescope', sk('actVerify', '真伪探针 · 渠道鉴伪')) +
       actBtn('probe:alias', 'tag', sk('actAlias', '频段摸底 · 别名扫描')) +
@@ -716,7 +718,7 @@ function uiBaseSig() {
     var refSig = String(cfg.refract || 'off') + ':' + String(cfg.refractMode || 'stable') + ':' + (cfg.refractAutoRotate ? '1' : '0') + ':' + String(cfg.refractSeed || '') + ':' + ((typeof LAST_REFRACT !== 'undefined' && LAST_REFRACT) ? (String(LAST_REFRACT.suite || '') + ':' + String(LAST_REFRACT.at || 0)) : '');
     var prismSig = (typeof uiPrismSig === 'function') ? uiPrismSig() : '0';
     return [STRUCT_VER, VERSION, uiMode(), uiCfgSig(),
-      c.same, c.diff, c.thin, c.unknown, c.other, String(K.bad), String(K.eff), lg,
+      c.same, c.diff, c.thin, (c.suspect || 0), c.unknown, c.other, String(K.bad), String(K.eff), lg,
       MORE_OPEN ? 1 : 0, LOGW.open ? 1 : 0, st.kind, jl, tr, ab, tc, tt, sv, sj,
       TOOL_CONFIRM ? 1 : 0,
       Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig, refSig, prismSig].join('|');

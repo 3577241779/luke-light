@@ -26,7 +26,7 @@
 
 var SHAPE_KEY = 'ar6.shape';
 var SHAPE_MAX = 24;       /* 每个 key 最多留 24 条，超出丢最旧 */
-var SHAPE_MIN_N = 8;      /* 少于 8 条历史样本没有指纹基线，不判 */
+var SHAPE_MIN_N = 5;      /* V5.77：冷启动从 8 降至 5 轮，并纳入原生签名/ID 拓扑 */
 var SHAPE_EXPIRE = 30 * 24 * 3600 * 1000;  /* 30 天 */
 
 function shapeOn() {
@@ -128,10 +128,12 @@ function shapeSig(rec) {
     var f = '';
     try { f = String(pk.finish == null ? '' : pk.finish).replace(/\|/g, '/'); }
     catch (eF) { f = ''; }
+    var hasNatMv = ('nativeModelVersion' in pk) ? !!pk.nativeModelVersion : !!pk.modelVersion;
+    var fpSeg = (pk.hasThoughtSig ? 's1' : 's0') + ':' + String(pk.idKind || 'none');
     return (u ? 'u1' : 'u0') + '|' +
       ks.slice(0, 6).join(',') + '|' +
       (u && shapeThinks(u) ? 't1' : 't0') + '|' +
-      (pk.modelVersion ? 'v1' : 'v0') + '|' + f;
+      (hasNatMv ? 'v1' : 'v0') + '|' + f + '|' + fpSeg;
   } catch (e) { return ''; }
 }
 
@@ -168,7 +170,7 @@ function shapePush(rec) {
   try {
     if (!rec || !shapeOn()) return null;
     if (rec.internal) return null;
-    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip' || rec.code === 'aux') return null;
+    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'suspect' || rec.code === 'skip' || rec.code === 'aux') return null;
     var sig = shapeSig(rec);
     if (!sig) return null;
     var k = shapeId(rec);
@@ -225,9 +227,10 @@ function shapeStable(hist) {
 /* 哪一段不同 → 一句人话。别把整串指纹甩给用户。 */
 function shapeSegDesc(pos, cur, ref) {
   try {
+    if (pos === 5) return String(ref || '').indexOf('s1') === 0 ? '少了原生思考签名或响应ID拓扑变了' : '原生签名/响应ID拓扑变了';
     if (pos === 2) return ref === 't1' ? '少了思考字段' : '多了思考字段';
     if (pos === 0) return ref === 'u1' ? '少了 usage' : '多了 usage';
-    if (pos === 3) return ref === 'v1' ? '少了 modelVersion' : '多了 modelVersion';
+    if (pos === 3) return ref === 'v1' ? '少了原生 modelVersion' : '多了原生 modelVersion';
     if (pos === 4) return 'finish 取值不同';
     if (pos === 1) {
       if (ref && cur) return 'usage 字段不一样';
@@ -237,14 +240,14 @@ function shapeSegDesc(pos, cur, ref) {
   } catch (e) { return '返回字段不一样'; }
 }
 
-/* 多段不同时只报最有信息量的一段：思考字段 → usage 有无 → modelVersion
+/* 多段不同时只报最有信息量的一段：原生签名/ID → 思考字段 → usage 有无 → modelVersion
    → finish → usage 键集。 */
 function shapeDiff(cur, ref) {
   try {
     var a = String(ref || '').split('|');
     var b = String(cur || '').split('|');
-    if (a.length !== 5 || b.length !== 5) return '字段组合和过去不一样';
-    var order = [2, 0, 3, 4, 1];
+    if ((a.length !== 5 && a.length !== 6) || (b.length !== 5 && b.length !== 6)) return '字段组合和过去不一样';
+    var order = (a.length === 6 && b.length === 6) ? [5, 2, 0, 3, 4, 1] : [2, 0, 3, 4, 1];
     for (var i = 0; i < order.length; i++) {
       var p = order[i];
       if (a[p] !== b[p]) return shapeSegDesc(p, b[p], a[p]);

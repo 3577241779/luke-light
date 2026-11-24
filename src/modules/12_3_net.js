@@ -405,7 +405,10 @@ function newEvidence(model, status, transport) {
     requestedModel: model, observed: [], observedSrc: [], status: status, transport: transport,
     verifiable: 'unknown',
     sawText: false, hasThink: false, hasReasonField: false,
-    outputChars: 0, thoughtTok: 0, firstMs: 0, totalMs: 0, error: ''
+    outputChars: 0, thoughtTok: 0, firstMs: 0, totalMs: 0, error: '', errBody: '',
+    reqStream: false, reqThinkOff: false,
+    ch: null,
+    fp: (typeof lkNewFp === 'function') ? lkNewFp() : null
   };
 }
 
@@ -439,6 +442,7 @@ function scopeMatch(model) {
 var VERDICT = {
   same:    { label: '一致', color: 'ok' },
   diff:    { label: '被换', color: 'bad' },
+  suspect: { label: '高疑掉包', color: 'warn' },
   thin:    { label: '无思考', color: 'warn' },
   unknown: { label: '未知', color: 'gray' },
   quota:   { label: '配额', color: 'warn' },
@@ -756,6 +760,31 @@ function finish(ev, meta) {
     }
   } catch (eNT) {}
   if (ev.capture) capture318Record(ev, rec);
+  /* V5.77 光鉴引擎：四维上游硬指纹交叉定级（V1~V4）+ 特征倒挂升级 suspect + 通道匿名域哈希 + 一码通 */
+  try {
+    if (!ev.ch && typeof lkClassifyChannel === 'function') {
+      ev.ch = lkClassifyChannel((lastReq && lastReq.url) || '', null, null);
+    }
+    if (ev.ch) {
+      rec.ch = { code: ev.ch.code, hash: ev.ch.hash, source: ev.ch.source || '', proto: ev.ch.proto || '' };
+    }
+    if (typeof lkEvalFingerprint === 'function') {
+      var fpEv = lkEvalFingerprint(ev, rec, { code: rec.code, note: rec.note });
+      ev.fpEval = fpEv;
+      rec.fpGrade = fpEv.grade;
+      rec.fpMask = fpEv.mask;
+      rec.fpNote = fpEv.summary;
+      rec.netCps = fpEv.netCps || 0;
+      if (fpEv.cadenceAlert && (rec.code === 'same' || (rec.code === 'unknown' && ev.sawText))) {
+        rec.code = 'suspect';
+        rec.verdict = VERDICT.suspect.label;
+        if (rec.conf === 'C') rec.conf = 'B';
+        rec.note = fpEv.cadenceWhy + (rec.note ? ('；' + rec.note) : '');
+      }
+    }
+    if (typeof lkClassifyErrorCode === 'function') rec.errCode = lkClassifyErrorCode(ev, rec);
+    if (typeof lkBuildDiagCode === 'function') rec.diagCode = lkBuildDiagCode(rec, ev);
+  } catch (eFp) {}
   try { ev.__ledEntry = ledAdd(rec); } catch (eLed) {}
   ev.__record = rec;
   pushLog(rec);
@@ -770,7 +799,9 @@ function finish(ev, meta) {
   if (v.code === 'skip' || v.code === 'aux') {
     /* 4.7.2：范围外与辅助请求只进台账，不弹顶部横幅（副 API 每轮一条太吵） */
   } else if (v.code === 'diff' || v.code === 'blocked' || v.code === 'gate') {
-    banner('🔴 ' + rec.verdict + '：' + v.note + '（请求 ' + rec.req + '）', kind);
+    banner('🔴 ' + rec.verdict + (rec.fpGrade === 'V4' ? '（V4）' : '') + '：' + v.note + '（请求 ' + rec.req + '）', kind);
+  } else if (v.code === 'suspect') {
+    banner('🟠 高疑掉包（V3）：' + v.note + '（请求 ' + rec.req + '）', 'warn');
   } else if (v.code === 'thin') {
     banner('🟠 ' + rec.verdict + '：' + v.note + '（请求 ' + rec.req + '）', kind);
   } else if (v.code === 'empty') {
@@ -782,14 +813,15 @@ function finish(ev, meta) {
     /* v0.84 结构指纹：名字和手感都过的时候，格式变了也要留一句 */
     var sShape = '';
     try { sShape = shapeLine(rec); } catch (eShape2) {}
-    banner('🟢 一致：' + v.note + '（' + (rec.ttft ? (rec.ttft / 1000).toFixed(1) + 's 首字，' : '') + rec.chars + ' 字）' + (bSame ? '　⚠ ' + bSame : '') + (sShape ? '　🔬 ' + sShape : ''), kind);
+    var sameHead = rec.fpGrade === 'V1' ? '🟢 验真一致（V1）：' : (rec.fpGrade === 'V2' ? '🟡 软一致（V2·无原生硬指纹）：' : '🟢 一致：');
+    banner(sameHead + v.note + '（' + (rec.ttft ? (rec.ttft / 1000).toFixed(1) + 's 首字，' : '') + rec.chars + ' 字）' + (bSame ? '　⚠ ' + bSame : '') + (sShape ? '　🔬 ' + sShape : ''), kind);
   } else {
     banner('⚪ ' + rec.verdict + '：' + v.note, kind);
   }
-  /* V5.73 四轨随机微扰 · 异常自动换套：监测到被换 / 无思考 / 行为基线异常时自动切换新随机套号 */
+  /* V5.73 四轨随机微扰 · 异常自动换套：监测到被换 / 无思考 / 特征倒挂 / 行为基线异常时自动切换新随机套号 */
   try {
     if (cfg && cfg.enabled && cfg.refract && cfg.refract !== 'off' && cfg.refractAutoRotate && !ev.internal && typeof refractRollSuite === 'function') {
-      var badRoute = (rec.code === 'diff' || rec.code === 'thin');
+      var badRoute = (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'suspect');
       if (!badRoute && rec.code === 'same') {
         try { var bjRot = baseJudge(rec); if (bjRot && bjRot.why !== 'slow') badRoute = true; } catch (eBjR) {}
       }
@@ -822,9 +854,9 @@ function finish(ev, meta) {
       HOST.dispatchEvent(settledEv);
     }
   } catch (eSettle) {}
-  /* v7.3：判定为「被换 / 无思考」时自动弹证据卡（1.6s 后，等响应体取样落地） */
+  /* v7.3：判定为「被换 / 无思考 / 高疑掉包」时自动弹证据卡（1.6s 后，等响应体取样落地） */
   try {
-    if (!cfg.silent && cfg.cardAuto && (rec.code === 'diff' || rec.code === 'thin')) {
+    if (!cfg.silent && cfg.cardAuto && (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'suspect')) {
       setTimeout(function () {
         try {
           /* v8.0.3：破甲确认框 / 已打开的卡优先，别把用户手上的东西顶掉 */
@@ -845,6 +877,7 @@ function finish(ev, meta) {
    现在拆成两件事：model 只留作展示（不 pushObs，4xx 不判被换），blocked / 超长才是判定输入。 */
 function salvageError(text, ev) {
   if (typeof text !== 'string' || !text) return;
+  if (!ev.errBody) ev.errBody = text.slice(0, 600);
   var mre = /"(?:modelVersion|model)"\s*:\s*"([^"]{1,120})"/g;
   var m;
   while ((m = mre.exec(text)) !== null) {
@@ -973,6 +1006,24 @@ function capture318ApplyLateVerdict(ev, rec) {
           if (k >= 0 && ev.observedSrc && ev.observedSrc[k]) rec.src = ev.observedSrc[k];
         }
       }
+      /* V5.77：晚到流数据补齐后重新跑一次四维硬指纹评估与诊断码更新 */
+      if (typeof lkEvalFingerprint === 'function') {
+        var fpLate = lkEvalFingerprint(ev, rec, { code: rec.code, note: rec.note });
+        ev.fpEval = fpLate;
+        rec.fpGrade = fpLate.grade;
+        rec.fpMask = fpLate.mask;
+        rec.fpNote = fpLate.summary;
+        rec.netCps = fpLate.netCps || 0;
+        if (fpLate.cadenceAlert && (rec.code === 'same' || (rec.code === 'unknown' && ev.sawText))) {
+          rec.code = 'suspect';
+          rec.verdict = VERDICT.suspect.label;
+          if (rec.conf === 'C') rec.conf = 'B';
+          rec.note = fpLate.cadenceWhy + (rec.note ? ('；' + rec.note) : '');
+        }
+      }
+      if (ev.ch) rec.ch = { code: ev.ch.code, hash: ev.ch.hash, source: ev.ch.source || '', proto: ev.ch.proto || '' };
+      if (typeof lkClassifyErrorCode === 'function') rec.errCode = lkClassifyErrorCode(ev, rec);
+      if (typeof lkBuildDiagCode === 'function') rec.diagCode = lkBuildDiagCode(rec, ev);
     }
   } catch (eLV) {}
 }
@@ -1001,7 +1052,7 @@ function capture318Reconcile(ev) {
       if (ev.__record.code === 'same') {
         basePush(ev.__record);
         shapePush(ev.__record);
-      } else if (ev.__record.code === 'diff' || ev.__record.code === 'thin') {
+      } else if (ev.__record.code === 'diff' || ev.__record.code === 'thin' || ev.__record.code === 'suspect') {
         var recL = ev.__record;
         var kindL = (VERDICT[recL.code] || VERDICT.unknown).color;
         banner((recL.code === 'diff' ? '🔴 ' : '🟠 ') + recL.verdict + '：' + recL.note + '（请求 ' + recL.req + '）', kindL, true);
@@ -1020,6 +1071,7 @@ function capture318Reconcile(ev) {
   try { if (typeof render === 'function') render(); } catch (e) {}
 }
 function buildPeekEntry(ev, done, failed) {
+  var fp = (ev && ev.fp) || null;
   var entry = {
     done: !!done,
     failed: !!failed,
@@ -1027,6 +1079,17 @@ function buildPeekEntry(ev, done, failed) {
     textChars: ev.chars || 0,
     model: ev.respModel || ev.modelVersion || '',
     modelVersion: ev.modelVersion || '',
+    nativeModelVersion: (fp && fp.nativeModelVersion) || '',
+    respModel: (fp && fp.respModel) || '',
+    respId: (fp && fp.respId) || '',
+    idKind: (fp && fp.idKind) || 'none',
+    hasThoughtSig: !!(fp && fp.hasThoughtSig),
+    sysFp: (fp && fp.sysFp) || '',
+    serviceTier: (fp && fp.serviceTier) || '',
+    usageProto: (fp && fp.usageProto) || 'none',
+    hasCachedTok: !!(fp && fp.hasCachedTok),
+    textChunks: (fp && fp.textChunks) || 0,
+    nonStreamDump: !!(fp && fp.nonStreamDump),
     finish: ev.finishReason || ev.finish || '',
     raw: ev.rawSample || ''
   };
@@ -1088,6 +1151,7 @@ function capture318Parser(ev) {
   if (typeof ev.rawSample !== 'string') ev.rawSample = '';
   if (!Array.isArray(ev.observed)) ev.observed = [];
   if (!Array.isArray(ev.observedSrc)) ev.observedSrc = [];
+  if (!ev.fp && typeof lkNewFp === 'function') ev.fp = lkNewFp();
 
   var lineBuf = '';
   var sawSSE = false;
@@ -1162,6 +1226,11 @@ function capture318Parser(ev) {
     if (via === 'tool') ev.sawToolBody = true;
     if (/\S/.test(txt)) {
       ev.sawText = true;
+      if (ev.fp) {
+        ev.fp.textChunks = (ev.fp.textChunks || 0) + 1;
+        if (ev.fp.textChunks === 1) ev.fp.firstTextChunkChars = txt.length;
+        if (txt.length > (ev.fp.maxChunkChars || 0)) ev.fp.maxChunkChars = txt.length;
+      }
       var dt = Math.max(1, nowMs() - startAt);
       if (cap.firstContentMs == null) cap.firstContentMs = dt;
       if (!ev.firstMs) ev.firstMs = dt;
@@ -1258,8 +1327,32 @@ function capture318Parser(ev) {
   function absorbObj(obj) {
     ev.peekChunks += 1;
 
-    /* 1. 模型版本提取（兼容 Gemini modelVersion / OpenAI model / OpenRouter served_model / Claude message.model） */
-    setModel(obj.modelVersion || obj.model || obj.served_model || (obj.message && obj.message.model) || (obj.response && obj.response.model));
+    /* 1. 模型版本提取（严格区分 Gemini 原生 modelVersion 与 OpenAI 回显 model，防止假回显冒充原生硬证） */
+    var rawNativeMv = (typeof obj.modelVersion === 'string' && obj.modelVersion.trim()) ? obj.modelVersion.trim() : '';
+    var rawRespMod = (typeof obj.model === 'string' && obj.model.trim()) ? obj.model.trim()
+      : ((typeof obj.served_model === 'string' && obj.served_model.trim()) ? obj.served_model.trim()
+      : ((obj.message && typeof obj.message.model === 'string' && obj.message.model.trim()) ? obj.message.model.trim()
+      : ((obj.response && typeof obj.response.model === 'string' && obj.response.model.trim()) ? obj.response.model.trim() : '')));
+    if (ev.fp) {
+      if (rawNativeMv && !ev.fp.nativeModelVersion) ev.fp.nativeModelVersion = rawNativeMv;
+      if (rawRespMod && !ev.fp.respModel) ev.fp.respModel = rawRespMod;
+      var gemRid = (typeof obj.responseId === 'string' && obj.responseId.trim()) ? obj.responseId.trim() : '';
+      var genId = gemRid ||
+        (typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim() : '') ||
+        (obj.message && typeof obj.message.id === 'string' && obj.message.id.trim() ? obj.message.id.trim() : '') ||
+        (obj.response && typeof obj.response.id === 'string' && obj.response.id.trim() ? obj.response.id.trim() : '');
+      if (genId && !ev.fp.respId) {
+        ev.fp.respId = genId.slice(0, 64);
+        ev.fp.idKind = (typeof lkClassifyRespId === 'function') ? lkClassifyRespId(genId, !!gemRid) : 'custom';
+      }
+      if (typeof obj.system_fingerprint === 'string' && obj.system_fingerprint.trim() && !ev.fp.sysFp) {
+        ev.fp.sysFp = obj.system_fingerprint.trim().slice(0, 48);
+      }
+      if (typeof obj.service_tier === 'string' && obj.service_tier.trim() && !ev.fp.serviceTier) {
+        ev.fp.serviceTier = obj.service_tier.trim().slice(0, 24);
+      }
+    }
+    setModel(rawNativeMv || rawRespMod);
 
     /* 2. 200 响应体夹带错误对象检测 */
     if (obj.error) {
@@ -1279,12 +1372,22 @@ function capture318Parser(ev) {
 
         var msg = c.delta || c.message || null;
         if (msg && typeof msg === 'object') {
+          if (ev.fp && !ev.fp.hasThoughtSig) {
+            if ((typeof msg.thought_signature === 'string' && msg.thought_signature.length >= 16) ||
+                (typeof msg.thoughtSignature === 'string' && msg.thoughtSignature.length >= 16) ||
+                (msg.extra_content && msg.extra_content.google && typeof msg.extra_content.google.thought_signature === 'string' && msg.extra_content.google.thought_signature.length >= 16)) {
+              ev.fp.hasThoughtSig = true;
+            }
+          }
           var rTxt = msg.reasoning_content || msg.reasoning || msg.thinking || '';
           if (typeof rTxt === 'string' && rTxt) addThinkText(rTxt);
           if (Array.isArray(msg.reasoning_details)) {
             for (var rdi = 0; rdi < msg.reasoning_details.length; rdi++) {
               var rd = msg.reasoning_details[rdi];
               if (!rd || typeof rd !== 'object') continue;
+              if (ev.fp && !ev.fp.hasThoughtSig && ((typeof rd.signature === 'string' && rd.signature.length >= 16) || (typeof rd.data === 'string' && rd.data.length >= 24 && rd.type === 'reasoning.encrypted'))) {
+                ev.fp.hasThoughtSig = true;
+              }
               var rdStr = rd.text || rd.summary || rd.content || '';
               if (typeof rdStr === 'string' && rdStr) addThinkText(rdStr);
             }
@@ -1358,13 +1461,19 @@ function capture318Parser(ev) {
         var cand = obj.candidates[ci];
         if (!cand || typeof cand !== 'object') continue;
         if (cand.finishReason) setFinish(cand.finishReason);
-        if (cand.modelVersion) setModel(cand.modelVersion);
+        if (cand.modelVersion) {
+          if (ev.fp && !ev.fp.nativeModelVersion) ev.fp.nativeModelVersion = String(cand.modelVersion).trim();
+          setModel(cand.modelVersion);
+        }
 
         var parts = cand.content && cand.content.parts;
         if (Array.isArray(parts)) {
           for (var pi = 0; pi < parts.length; pi++) {
             var part = parts[pi];
             if (!part || typeof part !== 'object') continue;
+            if (ev.fp && !ev.fp.hasThoughtSig && ((typeof part.thoughtSignature === 'string' && part.thoughtSignature.length >= 16) || (typeof part.thought_signature === 'string' && part.thought_signature.length >= 16))) {
+              ev.fp.hasThoughtSig = true;
+            }
             if (part.thought === true) {
               if (typeof part.text === 'string') addThinkText(part.text);
             } else if (part.functionCall && part.functionCall.args && toolTracker) {
@@ -1390,6 +1499,8 @@ function capture318Parser(ev) {
         addText(obj.delta.text, 'text');
       } else if (obj.delta.type === 'thinking_delta' && typeof obj.delta.thinking === 'string') {
         addThinkText(obj.delta.thinking);
+      } else if (obj.delta.type === 'signature_delta' && typeof obj.delta.signature === 'string' && obj.delta.signature.length >= 8) {
+        if (ev.fp) ev.fp.hasThoughtSig = true;
       } else if (obj.delta.type === 'input_json_delta' && typeof obj.delta.partial_json === 'string' && toolTracker) {
         var aSlot = 'anth_' + String(obj.index || 0);
         var aDelta = toolTracker.feedStr(aSlot, obj.delta.partial_json);
@@ -1404,7 +1515,10 @@ function capture318Parser(ev) {
       for (var ai = 0; ai < obj.content.length; ai++) {
         var blk = obj.content[ai];
         if (!blk || typeof blk !== 'object') continue;
-        if (blk.type === 'thinking') addThinkText(blk.thinking || blk.text || '');
+        if (blk.type === 'thinking') {
+          if (ev.fp && typeof blk.signature === 'string' && blk.signature.length >= 16) ev.fp.hasThoughtSig = true;
+          addThinkText(blk.thinking || blk.text || '');
+        }
         else if (blk.type === 'text') addText(blk.text || '', 'text');
         else if (blk.type === 'tool_use' && blk.input && toolTracker) {
           var tuDelta = toolTracker.feedObj('anth_tu_' + ai, blk.input);
@@ -1417,9 +1531,15 @@ function capture318Parser(ev) {
     }
 
     /* 7. Token 统计（使用 Math.max 防止流式累计快照被重复累加，同步推到采样悬浮窗） */
-    var u = obj.usage || (obj.response && obj.response.usage);
+    var u = obj.usage || (obj.message && obj.message.usage) || (obj.response && obj.response.usage);
     if (u && typeof u === 'object') {
       recordUsageKeys(u);
+      if (ev.fp) {
+        if ('input_tokens' in u || 'output_tokens' in u || 'cache_creation_input_tokens' in u) ev.fp.usageProto = 'anth_u';
+        else if (ev.fp.usageProto === 'none' && ('prompt_tokens' in u || 'completion_tokens' in u)) ev.fp.usageProto = 'oai_u';
+        if ((u.cache_read_input_tokens && u.cache_read_input_tokens > 0) ||
+            (u.prompt_tokens_details && u.prompt_tokens_details.cached_tokens > 0)) ev.fp.hasCachedTok = true;
+      }
       if (u.completion_tokens_details && typeof u.completion_tokens_details === 'object') recordUsageKeys(u.completion_tokens_details);
       var pTok = u.prompt_tokens || u.input_tokens || 0;
       if (pTok > ev.promptTokens) ev.promptTokens = pTok;
@@ -1446,6 +1566,10 @@ function capture318Parser(ev) {
     var um = obj.usageMetadata;
     if (um && typeof um === 'object') {
       recordUsageKeys(um);
+      if (ev.fp) {
+        ev.fp.usageProto = 'gemini_um';
+        if (typeof um.cachedContentTokenCount === 'number' && um.cachedContentTokenCount > 0) ev.fp.hasCachedTok = true;
+      }
       if (typeof um.promptTokenCount === 'number' && um.promptTokenCount > ev.promptTokens) {
         ev.promptTokens = um.promptTokenCount;
       }
@@ -1633,6 +1757,9 @@ function capture318Parser(ev) {
       if (tf.retroBodyToThink > 0) reclassBodyToThink(tf.retroBodyToThink);
       if (tf.think) addThinkText(tf.think);
       if (tf.body) commitBodyText(tf.body, 'text');
+    }
+    if (ev.fp && ev.reqStream && ev.fp.textChunks === 1 && ev.fp.firstTextChunkChars >= 400) {
+      ev.fp.nonStreamDump = true;
     }
     return ev;
   }
@@ -3122,7 +3249,8 @@ function handleFetch(next, thisArg, args) {
       effortHint = /EFFORT LEVEL|think silently/i.test(sysB);
       prefillThinkTag = detectPrefillThinkTag(bodyObj);
     } catch (eLB) {}
-    if (plan.model) lastReq = { url: url, raw: rawBody, model: plan.model, base: plan.base || '', asstTail: asstTail, effort: effortHint, authHeaders: extractSafeAuthHeaders(init) };
+    var reqCh = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, bodyObj || parsedForInternal, null) : null;
+    if (plan.model) lastReq = { url: url, raw: rawBody, model: plan.model, base: plan.base || '', asstTail: asstTail, effort: effortHint, ch: reqCh, authHeaders: extractSafeAuthHeaders(init) };
   } catch (e) { plan = null; }
 
   var selfContinuation = false;
@@ -3136,6 +3264,11 @@ function handleFetch(next, thisArg, args) {
   ev.prefillThinkTag = prefillThinkTag || '';
   ev.trafficKind = (traffic && traffic.kind) || 'story';
   ev.trafficLabel = (traffic && traffic.label) || '正文';
+  try {
+    ev.ch = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, parsedForInternal, null) : null;
+    ev.reqStream = !!(parsedForInternal && (parsedForInternal.stream === true || (parsedForInternal.request && parsedForInternal.request.stream === true)));
+    ev.reqThinkOff = (typeof lkDetectReqThinkOff === 'function') ? lkDetectReqThinkOff(parsedForInternal) : false;
+  } catch (eChEv) {}
   capture318(ev, started);
   var allowLive = !internal || String(cfg && cfg.contentOnly) === 'off';
   if (allowLive) CAP318_LIVE = ev.requestId;
@@ -3539,6 +3672,7 @@ function bindStEvents() {
 function detDiag() {
   var L = [];
   L.push('版本 ' + VERSION + ' · ' + (uiMode() === 'desktop' ? '桌面宽屏态' : '移动紧凑态'));
+  try { if (typeof lkBuildDiagCode === 'function') L.push('一码通 ' + lkBuildDiagCode(null, null)); } catch (eDc0) {}
   try { L.push('宿主 ' + String((SELF_WIN.location && SELF_WIN.location.href) || '').slice(0, 120)); } catch (e1) {}
   L.push('挂钩窗口 ' + DET.wins + ' · 探测 ' + DET.tries + ' · 跨窗口受阻 ' + DET.blocked);
   L.push('见请求 ' + DET.seen + ' · 非生成 ' + DET.notGen + ' · 命中生成 ' + DET.gen + ' · 内部 ' + DET.internal + ' · 记账 ' + DET.rec);

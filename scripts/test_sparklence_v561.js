@@ -498,7 +498,7 @@ function runForTarget(fileName) {
     script.runInContext(ctx);
     env.advance(100, 120);
     const api = env.win.__AR6__;
-    check(api && api.VERSION === '5.76', `VERSION 应为 5.76，实际 ${api && api.VERSION}`);
+    check(api && api.VERSION === '5.77', `VERSION 应为 5.77，实际 ${api && api.VERSION}`);
 
     // 初次使用：未开启桌宠，先进入防卫设置并点开「3D 迪迦 · 光之伙伴桌宠」
     api.openPanel();

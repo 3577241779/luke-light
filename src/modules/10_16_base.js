@@ -18,7 +18,7 @@
 
 var BASE_KEY = 'ar6.base';
 var BASE_MAX = 24;        /* 每个 key 最多留 24 条，超出丢最旧 */
-var BASE_MIN_N = 12;      /* 少于 12 条历史样本没有基线，不判 */
+var BASE_MIN_N = 6;       /* V5.77：冷启动从 12 降至 6 轮，配合四维指纹更快识别特征漂移 */
 var BASE_EXPIRE = 30 * 24 * 3600 * 1000;  /* 30 天 */
 
 function baseOn() {
@@ -151,7 +151,7 @@ function basePush(req, rec) {
     if (!rec) { rec = req; req = null; }
     if (!rec || !baseOn()) return null;
     if (rec.internal) return null;
-    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'skip' || rec.code === 'aux') return null;
+    if (rec.code === 'diff' || rec.code === 'thin' || rec.code === 'suspect' || rec.code === 'skip' || rec.code === 'aux') return null;
     var row = baseRow(rec);
     if (!row) return null;
     var k = baseId(rec);

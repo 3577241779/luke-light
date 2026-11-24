@@ -33,7 +33,7 @@ function writeLed(o) {
 }
 
 function ledEmpty() {
-  return { n: 0, same: 0, diff: 0, thin: 0, echo: 0, blocked: 0, weak: 0, at: 0 };
+  return { n: 0, same: 0, diff: 0, thin: 0, suspect: 0, echo: 0, blocked: 0, weak: 0, at: 0 };
 }
 
 function ledRow() {
@@ -41,7 +41,7 @@ function ledRow() {
   var r = all[statKey()];
   if (!r || typeof r !== 'object') return ledEmpty();
   var o = ledEmpty();
-  var keys = ['n', 'same', 'diff', 'thin', 'echo', 'blocked', 'weak', 'at'];
+  var keys = ['n', 'same', 'diff', 'thin', 'suspect', 'echo', 'blocked', 'weak', 'at'];
   for (var i = 0; i < keys.length; i++) {
     var v = Number(r[keys[i]]);
     o[keys[i]] = isFinite(v) ? v : 0;
@@ -56,7 +56,7 @@ function ledAdd(rec) {
     if (!rec || rec.internal) return null;
     var conf = rec.conf || 'C';
     var c = rec.code;
-    if (c !== 'same' && c !== 'diff' && c !== 'thin' && c !== 'echo' && c !== 'blocked') return null;
+    if (c !== 'same' && c !== 'diff' && c !== 'thin' && c !== 'suspect' && c !== 'echo' && c !== 'blocked') return null;
     var all = readLed();
     var k = statKey(rec.base);
     var r = all[k];
@@ -82,7 +82,7 @@ function ledReconcile(prev, rec) {
     if (!rec || rec.internal) return prev || null;
     var conf = rec.conf || 'C';
     var c = rec.code;
-    var valid = (c === 'same' || c === 'diff' || c === 'thin' || c === 'echo' || c === 'blocked');
+    var valid = (c === 'same' || c === 'diff' || c === 'thin' || c === 'suspect' || c === 'echo' || c === 'blocked');
     var nextBucket = (conf === 'A' || conf === 'B') ? 'strong' : 'weak';
     var nextKey = statKey(rec.base);
     if (prev && valid && prev.key === nextKey && prev.bucket === nextBucket && prev.code === c) return prev;
@@ -107,7 +107,7 @@ function ledReconcile(prev, rec) {
 /* 被换率 = 不该出现的三种（被换 / 无思考 / 回显）占全部有结论轮次 */
 function ledStat() {
   var r = ledRow();
-  var bad = r.diff + r.thin + r.echo;
+  var bad = r.diff + r.thin + (r.suspect || 0) + r.echo;
   var w = wilson(bad, r.n);
   return {
     n: r.n, bad: bad,
