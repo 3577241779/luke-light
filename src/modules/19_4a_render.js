@@ -6,14 +6,21 @@ var UI_SIG = {};
 var VERIFY_T = 0;
 var CLEAR_CONFIRM_AT = 0;
 var CLEAR_TIMER = 0;
-var UI_SECS = ['head', 'nav', 'sw', 'nums', 'hint', 'jail', 'trunc', 'know', 'charm', 'pvp', 'ooc', 'more', 'foot'];
+var UI_SECS = ['head', 'nav', 'sw', 'nums', 'hint', 'jail', 'trunc', 'know', 'charm', 'pvp', 'ooc', 'more', 'prism', 'foot'];
 
 function uiSkeletonHTML() {
+  var prismViewOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive() && (typeof getPrismView === 'function') && getPrismView() === 'prism';
   var h = '<div class="ar6-p" data-struct="' + STRUCT_VER + '">';
   h += '<div class="ar6-h ar6-mh" data-ar6-sec="head"></div>';
   h += '<div class="ar6-body" data-ar6-scroll="1">';
-  for (var i = 1; i < UI_SECS.length - 1; i++) {
-    h += '<div class="ar6-zone" data-ar6-sec="' + UI_SECS[i] + '"></div>';
+  if (prismViewOn) {
+    h += '<div class="ar6-zone" data-ar6-sec="nav"></div>';
+    h += '<div class="ar6-zone" data-ar6-sec="prism"></div>';
+  } else {
+    for (var i = 1; i < UI_SECS.length - 1; i++) {
+      if (UI_SECS[i] === 'prism') continue;
+      h += '<div class="ar6-zone" data-ar6-sec="' + UI_SECS[i] + '"></div>';
+    }
   }
   h += '</div>';
   h += '<div class="ar6-mf" data-ar6-sec="foot"></div>';
@@ -185,11 +192,17 @@ function uiActiveGroup() {
 }
 function uiTabAllows(n) {
   if (n === 'head' || n === 'nav') return true;
+  var prismOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive();
+  var pView = (typeof getPrismView === 'function') ? getPrismView() : 'luke';
+  if (prismOn && pView === 'prism') return n === 'prism';
+  if (n === 'prism') return false;
   var grp = UI_TABS[UI_TAB] || UI_TABS.route;
   return grp.indexOf(n) >= 0;
 }
 function uiNavHTML() {
   var grp = uiActiveGroup();
+  var prismOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive();
+  var pView = prismOn && (typeof getPrismView === 'function') ? getPrismView() : 'luke';
   var navNames = (typeof sk === 'function') ? sk('nav', ['光之雷达', '形态破甲', '叙事结界', '防卫设置']) : ['光之雷达', '形态破甲', '叙事结界', '防卫设置'];
   var list = [
     ['route', navNames[0] || '光之雷达'],
@@ -199,7 +212,9 @@ function uiNavHTML() {
   ];
   var hasUpdDot = (typeof updHasNotice === 'function') && updHasNotice();
   var skinDrawer = (typeof uiSkinBarHTML === 'function') ? uiSkinBarHTML() : '';
-  var h = skinDrawer + '<nav aria-label="分类导航" class="ar6-nav">';
+  var dualBar = (prismOn && typeof uiPrismDualBarHTML === 'function') ? uiPrismDualBarHTML(pView) : '';
+  var navStyle = (prismOn && pView === 'prism') ? ' style="display:none"' : '';
+  var h = skinDrawer + dualBar + '<nav aria-label="分类导航" class="ar6-nav"' + navStyle + '>';
   for (var i = 0; i < list.length; i++) {
     var dot = (list[i][0] === 'scope' && hasUpdDot) ? '<i class="ar6-nav-dot" aria-hidden="true"></i>' : '';
     h += '<button type="button" class="ar6-navb" data-ar6="nav" data-ar6-nav="' + list[i][0] + '" aria-pressed="' + (grp === list[i][0]) + '">' + esc(list[i][1]) + dot + '</button>';
@@ -641,6 +656,7 @@ function uiSecHTML(name) {
     if (name === 'pvp') return uiPvpHTML();
     if (name === 'ooc') return uiOocHTML();
     if (name === 'more') return uiMoreHTML();
+    if (name === 'prism') return (typeof uiPrismHTML === 'function') ? uiPrismHTML() : '';
     if (name === 'foot') return uiFootHTML();
   } catch (e) {}
   return '';
@@ -691,11 +707,12 @@ function uiBaseSig() {
     var pSkipSig = (typeof DET !== 'undefined' && DET) ? (String(DET.pluginSkip || 0) + ':' + String(DET.lastPlugin || '')) : '';
     var skSig = ((typeof skinId === 'function') ? skinId() : 'ultra') + ':' + ((typeof SKIN_BAR_OPEN !== 'undefined' && SKIN_BAR_OPEN) ? '1' : '0');
     var refSig = String(cfg.refract || 'off') + ':' + String(cfg.refractMode || 'stable') + ':' + (cfg.refractAutoRotate ? '1' : '0') + ':' + String(cfg.refractSeed || '') + ':' + ((typeof LAST_REFRACT !== 'undefined' && LAST_REFRACT) ? (String(LAST_REFRACT.suite || '') + ':' + String(LAST_REFRACT.at || 0)) : '');
+    var prismSig = (typeof uiPrismSig === 'function') ? uiPrismSig() : '0';
     return [STRUCT_VER, VERSION, uiMode(), uiCfgSig(),
       c.same, c.diff, c.thin, c.unknown, c.other, String(K.bad), String(K.eff), lg,
       MORE_OPEN ? 1 : 0, LOGW.open ? 1 : 0, st.kind, jl, tr, ab, tc, tt, sv, sj,
       TOOL_CONFIRM ? 1 : 0,
-      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig, refSig].join('|');
+      Number(cfg.grab || 0), String(cfg.toolChan || 'off'), cfg.jailWord ? 1 : 0, clrArmed, petSig, mpLockSig, oocChoiceSig, updSig, pSkipSig, skSig, refSig, prismSig].join('|');
   } catch (e) { return 'err'; }
 }
 
@@ -727,10 +744,11 @@ function focusKeyHit(key, cand) {
   var a = String(key || ''), b = String(cand || '');
   if (!a || !b) return false;
   if (a === b) return true;
+  if (a.indexOf('prism-') === 0 || b.indexOf('prism-') === 0 || a.indexOf('wsmode:') === 0 || b.indexOf('wsmode:') === 0) return false;
   var pa = focusKeyPre(a), pb = focusKeyPre(b);
   return !!pa && pa === pb;
 }
-function focusBack(scope, key) {
+function focusBack(scope, key, selStart, selEnd) {
   if (!scope || !key) return false;
   var nodes = [];
   try { nodes = scope.querySelectorAll ? scope.querySelectorAll('[data-ar6]') : []; } catch (e) { return false; }
@@ -739,7 +757,12 @@ function focusBack(scope, key) {
     if (focusKeyHit(key, focusKeyOf(nodes[i]))) { hit = nodes[i]; break; }
   }
   if (!hit) return false;
-  try { hit.focus(); } catch (eF) {}
+  try {
+    hit.focus();
+    if (selStart != null && selEnd != null && typeof hit.setSelectionRange === 'function') {
+      hit.setSelectionRange(selStart, selEnd);
+    }
+  } catch (eF) {}
   return true;
 }
 
@@ -759,15 +782,20 @@ function paintSections(names, force) {
     var sig = UI_TAB + '|' + base + '|' + name + (name === 'head' ? '|L' + uiLiveSig() : '');
     if (!force && UI_SIG[name] === sig) continue;
     var html = uiSecHTML(name);
-    var fk = '', hasAct = false;
+    var fk = '', hasAct = false, ss = null, se = null;
     if (act && act !== el) {
       try { hasAct = !!(el.contains && el.contains(act)); } catch (eHA) { hasAct = false; }
-      if (hasAct) fk = focusKeyOf(act);
+      if (hasAct) {
+        fk = focusKeyOf(act);
+        try {
+          if (typeof act.selectionStart === 'number') { ss = act.selectionStart; se = act.selectionEnd; }
+        } catch (eSel) {}
+      }
     }
     try { el.hidden = !uiTabAllows(name); if (el.innerHTML !== html) el.innerHTML = html; } catch (eW) { continue; }
     UI_SIG[name] = sig;
     try { bindDirect(el); } catch (eB) {}
-    if (hasAct && fk) focusBack(el, fk);
+    if (hasAct && fk) focusBack(el, fk, ss, se);
   }
   return true;
 }
@@ -820,10 +848,13 @@ function mountAll() {
     return true;
   }
 
+  var wantMode = ((typeof isPrismPresetActive === 'function') && isPrismPresetActive() && (typeof getPrismView === 'function') && getPrismView() === 'prism') ? 'prism' : 'luke';
   var needSkel = false;
+  var wsmodeChanged = false;
   try {
     var box0 = r.querySelector('.ar6-p');
-    needSkel = !box0 || !uiSecEl(r, 'head') || r.getAttribute('data-struct') !== String(STRUCT_VER);
+    wsmodeChanged = r.getAttribute('data-ar6-wsmode') !== wantMode;
+    needSkel = !box0 || !uiSecEl(r, 'head') || r.getAttribute('data-struct') !== String(STRUCT_VER) || wsmodeChanged;
   } catch (eNs) { needSkel = true; }
 
   var focusKey = '';
@@ -832,7 +863,7 @@ function mountAll() {
     if (pf && pf.getAttribute) focusKey = pf.getAttribute('data-ar6') || '';
   } catch (eF) {}
   var scTop = 0;
-  try { var oldBody = r.querySelector('.ar6-body'); if (oldBody) scTop = oldBody.scrollTop || 0; } catch (eSc) {}
+  try { var oldBody = r.querySelector('.ar6-body'); if (oldBody && !wsmodeChanged) scTop = oldBody.scrollTop || 0; } catch (eSc) {}
 
   r.className = mode === 'mobile' ? 'ar6-mobile' : '';
   try { r.removeAttribute('data-min'); } catch (eR0) {}
@@ -841,6 +872,7 @@ function mountAll() {
   if (needSkel) {
     r.innerHTML = uiSkeletonHTML();
     r.setAttribute('data-struct', String(STRUCT_VER));
+    r.setAttribute('data-ar6-wsmode', wantMode);
     UI_SIG = {};
   }
 

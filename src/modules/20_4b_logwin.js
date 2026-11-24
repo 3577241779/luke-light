@@ -705,7 +705,9 @@ function knowTipDialog(next) {
       return;
     }
     if (chk && chk.checked) cfg.knowTip = 'off';
-    cfg.know = next; saveCfg(); render();
+    cfg.know = next;
+    try { if (typeof prismSyncSynergyGuard === 'function') prismSyncSynergyGuard(); } catch (eSgK) {}
+    saveCfg(); render();
     banner('迷雾结界：' + narrTag(cfg.know), cfg.know === 'off' ? 'gray' : 'ok');
   });
 }
@@ -808,7 +810,7 @@ function onPanelClick(e) {
       a0 = 'nav:' + a0Node.getAttribute('data-ar6-nav');
     }
     if (a0) {
-      a0 = (typeof ar6NormActKey === 'function') ? ar6NormActKey(a0) : String(a0).replace(/[:：](?:开|关|on|off|safe|mid|strong|supreme|only|auto|low|medium|high)$/, '').replace(/\s(?:开|关)$/, '');
+      a0 = (typeof ar6NormActKey === 'function') ? ar6NormActKey(a0) : ((a0.indexOf('wsmode:') === 0 || a0.indexOf('prism-') === 0) ? a0 : String(a0).replace(/[:：](?:开|关|on|off|safe|mid|strong|supreme|only|auto|low|medium|high)$/, '').replace(/\s(?:开|关)$/, ''));
       var ty0 = (e && e.type) || 'click';
       var nowT = Date.now();
       if (ty0 === 'click' && LAST_PTR_FIRE_AT && LAST_PTR_FIRE_KEY === a0 && nowT - LAST_PTR_FIRE_AT < 750) return;
@@ -834,6 +836,64 @@ function onPanelClick(e) {
     catch (eP) { try { banner('桌宠设置没保存成功：' + String((eP && eP.message) || eP), 'bad', true); } catch (eB) {} }
     UI_SIG = {};
     render();
+    return;
+  }
+
+  if (act.indexOf('wsmode:') === 0) {
+    if (typeof setPrismView === 'function') setPrismView(act.slice(7));
+    return;
+  }
+  if (act.indexOf('prism-tab:') === 0) {
+    if (typeof PRISM_TAB !== 'undefined') PRISM_TAB = act.slice(10) || 'cot';
+    UI_SIG = {};
+    render();
+    return;
+  }
+  if (act === 'prism-search-clear') {
+    if (typeof PRISM_SEARCH !== 'undefined') PRISM_SEARCH = '';
+    UI_SIG = {};
+    render();
+    return;
+  }
+  if (act === 'prism-desc-toggle') {
+    if (typeof PRISM_SHOW_DESC !== 'undefined') PRISM_SHOW_DESC = !PRISM_SHOW_DESC;
+    UI_SIG = {};
+    render();
+    return;
+  }
+  if (act.indexOf('prism-sw:') === 0 || act.indexOf('prism-core:') === 0) {
+    var swIdP = act.indexOf('prism-sw:') === 0 ? act.slice(9) : act.slice(11);
+    if (typeof prismTogglePrompt === 'function') prismTogglePrompt(swIdP);
+    return;
+  }
+  if (act.indexOf('prism-rad:') === 0) {
+    var restR = act.slice(10), ciR = restR.indexOf(':');
+    var rgR = ciR >= 0 ? restR.slice(0, ciR) : '';
+    var idR = ciR >= 0 ? restR.slice(ciR + 1) : restR;
+    if (typeof prismSelectRadio === 'function') prismSelectRadio(rgR, idR);
+    return;
+  }
+  if (act.indexOf('prism-bdl:') === 0) {
+    if (typeof prismApplyBundle === 'function') prismApplyBundle(act.slice(10));
+    return;
+  }
+  if (act.indexOf('prism-save:') === 0) {
+    var txIdP = act.slice(11), txValP = '', foundTxP = false;
+    try {
+      var rNodeP = DOC && DOC.getElementById(ROOT_ID);
+      var txNodes = rNodeP && rNodeP.querySelectorAll ? rNodeP.querySelectorAll('[data-ar6-prism-tx]') : [];
+      for (var txi = 0; txi < txNodes.length; txi++) {
+        if (txNodes[txi].getAttribute && txNodes[txi].getAttribute('data-ar6-prism-tx') === txIdP) {
+          txValP = String(txNodes[txi].value || '');
+          foundTxP = true;
+          break;
+        }
+      }
+    } catch (eTxR) {}
+    if (!foundTxP && typeof PRISM_DRAFTS === 'object' && PRISM_DRAFTS && Object.prototype.hasOwnProperty.call(PRISM_DRAFTS, txIdP)) {
+      txValP = String(PRISM_DRAFTS[txIdP] || '');
+    }
+    if (typeof prismSaveCustomText === 'function') prismSaveCustomText(txIdP, txValP);
     return;
   }
 
@@ -1325,6 +1385,9 @@ function onPanelClick(e) {
       return;
     }
     try { menuApply(gk, gidx); } catch (eGen) { criticalWarn('档位菜单', eGen); }
+    if ((gk === 'know' || gk === 'charm') && typeof prismSyncSynergyGuard === 'function') {
+      try { prismSyncSynergyGuard(); } catch (eSg0) {}
+    }
     saveCfg(); UI_SIG = {}; render();
     var spGm = MENU_SPEC[gk];
     if (spGm && spGm.items && spGm.items[gidx]) {
@@ -1454,7 +1517,9 @@ function onPanelClick(e) {
   /* v0.76 反 OOC：总闸 + 四子项。前缀都带 emoji 和空格，与叙述层不撞 */
   if (act.indexOf('🎭 反OOC:') === 0) {
     var oocNow = String(cfg.ooc || 'off') === 'on' ? 'off' : 'on';
-    cfg.ooc = oocNow; saveCfg(); render();
+    cfg.ooc = oocNow;
+    try { if (oocNow === 'on' && typeof prismSyncSynergyGuard === 'function') prismSyncSynergyGuard(); } catch (eSgO) {}
+    saveCfg(); render();
     banner('🎭 反 OOC：' + (oocNow === 'on' ? '开' : '关'), oocNow === 'on' ? 'ok' : 'gray');
     if (oocNow === 'on') {
       var askAll = [], sigAll = null;
@@ -1644,6 +1709,16 @@ function onPanelClick(e) {
 function onPanelInput(e) {
   var t = e && e.target;
   if (!t || !t.getAttribute) return;
+  if (t.getAttribute('data-ar6-prism-search') === '1' || t.getAttribute('data-ar6') === 'prism-search') {
+    if (typeof PRISM_SEARCH !== 'undefined') PRISM_SEARCH = String(t.value || '');
+    if (typeof prismRefreshListInPlace === 'function') prismRefreshListInPlace();
+    return;
+  }
+  var pTxId = t.getAttribute('data-ar6-prism-tx');
+  if (pTxId) {
+    if (typeof PRISM_DRAFTS === 'object' && PRISM_DRAFTS) PRISM_DRAFTS[pTxId] = String(t.value || '');
+    return;
+  }
   var k = t.getAttribute('data-ar6');
   if (!k) return;
   if (k === 'scope') { cfg.scopeList = String(t.value || ''); try { saveCfg(); } catch (e4) {} }

@@ -456,16 +456,27 @@ function narrRecentChatUserTexts() {
   return out;
 }
 
+/* 光域预设 [净化10] 玩家输入边界外壳：<lk_user_turn>...</lk_user_turn>（真玩家楼层，绝非预设控制块） */
+var NARR_USER_TURN_RE = /^\s*<lk_user_turn(?:\s[^>]*)?>([\s\S]*?)<\/lk_user_turn>\s*$/i;
+function narrStripUserTurnShell(s) {
+  var t = String(s == null ? '' : s).trim();
+  var m = NARR_USER_TURN_RE.exec(t);
+  return m ? String(m[1] || '').trim() : t;
+}
+
 function narrMatchesRecentChat(text, chatUsers) {
   if (!chatUsers || !chatUsers.length) return false;
   var t = String(text || '').trim();
   if (!t) return false;
+  var inner = narrStripUserTurnShell(t);
   for (var i = 0; i < chatUsers.length; i++) {
     var cu = chatUsers[i];
-    if (t === cu) return true;
+    if (t === cu || (inner && inner === cu)) return true;
     /* 兼容酒馆前缀 "UserName: 正文" 或轻微前后裁剪 */
     if (cu.length >= 6 && t.indexOf(cu) >= 0 && t.length <= cu.length + 60) return true;
     if (t.length >= 6 && cu.indexOf(t) >= 0 && cu.length <= t.length + 60) return true;
+    if (inner && cu.length >= 6 && inner.indexOf(cu) >= 0 && inner.length <= cu.length + 60) return true;
+    if (inner && inner.length >= 6 && cu.indexOf(inner) >= 0 && cu.length <= inner.length + 60) return true;
   }
   return false;
 }
@@ -482,20 +493,23 @@ function narrIsPresetControlUserMsg(cleanText, msg, chatUsers) {
   }
   var t = String(cleanText || '').trim();
   if (!t) return true;
+  var isUserTurnWrapped = NARR_USER_TURN_RE.test(t);
+  var checkTxt = isUserTurnWrapped ? narrStripUserTurnShell(t) : t;
+  if (!checkTxt) return true;
   /* 若精准命中酒馆聊天记录里的真实玩家发言，直接放行（绝不误杀） */
-  if (narrMatchesRecentChat(t, chatUsers)) return false;
-  if (NARR_CTRL_HEAD_RE.test(t)) return true;
-  if (NARR_CTRL_BODY_RE.test(t)) return true;
+  if (narrMatchesRecentChat(t, chatUsers) || (isUserTurnWrapped && narrMatchesRecentChat(checkTxt, chatUsers))) return false;
+  if (!isUserTurnWrapped && NARR_CTRL_HEAD_RE.test(checkTxt)) return true;
+  if (NARR_CTRL_BODY_RE.test(checkTxt)) return true;
   /* 孤立闭合标签或末尾挂有未闭合起笔开标签的预设预填桥接尾块 */
-  if (/^<\/[a-zA-Z0-9_\u4e00-\u9fa5~-]+>\s*$/.test(t)) return true;
-  var tailOpen = NARR_UNCLOSED_TAIL_TAG_RE.exec(t);
+  if (!isUserTurnWrapped && /^<\/[a-zA-Z0-9_\u4e00-\u9fa5~-]+>\s*$/.test(checkTxt)) return true;
+  var tailOpen = isUserTurnWrapped ? null : NARR_UNCLOSED_TAIL_TAG_RE.exec(checkTxt);
   if (tailOpen) {
     var tagNm = String(tailOpen[1] || '').toLowerCase();
-    if (tagNm !== 'user' && tagNm !== 'char' && t.toLowerCase().indexOf('</' + tagNm + '>') < 0) return true;
+    if (tagNm !== 'user' && tagNm !== 'char' && checkTxt.toLowerCase().indexOf('</' + tagNm + '>') < 0) return true;
   }
   /* 超长结构化 Markdown 规则清单（预设 system-in-user 典型形态） */
-  if (t.length > 1400) {
-    var ruleHits = t.match(/^(?:#{1,4}\s+|[-*]\s+.*(?:严禁|禁止|必须|规则|视角|格式|原则|准则))/gm);
+  if (checkTxt.length > 1400) {
+    var ruleHits = checkTxt.match(/^(?:#{1,4}\s+|[-*]\s+.*(?:严禁|禁止|必须|规则|视角|格式|原则|准则))/gm);
     if (ruleHits && ruleHits.length >= 4) return true;
   }
   return false;
@@ -605,8 +619,20 @@ function narrApply(body) {
   var wantCharm = narrPick(cfg && cfg.charm) !== 'off';
   var skipKnow = false, skipCharm = false;
   if (!forceMode) {
-    if (wantKnow && NARR_PRESET_KNOW_RE.test(presetTextAll)) { skipKnow = true; NARR_RT.yieldKnow = true; }
-    if (wantCharm && NARR_PRESET_CHARM_RE.test(presetTextAll)) { skipCharm = true; NARR_RT.yieldCharm = true; }
+    /* 双生协议防死锁：《光域·镜界》的独立防线 base_standalone_guard 已让位给卢克时，不被其思维链清单词误判为需要礼让 */
+    var prismHandedToLuke = false;
+    try {
+      if (typeof isPrismPresetActive === 'function' && isPrismPresetActive()) {
+        var pSnap = (typeof prismCollectSnapshot === 'function') ? prismCollectSnapshot() : null;
+        if (!pSnap || !pSnap.enabledMap || !pSnap.enabledMap.base_standalone_guard) {
+          prismHandedToLuke = true;
+        }
+      }
+    } catch (ePrY) {}
+    if (!prismHandedToLuke) {
+      if (wantKnow && NARR_PRESET_KNOW_RE.test(presetTextAll)) { skipKnow = true; NARR_RT.yieldKnow = true; }
+      if (wantCharm && NARR_PRESET_CHARM_RE.test(presetTextAll)) { skipCharm = true; NARR_RT.yieldCharm = true; }
+    }
   }
 
   var block = narrBody({ skipKnow: skipKnow, skipCharm: skipCharm, skipLethal: skipCharm });

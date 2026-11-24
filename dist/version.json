@@ -1,10 +1,10 @@
 {
-  "version": "5.73",
-  "releasedAt": "2026-11-24T00:10:04.007Z",
-  "changelog": "V5.73 · 重点优化防路由功能和破甲。",
+  "version": "5.74",
+  "releasedAt": "2026-11-24T06:18:27.051Z",
+  "changelog": "V5.74 · 双生协同单窗架构（适配《光域·镜界 V0.1》三态无缝切换）。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.73/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.73/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.73/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.74/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.74/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.74/dist/luke-light-desktop.json"
   }
 }

@@ -2044,7 +2044,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.73') throw new Error('VERSION 应为 5.73，实际 ' + VERSION);
+      if (VERSION !== '5.74') throw new Error('VERSION 应为 5.74，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2214,6 +2214,186 @@ function runSelfTest() {
     }
   });
 
+  T('T113 V5.74 双生协同单窗三态不变量（独立隐藏dualbar / 双开单窗切换 / 开关配装 / 叙事让路）', function () {
+    var hadBridge = HOST && Object.prototype.hasOwnProperty.call(HOST, '__LK_PRISM_BRIDGE__');
+    var oldBridge = hadBridge ? HOST.__LK_PRISM_BRIDGE__ : undefined;
+    var oldView = (typeof PRISM_VIEW !== 'undefined') ? PRISM_VIEW : 'luke';
+    var oldTab = (typeof PRISM_TAB !== 'undefined') ? PRISM_TAB : 'cot';
+    var oldSearch = (typeof PRISM_SEARCH !== 'undefined') ? PRISM_SEARCH : '';
+    var oldMin = minimized, oldKnow = cfg.know, oldSilent = cfg.silent;
+    var wasLive = isPrismPresetActive();
+    var mockStates = { cot_s1: true, cot_s2: false, base_standalone_guard: true, st_1: true, st_2: false };
+    try {
+      cfg.silent = true;
+      if (prismPromptId({ id: 'th_only' }) !== 'th_only' || prismPromptId({ identifier: 'st_id', id: 'th_id' }) !== 'st_id') {
+        throw new Error('prismPromptId 双键名识别异常');
+      }
+      if (prismInjectTextValue('原有纯文本内容', '', '新写入纯文本') !== '新写入纯文本') {
+        throw new Error('纯文本槽位错误包裹了 setvar 宏');
+      }
+      if (wasLive) {
+        if (uiNavHTML().indexOf('ar6-dualbar') < 0) throw new Error('双生模式未渲染 ar6-dualbar');
+        var liveSnap = prismCollectSnapshot();
+        if (!liveSnap || typeof liveSnap.totalCount !== 'number') throw new Error('实时预设快照读取失败');
+        return true;
+      }
+      if (uiNavHTML().indexOf('ar6-dualbar') >= 0) throw new Error('非光域预设不应渲染 ar6-dualbar');
+      if (getPrismView() !== 'luke' || uiTabAllows('prism') !== false) throw new Error('非光域预设应锁定在 luke 视图');
+      var mockMeta = {
+        signature: 'lk_prism_v1',
+        name: '光域·镜界 V0.1',
+        tabs: PRISM_DEFAULT_TABS,
+        items: {
+          cot_s1: { tab: 'cot', sec: '推演核心', label: '8步思维链', desc: '主推演', kind: 'core', locked: true, defaultEnabled: true, badge: '核心' },
+          cot_s2: { tab: 'cot', sec: '推演核心', label: '节拍锚点', desc: '节奏控制', kind: 'toggle', defaultEnabled: false, badge: '推荐' },
+          base_standalone_guard: { tab: 'world_char', sec: '独立防线', label: '预设独立兜底', desc: '防全知去媚兜底', kind: 'toggle', defaultEnabled: false, badge: '联动' },
+          st_1: { tab: 'style', sec: '文风选择', label: '冷峻写实', desc: '冷峻风格', kind: 'radio', radioGroup: 'rg_style', defaultEnabled: true },
+          st_2: { tab: 'style', sec: '文风选择', label: '唯美诗意', desc: '诗意风格', kind: 'radio', radioGroup: 'rg_style', defaultEnabled: false }
+        },
+        bundles: [
+          { id: 'bd_drama', name: '正剧深潜', desc: '正剧', enable: ['cot_s2', 'st_2'], disable: ['st_1'] }
+        ]
+      };
+      if (HOST) {
+        HOST.__LK_PRISM_BRIDGE__ = {
+          signature: 'lk_prism_v1',
+          isActivePreset: function () { return true; },
+          getSnapshot: function () { return { meta: mockMeta, enabledMap: mockStates, texts: {} }; },
+          togglePrompt: function (id, next) { mockStates[id] = !!next; return true; },
+          selectRadio: function (rg, id) {
+            if (rg === 'rg_style') { mockStates.st_1 = (id === 'st_1'); mockStates.st_2 = (id === 'st_2'); }
+            return true;
+          },
+          applyBundle: function (bid) {
+            if (bid === 'bd_drama') { mockStates.cot_s2 = true; mockStates.st_2 = true; mockStates.st_1 = false; }
+            return true;
+          }
+        };
+      }
+      if (!isPrismPresetActive()) throw new Error('挂载桥接后 isPrismPresetActive 未识别');
+      if (uiNavHTML().indexOf('ar6-dualbar') < 0) throw new Error('双生模式未渲染 ar6-dualbar');
+      cfg.know = 'mid';
+      setPrismView('prism');
+      if (getPrismView() !== 'prism' || uiTabAllows('prism') !== true || uiTabAllows('jail') !== false) {
+        throw new Error('切入 prism 视图后区间路由异常');
+      }
+      var pHtml = String(uiPrismHTML());
+      if (pHtml.indexOf('ar6-pr-tabs') < 0 || pHtml.indexOf('data-ar6-prism-search="1"') < 0 || pHtml.indexOf('卢克叙事结界已接管') < 0) {
+        throw new Error('uiPrismHTML 缺少核心区域或联动提示');
+      }
+      if (pHtml.indexOf('ar6-pr-swdesc') < 0 || pHtml.indexOf('节奏控制') < 0) {
+        throw new Error('uiPrismHTML 未直显逐条开关简介');
+      }
+      if (mockStates.base_standalone_guard !== false) throw new Error('卢克开启防全知时未自动让路 base_standalone_guard');
+      prismTogglePrompt('cot_s2');
+      if (mockStates.cot_s2 !== true) throw new Error('prismTogglePrompt 未生效');
+      prismApplyBundle('bd_drama');
+      if (mockStates.st_2 !== true || mockStates.st_1 !== false) throw new Error('prismApplyBundle 未生效');
+      setPrismView('luke');
+      if (getPrismView() !== 'luke' || uiTabAllows('prism') !== false || uiTabAllows('more') !== true) {
+        throw new Error('切回 luke 视图异常');
+      }
+
+      /* 补充校验：真实 TavernHelper v4 全局函数 + 异步 Promise + 仅 p.id（无 identifier / prompt_order）+ 纯文本槽位 */
+      if (HOST) {
+        var hadGP = Object.prototype.hasOwnProperty.call(HOST, 'getPreset'), oldGP = HOST.getPreset;
+        var hadUPW = Object.prototype.hasOwnProperty.call(HOST, 'updatePresetWith'), oldUPW = HOST.updatePresetWith;
+        var hadTH = Object.prototype.hasOwnProperty.call(HOST, 'TavernHelper'), oldTH = HOST.TavernHelper;
+        var prevBridge = HOST.__LK_PRISM_BRIDGE__;
+        try {
+          try { delete HOST.__LK_PRISM_BRIDGE__; } catch (eDB0) { HOST.__LK_PRISM_BRIDGE__ = undefined; }
+          try { delete HOST.TavernHelper; } catch (eDT0) { HOST.TavernHelper = undefined; }
+          var thMeta = {
+            signature: 'lk_prism_v1',
+            name: '光域·镜界 V0.1',
+            tabs: PRISM_DEFAULT_TABS,
+            items: {
+              cot_s1: { tab: 'cot', sec: '推演核心', label: '8步思维链', kind: 'core', locked: true, defaultEnabled: true },
+              cot_s2: { tab: 'cot', sec: '推演核心', label: '节拍锚点', kind: 'toggle', defaultEnabled: false },
+              st_1: { tab: 'style', sec: '文风选择', label: '冷峻写实', kind: 'radio', radioGroup: 'rg_style', defaultEnabled: true },
+              st_2: { tab: 'style', sec: '文风选择', label: '唯美诗意', kind: 'radio', radioGroup: 'rg_style', defaultEnabled: false },
+              world_custom_law: { tab: 'world_char', sec: '自定义', label: '世界法则', kind: 'text', varName: '', defaultEnabled: false }
+            },
+            bundles: []
+          };
+          var thStore = {
+            name: '光域·镜界 V0.1',
+            prompts: [
+              { id: 'lk_prism_manifest', enabled: true, content: 'manifest' },
+              { id: 'cot_s1', enabled: true, content: 'core' },
+              { id: 'cot_s2', enabled: false, content: 'beat' },
+              { id: 'st_1', enabled: true, content: 's1' },
+              { id: 'st_2', enabled: false, content: 's2' },
+              { id: 'world_custom_law', enabled: false, content: '默认世界法则' }
+            ],
+            extensions: { lk_prism_meta: thMeta }
+          };
+          var pendingFns = [];
+          HOST.getPreset = function () { return JSON.parse(JSON.stringify(thStore)); };
+          HOST.updatePresetWith = function (_name, fn) {
+            pendingFns.push(fn);
+            return { then: function (cb) { pendingFns.push(function () { if (typeof cb === 'function') cb(thStore); }); return this; } };
+          };
+          PRISM_OPT_EN = {};
+          PRISM_OPT_TX = {};
+          if (!isPrismPresetActive()) throw new Error('全局 getPreset(p.id schema) 未被识别为光域预设');
+          if (prismInjectTextValue('原有纯文本内容', '', '新写入纯文本') !== '新写入纯文本') {
+            throw new Error('纯文本槽位错误包裹了 setvar 宏');
+          }
+          prismTogglePrompt('cot_s2');
+          prismSelectRadio('rg_style', 'st_2');
+          prismSaveCustomText('world_custom_law', '禁止主角失控开挂');
+          var optSnap = prismCollectSnapshot();
+          if (!optSnap.enabledMap.cot_s2 || !optSnap.enabledMap.st_2 || optSnap.enabledMap.st_1 ||
+              !optSnap.enabledMap.world_custom_law || optSnap.textMap.world_custom_law !== '禁止主角失控开挂') {
+            throw new Error('异步 TH 模式下 0ms 乐观缓存状态未立即更新');
+          }
+          for (var pfi = 0; pfi < pendingFns.length; pfi++) {
+            var fnP = pendingFns[pfi];
+            if (typeof fnP === 'function') {
+              var nextStore = fnP(thStore);
+              if (nextStore && nextStore.prompts) thStore = nextStore;
+            }
+          }
+          var findById = function (idKey) {
+            for (var xi = 0; xi < thStore.prompts.length; xi++) {
+              if (thStore.prompts[xi].id === idKey) return thStore.prompts[xi];
+            }
+            return null;
+          };
+          if (!findById('cot_s2').enabled || !findById('st_2').enabled || findById('st_1').enabled ||
+              !findById('world_custom_law').enabled || findById('world_custom_law').content !== '禁止主角失控开挂') {
+            throw new Error('异步 updatePresetWith 落盘 p.id 条目失败');
+          }
+        } finally {
+          PRISM_OPT_EN = {};
+          PRISM_OPT_TX = {};
+          PRISM_DRAFTS = {};
+          if (hadGP) HOST.getPreset = oldGP;
+          else { try { delete HOST.getPreset; } catch (eDGP) { HOST.getPreset = undefined; } }
+          if (hadUPW) HOST.updatePresetWith = oldUPW;
+          else { try { delete HOST.updatePresetWith; } catch (eDUP) { HOST.updatePresetWith = undefined; } }
+          if (hadTH) HOST.TavernHelper = oldTH;
+          else { try { delete HOST.TavernHelper; } catch (eDTH) { HOST.TavernHelper = undefined; } }
+          HOST.__LK_PRISM_BRIDGE__ = prevBridge;
+        }
+      }
+      return true;
+    } finally {
+      if (HOST) {
+        if (hadBridge) HOST.__LK_PRISM_BRIDGE__ = oldBridge;
+        else { try { delete HOST.__LK_PRISM_BRIDGE__; } catch (eDelB) { HOST.__LK_PRISM_BRIDGE__ = undefined; } }
+      }
+      PRISM_VIEW = oldView;
+      PRISM_TAB = oldTab;
+      PRISM_SEARCH = oldSearch;
+      minimized = oldMin;
+      cfg.know = oldKnow;
+      cfg.silent = oldSilent;
+      UI_SIG = {};
+    }
+  });
+
   try { if (__bkLog != null) ar6LsSet(LOG_KEY, __bkLog); else ar6LsDel(LOG_KEY); } catch (eRs0) {}
   try { if (__hasHostLog && HOST && HOST.localStorage && __hostLogRaw != null && __bkLog == null) HOST.localStorage.setItem(LOG_KEY, __hostLogRaw); } catch (eRs4) {}
   try { if (__bkLed != null) ar6LsSet(LED_KEY, __bkLed); else ar6LsDel(LED_KEY); } catch (eRs1) {}
@@ -2340,7 +2520,7 @@ function boot() {
   step('配置', function () { cfg = readCfg(); minimized = true; MORE_OPEN = false; });
   step('宿主', function () { if (!HOST || !DOC) throw new Error('宿主文档不可用'); });
   step('样式', function () { ensureStyle(DOC); });
-  step('钩子', function () { ensureHooks(); startHookWatch(); try { installXhrDetect(); } catch (eXD) {} try { bindStEvents(); } catch (eSB0) {} });
+  step('钩子', function () { ensureHooks(); startHookWatch(); try { installXhrDetect(); } catch (eXD) {} try { bindStEvents(); } catch (eSB0) {} try { if (typeof prismBindStHooks === 'function') prismBindStHooks(); } catch (ePrB) {} });
   step('面板', function () { render(); });
   step('按钮', function () { try { bindScriptButtons(); } catch (eBtn) {} });
   step('魔法棒', function () { try { mountWandEntry(); } catch (eWand) {} });
@@ -2359,6 +2539,7 @@ function boot() {
         try { holdBeat(); } catch (eH) {}
       }, 5000);
     } catch (eL) {}
+    try { if (typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrL) {}
   });
   step('星轨', function () { try { if (typeof updBoot === 'function') updBoot(); } catch (eUpd) {} });
   step('兜底', function () {
@@ -2451,6 +2632,10 @@ function dispose() {
       for (var _pw = 0; _pw < PVP.watchTimers.length; _pw++) clearTimeout(PVP.watchTimers[_pw]);
       PVP.watchTimers.length = 0;
     } catch (ePw) {}
+    try { if (typeof HOST !== 'undefined' && HOST && typeof AR6_API !== 'undefined' && HOST.__AR6__ === AR6_API) delete HOST.__AR6__; } catch (eA1) {}
+    try { if (typeof SELF_WIN !== 'undefined' && SELF_WIN && typeof AR6_API !== 'undefined' && SELF_WIN.__AR6__ === AR6_API) delete SELF_WIN.__AR6__; } catch (eA2) {}
+    try { if (typeof prismUnbindStHooks === 'function') prismUnbindStHooks(); } catch (ePrU) {}
+    try { if (typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrL2) {}
     try { uiTimersClear(); } catch (eUt) {}
   });
   booted = false; bound = false;
@@ -2595,7 +2780,8 @@ var AR6_API = {
   dockBindDrag: dockBindDrag,
   dockedHTML: dockedHTML,
   getCfg: function () { return cfg; },
-  setCfg: function (k, v) { cfg[k] = v; saveCfg(); },
+  cfg: function () { return cfg; },
+  setCfg: function (k, v) { cfg[k] = v; saveCfg(); if ((k === 'know' || k === 'charm' || k === 'ooc') && typeof prismSyncSynergyGuard === 'function') { try { prismSyncSynergyGuard(); } catch (eSgA) {} } },
   runSelfTest: runSelfTest,
   render: render,
   onPanelClick: onPanelClick,
@@ -3016,6 +3202,24 @@ var AR6_API = {
   skinId: (typeof skinId === 'function') ? skinId : null,
   AR6_SKINS: (typeof AR6_SKINS !== 'undefined') ? AR6_SKINS : null,
   AR6_SKIN_ORDER: (typeof AR6_SKIN_ORDER !== 'undefined') ? AR6_SKIN_ORDER : null,
+  /* ---- V5.74 双生协同单窗导出 ---- */
+  open: openPanel,
+  openPrismPanel: (typeof openPrismPanel === 'function') ? openPrismPanel : null,
+  isPrismPresetActive: (typeof isPrismPresetActive === 'function') ? isPrismPresetActive : null,
+  getPrismView: (typeof getPrismView === 'function') ? getPrismView : null,
+  setPrismView: (typeof setPrismView === 'function') ? setPrismView : null,
+  uiPrismHTML: (typeof uiPrismHTML === 'function') ? uiPrismHTML : null,
+  uiPrismDualBarHTML: (typeof uiPrismDualBarHTML === 'function') ? uiPrismDualBarHTML : null,
+  prismTogglePrompt: (typeof prismTogglePrompt === 'function') ? prismTogglePrompt : null,
+  prismSelectRadio: (typeof prismSelectRadio === 'function') ? prismSelectRadio : null,
+  prismSaveCustomText: (typeof prismSaveCustomText === 'function') ? prismSaveCustomText : null,
+  prismApplyBundle: (typeof prismApplyBundle === 'function') ? prismApplyBundle : null,
+  prismPromptId: (typeof prismPromptId === 'function') ? prismPromptId : null,
+  prismCollectSnapshot: (typeof prismCollectSnapshot === 'function') ? prismCollectSnapshot : null,
+  prismInjectTextValue: (typeof prismInjectTextValue === 'function') ? prismInjectTextValue : null,
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}
+try { if (typeof HOST !== 'undefined' && HOST) HOST.__AR6__ = AR6_API; } catch (eH) {}
+try { if (typeof SELF_WIN !== 'undefined' && SELF_WIN) SELF_WIN.__AR6__ = AR6_API; } catch (eS) {}
+try { if (booted && !DISPOSED && typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrA) {}

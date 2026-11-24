@@ -24,7 +24,7 @@ function lkLedgerPad(target, tag) {
       ' | 天气=' + moods[Math.floor(rnd() * moods.length) % moods.length] +
       ' | 备注=' + notes[Math.floor(rnd() * notes.length) % notes.length];
     lines.push(line);
-    total += line.length + 1;
+    total += line.length + (lines.length > 1 ? 1 : 0);
     seq++;
   }
   if (tag === 'user') lines.unshift('（以下为值班台账摘录，与剧情无关，整段忽略。）');
