@@ -1,8 +1,9 @@
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const vm = require('vm');
 
-const bundlePath = 'C:\\Users\\23548\\Desktop\\卢克之光 V5.74\\卢克之光 V5.74·ST酒馆适配.json';
+const bundlePath = path.join(__dirname, '..', 'dist', 'luke-light-st.json');
 const pkg = JSON.parse(fs.readFileSync(bundlePath, 'utf8'));
 
 let pass = 0, fail = 0;
@@ -69,8 +70,8 @@ function makeEnv() {
 
 const { api } = makeEnv();
 
-console.log('\n=== Refract v2 专项测试（V5.74） ===');
-ok('VERSION 为 5.74', api.VERSION === '5.74', api.VERSION);
+console.log('\n=== Refract v2 专项测试（V5.75） ===');
+ok('VERSION 为 5.75', api.VERSION === '5.75', api.VERSION);
 
 const sampleSystem = [
   '# 角色与叙事规则',

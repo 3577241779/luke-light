@@ -1069,8 +1069,8 @@ async function runAsyncPipelineChecks(win, api, raw, fileLabel) {
     api.setCfg('pvp', savedPvp);
     api.setCfg('onlyGemini', savedOnlyGem);
 
-    // (d) V5.4 / V5.5 / V5.6 / V5.61 / V5.65 / V5.70 / V5.71 / V5.72 / V5.73 / V5.74 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
-    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70' || api.VERSION === '5.71' || api.VERSION === '5.72' || api.VERSION === '5.73' || api.VERSION === '5.74') {
+    // (d) V5.4 ~ V5.75 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
+    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70' || api.VERSION === '5.71' || api.VERSION === '5.72' || api.VERSION === '5.73' || api.VERSION === '5.74' || api.VERSION === '5.75') {
       api.openPanel();
       api.setUITab('jail');
       api.render();

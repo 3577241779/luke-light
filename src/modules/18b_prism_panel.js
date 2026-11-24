@@ -16,6 +16,109 @@ var PRISM_SYNC_GUARD = false;
 var PRISM_EVT_BOUND = false;
 var PRISM_EVT_REFS = [];
 
+/* ---- V5.76 三生合体：同生态兄弟面板槽位注册中心 (lightlens 等) ---- */
+var AR6_SIBLINGS = {};
+var AR6_SIB_ORDER = [];
+var AR6_SIB_MOUNTED = null; /* { id: string, el: HTMLElement, spec: object } */
+
+function siblingValid(spec) {
+  return !!(spec && typeof spec === 'object' && spec.id && typeof spec.mount === 'function');
+}
+
+function listSiblings() {
+  var out = [];
+  for (var i = 0; i < AR6_SIB_ORDER.length; i++) {
+    var s = AR6_SIBLINGS[AR6_SIB_ORDER[i]];
+    if (s) out.push(s);
+  }
+  return out;
+}
+
+function hasAnySibling() {
+  return AR6_SIB_ORDER.length > 0;
+}
+
+function getSiblingById(id) {
+  return (id && AR6_SIBLINGS[String(id)]) ? AR6_SIBLINGS[String(id)] : null;
+}
+
+function unmountActiveSibling() {
+  if (!AR6_SIB_MOUNTED) return;
+  var cur = AR6_SIB_MOUNTED;
+  AR6_SIB_MOUNTED = null;
+  try {
+    if (cur.spec && typeof cur.spec.unmount === 'function') {
+      cur.spec.unmount(cur.el);
+    } else if (cur.el) {
+      cur.el.innerHTML = '';
+    }
+  } catch (eU) {}
+}
+
+function registerSibling(spec) {
+  if (!siblingValid(spec)) return function () {};
+  var id = String(spec.id);
+  var isNew = !AR6_SIBLINGS[id];
+  AR6_SIBLINGS[id] = spec;
+  if (isNew) AR6_SIB_ORDER.push(id);
+  try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS) {}
+  try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eR) {}
+  return function unregisterSibling() {
+    if (AR6_SIBLINGS[id] !== spec) return;
+    if (AR6_SIB_MOUNTED && AR6_SIB_MOUNTED.id === id) unmountActiveSibling();
+    delete AR6_SIBLINGS[id];
+    var nextOrd = [];
+    for (var i = 0; i < AR6_SIB_ORDER.length; i++) {
+      if (AR6_SIB_ORDER[i] !== id) nextOrd.push(AR6_SIB_ORDER[i]);
+    }
+    AR6_SIB_ORDER = nextOrd;
+    if (PRISM_VIEW === 'sibling:' + id) PRISM_VIEW = 'luke';
+    try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS2) {}
+    try { if (typeof render === 'function') render(); } catch (eR2) {}
+  };
+}
+
+function syncGlobalSiblings() {
+  var ws = prismWins();
+  for (var i = 0; i < ws.length; i++) {
+    try {
+      var arr = ws[i] && ws[i].__LK_SIBLINGS__;
+      if (!Array.isArray(arr)) continue;
+      for (var j = 0; j < arr.length; j++) {
+        if (siblingValid(arr[j])) {
+          var id = String(arr[j].id);
+          if (!AR6_SIBLINGS[id]) {
+            AR6_SIBLINGS[id] = arr[j];
+            AR6_SIB_ORDER.push(id);
+          } else {
+            AR6_SIBLINGS[id] = arr[j];
+          }
+        }
+      }
+    } catch (eG) {}
+  }
+}
+
+function openSiblingPanel(id) {
+  syncGlobalSiblings();
+  var sib = getSiblingById(id);
+  try { PANEL_OPENED_AT = Date.now(); } catch (e0) {}
+  try { minimized = false; } catch (e1) {}
+  try { MORE_OPEN = false; } catch (e2) {}
+  try {
+    if (typeof cfg === 'object' && cfg) {
+      cfg.docked = false;
+      cfg.min = false;
+      if (typeof saveCfg === 'function') saveCfg();
+    }
+  } catch (e3) {}
+  PRISM_VIEW = sib ? ('sibling:' + sib.id) : 'luke';
+  try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (e4) {}
+  try { if (typeof render === 'function') render(); } catch (e5) {}
+  try { if (typeof syncPill === 'function') syncPill(); } catch (e6) {}
+  return PRISM_VIEW;
+}
+
 function prismSetOptEn(id, val) {
   if (!id) return;
   PRISM_OPT_EN[String(id)] = { v: !!val, exp: Date.now() + PRISM_OPT_TTL };
@@ -212,16 +315,29 @@ function isPrismPresetActive() {
 }
 
 function getPrismView() {
-  if (!isPrismPresetActive()) {
+  syncGlobalSiblings();
+  if (typeof PRISM_VIEW === 'string' && PRISM_VIEW.indexOf('sibling:') === 0) {
+    var sid = PRISM_VIEW.slice(8);
+    if (getSiblingById(sid)) return PRISM_VIEW;
     PRISM_VIEW = 'luke';
     return 'luke';
   }
-  return PRISM_VIEW === 'prism' ? 'prism' : 'luke';
+  if (PRISM_VIEW === 'prism' && isPrismPresetActive()) return 'prism';
+  PRISM_VIEW = 'luke';
+  return 'luke';
 }
 
 function setPrismView(v) {
-  var active = isPrismPresetActive();
-  var next = (v === 'prism' && active) ? 'prism' : 'luke';
+  syncGlobalSiblings();
+  var next = 'luke';
+  if (v === 'prism' && isPrismPresetActive()) {
+    next = 'prism';
+  } else if (typeof v === 'string' && v.indexOf('sibling:') === 0 && getSiblingById(v.slice(8))) {
+    next = v;
+  }
+  if (PRISM_VIEW !== next && AR6_SIB_MOUNTED) {
+    unmountActiveSibling();
+  }
   PRISM_VIEW = next;
   if (next === 'prism') {
     try { prismSyncSynergyGuard(); } catch (eG) {}
@@ -769,7 +885,12 @@ function prismApplyBundle(bundleId) {
 
 function uiPrismSig() {
   try {
-    if (!isPrismPresetActive()) return '0';
+    syncGlobalSiblings();
+    var sibSig = AR6_SIB_ORDER.join(',');
+    var curView = getPrismView();
+    if (!isPrismPresetActive()) {
+      return sibSig ? ('S:' + curView + ':' + sibSig) : '0';
+    }
     var snap = prismCollectSnapshot();
     var bits = [];
     for (var i = 0; i < snap.keys.length; i++) {
@@ -785,7 +906,8 @@ function uiPrismSig() {
     }
     return [
       '1',
-      getPrismView(),
+      curView,
+      sibSig,
       PRISM_TAB,
       PRISM_SEARCH,
       PRISM_SHOW_DESC ? 'D1' : 'D0',
@@ -798,15 +920,33 @@ function uiPrismSig() {
 }
 
 function uiPrismDualBarHTML(pView) {
+  syncGlobalSiblings();
   var view = pView || getPrismView();
-  var cnt = prismCountActive();
-  var lukeOn = (view !== 'prism');
-  var prismOn = (view === 'prism');
-  return '<div class="ar6-dualbar" role="tablist" aria-label="双生单窗模式切换">' +
-    '<button type="button" class="ar6-dualbtn' + (lukeOn ? ' on' : '') + '" data-ar6="wsmode:luke" aria-pressed="' + (lukeOn ? 'true' : 'false') + '">🛡️ 卢克之光面板</button>' +
-    '<button type="button" class="ar6-dualbtn' + (prismOn ? ' on' : '') + '" data-ar6="wsmode:prism" aria-pressed="' + (prismOn ? 'true' : 'false') + '">🪞 光域预设 · <span>' + cnt + '</span> 项</button>' +
-    '<span class="ar6-dual-bdg">⚡ 双生联动</span>' +
-    '</div>';
+  var prismOn = isPrismPresetActive();
+  var sibs = listSiblings();
+  if (!prismOn && sibs.length === 0) return '';
+
+  var lukeOn = (view === 'luke');
+  var h = '<div class="ar6-dualbar" role="tablist" aria-label="光域生态单窗切换">' +
+    '<button type="button" class="ar6-dualbtn' + (lukeOn ? ' on' : '') + '" data-ar6="wsmode:luke" aria-pressed="' + (lukeOn ? 'true' : 'false') + '">🛡️ 卢克之光</button>';
+
+  if (prismOn) {
+    var cnt = prismCountActive();
+    var pOn = (view === 'prism');
+    h += '<button type="button" class="ar6-dualbtn' + (pOn ? ' on' : '') + '" data-ar6="wsmode:prism" aria-pressed="' + (pOn ? 'true' : 'false') + '">🪞 光域预设 · <span>' + cnt + '</span></button>';
+  }
+
+  for (var i = 0; i < sibs.length; i++) {
+    var sb = sibs[i];
+    var sKey = 'sibling:' + sb.id;
+    var sOn = (view === sKey);
+    h += '<button type="button" class="ar6-dualbtn' + (sOn ? ' on' : '') + '" data-ar6="wsmode:' + esc(sKey) + '" aria-pressed="' + (sOn ? 'true' : 'false') + '">' +
+      esc((sb.icon ? sb.icon + ' ' : '') + (sb.label || sb.id)) + '</button>';
+  }
+
+  var badgeTxt = (prismOn && sibs.length > 0) ? '⚡ 三生合体' : '⚡ 双生联动';
+  h += '<span class="ar6-dual-bdg">' + badgeTxt + '</span></div>';
+  return h;
 }
 
 function prismMatchesQuery(q, id, it) {
@@ -1004,7 +1144,7 @@ function uiPrismListHTML(snapArg) {
   }
 
   if (PRISM_TAB === 'bundles') {
-    return '<div class="ar6-ugroup"><div class="ar6-ug-top"><span class="ar6-ug-title">六大场景一键配装方案</span>' +
+    return '<div class="ar6-ugroup"><div class="ar6-ug-top"><span class="ar6-ug-title">' + bundles.length + ' 大场景一键配装方案</span>' +
       '<span class="ar6-badge cyan">0-Token 切换</span></div>' +
       prismRenderBundlesHTML(snap, bundles) +
       '<div class="ar6-ug-sub">点击任意场景卡即刻重排全套开关与文风轨道；仍可在上方各分栏继续微调单一项。</div></div>';
@@ -1061,7 +1201,7 @@ function uiPrismHTML() {
     (lukeOwns
       ? ('<div class="ar6-pr-syn-t">🛡️ 卢克叙事结界已接管防全知/去媚/反OOC<span class="ar6-badge cyan">' + esc(synParts.join(' · ')) + '</span></div>' +
          '<div class="ar6-pr-syn-d">当前预设独立防线（base_standalone_guard）已自动让路静默，避免重复条款互相冲突。</div>')
-      : ('<div class="ar6-pr-syn-t">⚡ 双生协同就绪 · ' + esc(meta.name || '光域·镜界 V0.1') + '<span class="ar6-badge">' + snap.activeCount + '/' + snap.totalCount + ' 项激活</span></div>' +
+      : ('<div class="ar6-pr-syn-t">⚡ 双生协同就绪 · ' + esc(meta.name || '光域·镜界') + '<span class="ar6-badge">' + snap.activeCount + '/' + snap.totalCount + ' 项激活</span></div>' +
          '<div class="ar6-pr-syn-d">卢克之光护航防路由与破甲续写 · 独立兜底守卫 ' + (guardOn ? '已开启' : '待机（按需在「角色世界」启用）') + '。</div>')) +
     '</div>';
 
@@ -1118,6 +1258,25 @@ function prismEmitLifecycle() {
       var ev = (typeof w.CustomEvent === 'function')
         ? new w.CustomEvent('ar6:lifecycle')
         : { type: 'ar6:lifecycle', bubbles: false, cancelable: false };
+      w.dispatchEvent(ev);
+      var evReady = (typeof w.CustomEvent === 'function')
+        ? new w.CustomEvent('ar6:host-ready')
+        : { type: 'ar6:host-ready', bubbles: false, cancelable: false };
+      w.dispatchEvent(evReady);
+    } catch (e) {}
+  }
+}
+
+function prismEmitSkinChanged(skinName) {
+  var skNow = skinName || ((typeof skinId === 'function') ? skinId() : 'ultra');
+  var ws = prismWins();
+  for (var i = 0; i < ws.length; i++) {
+    try {
+      var w = ws[i];
+      if (!w || typeof w.dispatchEvent !== 'function') continue;
+      var ev = (typeof w.CustomEvent === 'function')
+        ? new w.CustomEvent('ar6:skin-changed', { detail: { skin: skNow } })
+        : { type: 'ar6:skin-changed', detail: { skin: skNow }, bubbles: false, cancelable: false };
       w.dispatchEvent(ev);
     } catch (e) {}
   }
@@ -1411,12 +1570,19 @@ function prismBindStHooks() {
       if (PRISM_SYNC_GUARD) return;
       onPrismPresetSwitch();
     };
+    var sibChgFn = function () {
+      syncGlobalSiblings();
+      try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS0) {}
+      try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eS1) {}
+    };
     var ws = prismWins();
     for (var wi = 0; wi < ws.length; wi++) {
       try {
         if (ws[wi] && typeof ws[wi].addEventListener === 'function') {
           ws[wi].addEventListener('lkp:sync', syncFn);
           PRISM_EVT_REFS.push({ domTarget: ws[wi], name: 'lkp:sync', fn: syncFn });
+          ws[wi].addEventListener('lk:siblings-changed', sibChgFn);
+          PRISM_EVT_REFS.push({ domTarget: ws[wi], name: 'lk:siblings-changed', fn: sibChgFn });
           boundAny = true;
         }
       } catch (eW) {}

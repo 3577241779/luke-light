@@ -466,7 +466,7 @@ function ensureStyle(d) {
     var legacy = d.querySelectorAll('style#ar6-style82,style#ar6-gold-style,style#ar6-temple-style-v2');
     for (var li = 0; li < legacy.length; li++) if (legacy[li].parentNode) legacy[li].parentNode.removeChild(legacy[li]);
   } catch (eLg) {}
-  [[STYLE_ID, CSS_TEXT], ['ar6-skin-style', (typeof SKIN_CSS_TEXT === 'string') ? SKIN_CSS_TEXT : ''], ['ar6-logwin-style', LOGW_CSS], ['ar6-dock-style', AR6_DOCK_CSS]].forEach(function (pair) {
+  [[STYLE_ID, CSS_TEXT], ['ar6-skin-style', (typeof SKIN_CSS_TEXT === 'string') ? SKIN_CSS_TEXT : ''], ['ar6-skinfx-style', (typeof SKIN_FX_CSS_TEXT === 'string') ? SKIN_FX_CSS_TEXT : ''], ['ar6-logwin-style', LOGW_CSS], ['ar6-dock-style', AR6_DOCK_CSS]].forEach(function (pair) {
     var nodes = d.querySelectorAll('style#' + pair[0]), node = nodes[0];
     for (var i = 1; i < nodes.length; i++) if (nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
     if (!node) { node = d.createElement('style'); node.id = pair[0]; d.head.appendChild(node); }
@@ -675,6 +675,7 @@ function bindOutsideDismiss() {
       if (t && t.closest && t.closest('#ar6-logwin')) return;
       if (t && t.closest && t.closest('#ar6-pvdbg')) return;
       if (t && t.closest && t.closest('#ar6-help')) return;
+      if (t && t.closest && t.closest('[data-lk-sibling-modal="1"]')) return;
       /* 点击 #ar6-card 内部绝不误关主面板；点遮罩层本身关闭 #ar6-card */
       if (t && t.closest && t.closest('#ar6-card')) {
         if (t.id === 'ar6-card') { closeCard(); ar6ArmSynthShield(); }
@@ -725,6 +726,7 @@ function bindOutsideDismiss() {
       /* Esc 优先关 #ar6-card（诊断报告/仪式弹窗），不误关主面板 */
       if ((CARD && CARD.open) || DOC.getElementById('ar6-card')) { closeCard(); return; }
       if (DOC.getElementById('ar6-help')) { closeHelp(); return; }
+      if (DOC.querySelector && DOC.querySelector('[data-lk-sibling-modal="1"]')) return;
       if (PVPD && PVPD.open) { closePvpDlg(); return; }
       if (LOGW.open && !(CARD && CARD.open)) { closeLogWin(false); return; }
       if (minimized) return;
@@ -966,6 +968,11 @@ function triggerAwakenFx(tier) {
       if (HOST && HOST.matchMedia && HOST.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     } catch (eRM) {}
     clearAwakenFx();
+
+    var curSk = (typeof skinId === 'function') ? skinId() : 'ultra';
+    if (curSk !== 'ultra' && typeof triggerSkinAwakenFx === 'function') {
+      return triggerSkinAwakenFx(curSk, k);
+    }
 
     var html = '';
     if (k === 'noa') {

@@ -1838,11 +1838,20 @@ function toolStatusLine() {
 }
 
 function toolConfirmHTML() {
-  return '<div class="ar6-dlg" style="margin:8px 14px;padding:12px;border-radius:10px;background:rgba(12,45,72,.55);border:1px solid #38bdf8;">' +
-    '<div style="font-weight:700;color:#f0f9ff;margin-bottom:6px">武装货舱 · 独立圣柜信道启用敕令</div>' +
-    '<div style="font-size:12px;color:#cbd5e1;line-height:1.6">通过独立函数圣柜（lk_write）完整封装并交回整段正文，跨越常规流式截断障壁；遇到非兼容源或末尾带助手预填引子时，将自动无缝切回常规能量续航，绝不空回。</div>' +
+  var sk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  var aux = (sk !== 'ultra' && typeof lkSkinAuxData === 'function') ? lkSkinAuxData(sk, 'tool') : null;
+  var bg = (aux && aux.bg) || 'rgba(12,45,72,.55)';
+  var bd = (aux && aux.border) || '#38bdf8';
+  var tCol = (aux && aux.titleCol) || '#f0f9ff';
+  var ttl = (aux && aux.title) || '武装货舱 · 独立圣柜信道启用敕令';
+  var desc = (aux && aux.desc) || '通过独立函数圣柜（lk_write）完整封装并交回整段正文，跨越常规流式截断障壁；遇到非兼容源或末尾带助手预填引子时，将自动无缝切回常规能量续航，绝不空回。';
+  var okTxt = (aux && aux.okTxt) || '【锁定圣柜信道】';
+  var noTxt = (aux && aux.noTxt) || '退回常规信道';
+  return '<div class="ar6-dlg" data-skin="' + esc(sk) + '" style="margin:8px 14px;padding:12px;border-radius:10px;background:' + bg + ';border:1px solid ' + bd + ';box-shadow:0 0 18px ' + bd + ';">' +
+    '<div style="font-weight:700;color:' + tCol + ';margin-bottom:6px">' + esc(ttl) + '</div>' +
+    '<div style="font-size:12px;color:#cbd5e1;line-height:1.6">' + esc(desc) + '</div>' +
     '<div class="ar6-mrow" style="margin-top:8px">' +
-    '<button type="button" class="ar6-b gold on" data-ar6="tool-on"><span>【锁定圣柜信道】</span></button>' +
-    '<button type="button" class="ar6-b" data-ar6="tool-off"><span>退回常规信道</span></button>' +
+    '<button type="button" class="ar6-b gold on" data-ar6="tool-on"><span>' + esc(okTxt) + '</span></button>' +
+    '<button type="button" class="ar6-b" data-ar6="tool-off"><span>' + esc(noTxt) + '</span></button>' +
     '</div></div>';
 }

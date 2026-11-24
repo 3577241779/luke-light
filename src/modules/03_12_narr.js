@@ -456,12 +456,12 @@ function narrRecentChatUserTexts() {
   return out;
 }
 
-/* 光域预设 [净化10] 玩家输入边界外壳：<lk_user_turn>...</lk_user_turn>（真玩家楼层，绝非预设控制块） */
-var NARR_USER_TURN_RE = /^\s*<lk_user_turn(?:\s[^>]*)?>([\s\S]*?)<\/lk_user_turn>\s*$/i;
+/* 光域预设玩家输入边界外壳：<lk_user_turn>（V0.1）与 <lk_current_input>/<lk_history_input>（V0.2）（真玩家楼层，绝非预设控制块） */
+var NARR_USER_TURN_RE = /^\s*<(lk_(?:user_turn|current_input|history_input))(?:\s[^>]*)?>([\s\S]*?)<\/\1>\s*$/i;
 function narrStripUserTurnShell(s) {
   var t = String(s == null ? '' : s).trim();
   var m = NARR_USER_TURN_RE.exec(t);
-  return m ? String(m[1] || '').trim() : t;
+  return m ? String(m[2] || '').trim() : t;
 }
 
 function narrMatchesRecentChat(text, chatUsers) {
@@ -532,7 +532,7 @@ function narrSplitExternalTails(s) {
     for (var p = 0; p < pairs.length; p++) {
       var openMark = pairs[p][0], closeMark = pairs[p][1];
       if (trimmed.length >= closeMark.length && trimmed.slice(-closeMark.length) === closeMark) {
-        var oi = trimmed.lastIndexOf(openMark);
+        var oi = (openMark === '〔AR-OOC') ? trimmed.indexOf(openMark) : trimmed.lastIndexOf(openMark);
         if (oi >= 0) {
           tails.unshift(trimmed.slice(oi));
           core = trimmed.slice(0, oi).replace(/[ \t\r\n]+$/, '');

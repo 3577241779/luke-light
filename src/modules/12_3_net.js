@@ -809,6 +809,19 @@ function finish(ev, meta) {
   try { jailAfterFinish(ev); } catch (eJail) {}
   /* v3.0 自动 PVP：空回兜底——破甲关着时才接管，开着就整段让路（绝不两家一起补） */
   try { pvpAfterFinish(ev); } catch (ePvp) {}
+  /* 三生合体：若本轮非内部请求且已彻底落定（无续写/重试锁与未决补写框），派发 ar6:turn-settled 秒唤同生态文生图 B 轨 */
+  try {
+    var pendingResume = !!((typeof RS !== 'undefined' && RS && ((RS.trunc && RS.trunc.lock) || (RS.pvp && RS.pvp.lock))) ||
+      (typeof JL !== 'undefined' && JL && JL.lock) ||
+      (typeof jailAskPending === 'function' && jailAskPending()));
+    if (!DISPOSED && !ev.internal && !pendingResume && HOST && typeof HOST.dispatchEvent === 'function') {
+      var settledDetail = { code: rec.code, chars: rec.chars, requestId: ev.requestId || '' };
+      var settledEv = (typeof HOST.CustomEvent === 'function')
+        ? new HOST.CustomEvent('ar6:turn-settled', { detail: settledDetail })
+        : { type: 'ar6:turn-settled', detail: settledDetail, bubbles: false, cancelable: false };
+      HOST.dispatchEvent(settledEv);
+    }
+  } catch (eSettle) {}
   /* v7.3：判定为「被换 / 无思考」时自动弹证据卡（1.6s 后，等响应体取样落地） */
   try {
     if (!cfg.silent && cfg.cardAuto && (rec.code === 'diff' || rec.code === 'thin')) {

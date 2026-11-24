@@ -94,7 +94,7 @@ async function runForTarget(fileName) {
   };
   const win = makeSandbox(baseFetch);
   const api = loadBundle(fullPath, win);
-  check(api && api.VERSION === '5.74', '版本号为 5.74');
+  check(api && api.VERSION === '5.75', '版本号为 5.75');
 
   const cfg = api.getCfg();
   check(cfg.contentOnly === 'on', '默认开启「纯净正轨 · 放行外部插件」');
@@ -314,7 +314,7 @@ async function runForTarget(fileName) {
   });
   const wbmApi = loadBundle(fullPath, wbmWin);
   await wbmWin.fetch('http://127.0.0.1:8000/api/ping', { method: 'GET' });
-  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.74', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
+  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.75', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
 
   // 7) 面板落位 A 校验：防卫设置出现「星域协同 · 插件与预设兼容」专卡（双独立开关）+ 形态破甲底栏含「预设适配」状态 + 采样窗星轨路由条
   const jailHtml = api.uiJailHTML();
@@ -338,12 +338,14 @@ async function runForTarget(fileName) {
     }
     updMirrorHit++;
     const ver = (updMirrorHit === 1) ? '5.61' : '5.99'; // 第 1 条镜像返回旧缓存 mismatch，第 2 条返回 5.99
+    const plat = /(?:ST|-st\.json)/i.test(fileName) ? 'st' : (/(?:TT|-tt\.json)/i.test(fileName) ? 'tt' : 'desktop');
     return new Response(JSON.stringify({
       type: 'script', name: '卢克之光 V5.99', info: 'ok',
-      content: "var VERSION = '" + ver + "';\nvar PLATFORM = '" + (fileName.includes('ST') ? 'st' : (fileName.includes('TT') ? 'tt' : 'desktop')) + "';\n",
+      content: "var VERSION = '" + ver + "';\nvar PLATFORM = '" + plat + "';\n",
     }), { status: 200 });
   });
-  const fakeScript = { id: 'lk-1', name: fileName.replace('.json', ''), content: "var VERSION = '5.74';\nvar PLATFORM = '" + (fileName.includes('ST') ? 'st' : (fileName.includes('TT') ? 'tt' : 'desktop')) + "';" };
+  const fakePlat = /(?:ST|-st\.json)/i.test(fileName) ? 'st' : (/(?:TT|-tt\.json)/i.test(fileName) ? 'tt' : 'desktop');
+  const fakeScript = { id: 'lk-1', name: '卢克之光 V5.75 (' + fakePlat + ')', content: "var VERSION = '5.75';\nvar PLATFORM = '" + fakePlat + "';" };
   updWin.TavernHelper = {
     getScriptTrees() { return [fakeScript]; },
     updateScriptTreesWith(fn) { fn([fakeScript]); return true; },

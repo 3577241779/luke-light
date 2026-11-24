@@ -418,9 +418,17 @@ function oocBodyPatch(body) {
   if (!msgs || !msgs.length) return out;
 
   var idx = -1;
-  for (var i = msgs.length - 1; i >= 0; i--) {
-    var m = msgs[i];
-    if (m && String(m.role || '') === 'user') { idx = i; break; }
+  try {
+    if (typeof narrFindRealUserIndices === 'function') {
+      var nfO = narrFindRealUserIndices({ arr: msgs, proto: 'messages' });
+      if (nfO && nfO.real && nfO.real.length) idx = nfO.real[0];
+    }
+  } catch (eNfO) {}
+  if (idx < 0) {
+    for (var i = msgs.length - 1; i >= 0; i--) {
+      var m = msgs[i];
+      if (m && String(m.role || '') === 'user' && !(typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m))) { idx = i; break; }
+    }
   }
   if (idx < 0) return out;
 

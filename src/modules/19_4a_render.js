@@ -9,11 +9,16 @@ var CLEAR_TIMER = 0;
 var UI_SECS = ['head', 'nav', 'sw', 'nums', 'hint', 'jail', 'trunc', 'know', 'charm', 'pvp', 'ooc', 'more', 'prism', 'foot'];
 
 function uiSkeletonHTML() {
-  var prismViewOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive() && (typeof getPrismView === 'function') && getPrismView() === 'prism';
+  var curView = (typeof getPrismView === 'function') ? getPrismView() : 'luke';
+  var prismViewOn = (curView === 'prism');
+  var sibViewOn = (typeof curView === 'string' && curView.indexOf('sibling:') === 0);
   var h = '<div class="ar6-p" data-struct="' + STRUCT_VER + '">';
   h += '<div class="ar6-h ar6-mh" data-ar6-sec="head"></div>';
   h += '<div class="ar6-body" data-ar6-scroll="1">';
-  if (prismViewOn) {
+  if (sibViewOn) {
+    h += '<div class="ar6-zone" data-ar6-sec="nav"></div>';
+    h += '<div class="ar6-zone ar6-sib-host" data-ar6-sib-slot="' + esc(curView.slice(8)) + '" style="min-height:420px;padding:6px;"></div>';
+  } else if (prismViewOn) {
     h += '<div class="ar6-zone" data-ar6-sec="nav"></div>';
     h += '<div class="ar6-zone" data-ar6-sec="prism"></div>';
   } else {
@@ -192,8 +197,9 @@ function uiActiveGroup() {
 }
 function uiTabAllows(n) {
   if (n === 'head' || n === 'nav') return true;
-  var prismOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive();
   var pView = (typeof getPrismView === 'function') ? getPrismView() : 'luke';
+  if (typeof pView === 'string' && pView.indexOf('sibling:') === 0) return false;
+  var prismOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive();
   if (prismOn && pView === 'prism') return n === 'prism';
   if (n === 'prism') return false;
   var grp = UI_TABS[UI_TAB] || UI_TABS.route;
@@ -202,7 +208,8 @@ function uiTabAllows(n) {
 function uiNavHTML() {
   var grp = uiActiveGroup();
   var prismOn = (typeof isPrismPresetActive === 'function') && isPrismPresetActive();
-  var pView = prismOn && (typeof getPrismView === 'function') ? getPrismView() : 'luke';
+  var hasSib = (typeof hasAnySibling === 'function') && hasAnySibling();
+  var pView = (prismOn || hasSib) && (typeof getPrismView === 'function') ? getPrismView() : 'luke';
   var navNames = (typeof sk === 'function') ? sk('nav', ['光之雷达', '形态破甲', '叙事结界', '防卫设置']) : ['光之雷达', '形态破甲', '叙事结界', '防卫设置'];
   var list = [
     ['route', navNames[0] || '光之雷达'],
@@ -212,8 +219,8 @@ function uiNavHTML() {
   ];
   var hasUpdDot = (typeof updHasNotice === 'function') && updHasNotice();
   var skinDrawer = (typeof uiSkinBarHTML === 'function') ? uiSkinBarHTML() : '';
-  var dualBar = (prismOn && typeof uiPrismDualBarHTML === 'function') ? uiPrismDualBarHTML(pView) : '';
-  var navStyle = (prismOn && pView === 'prism') ? ' style="display:none"' : '';
+  var dualBar = ((prismOn || hasSib) && typeof uiPrismDualBarHTML === 'function') ? uiPrismDualBarHTML(pView) : '';
+  var navStyle = (pView !== 'luke') ? ' style="display:none"' : '';
   var h = skinDrawer + dualBar + '<nav aria-label="分类导航" class="ar6-nav"' + navStyle + '>';
   for (var i = 0; i < list.length; i++) {
     var dot = (list[i][0] === 'scope' && hasUpdDot) ? '<i class="ar6-nav-dot" aria-hidden="true"></i>' : '';
@@ -835,6 +842,7 @@ function mountAll() {
   try { syncLogWin(); } catch (eLW0) {}
 
   if (minimized) {
+    if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
     PANEL_SHOWN = false;
     r.className = '';
     UI_SIG = {};
@@ -848,7 +856,7 @@ function mountAll() {
     return true;
   }
 
-  var wantMode = ((typeof isPrismPresetActive === 'function') && isPrismPresetActive() && (typeof getPrismView === 'function') && getPrismView() === 'prism') ? 'prism' : 'luke';
+  var wantMode = (typeof getPrismView === 'function') ? getPrismView() : 'luke';
   var needSkel = false;
   var wsmodeChanged = false;
   try {
@@ -870,6 +878,7 @@ function mountAll() {
   try { r.setAttribute('style', panelStyle(mode, false)); } catch (eSt) {}
 
   if (needSkel) {
+    if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
     r.innerHTML = uiSkeletonHTML();
     r.setAttribute('data-struct', String(STRUCT_VER));
     r.setAttribute('data-ar6-wsmode', wantMode);
@@ -879,6 +888,19 @@ function mountAll() {
   try { syncLogWin(); } catch (eLW) {}
   patchRole();
   paintSections(UI_SECS, needSkel);
+
+  if (typeof wantMode === 'string' && wantMode.indexOf('sibling:') === 0 && typeof getSiblingById === 'function') {
+    var sibId = wantMode.slice(8);
+    var sibSpec = getSiblingById(sibId);
+    var slotEl = r.querySelector ? r.querySelector('[data-ar6-sib-slot="' + sibId.replace(/"/g, '') + '"]') : null;
+    if (sibSpec && slotEl && (!AR6_SIB_MOUNTED || AR6_SIB_MOUNTED.id !== sibId || AR6_SIB_MOUNTED.el !== slotEl)) {
+      if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
+      try {
+        sibSpec.mount(slotEl);
+        AR6_SIB_MOUNTED = { id: sibId, el: slotEl, spec: sibSpec };
+      } catch (eSibM) {}
+    }
+  }
 
   try {
     var first = !PANEL_SHOWN;

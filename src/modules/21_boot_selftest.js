@@ -109,7 +109,11 @@ function syncPill() {
     var baseTip = on
       ? (alertBad ? '卢克之光：上轮检测到疑似模型异动（点击查看，上下拖动移位）' : '卢克之光：蓝灯守护中（单击打开面板，上下拖动调整位置）')
       : '卢克之光：石像待机（单击打开面板）';
-    if (petDock) baseTip += ' · ✦ 闪耀迪迦已合入圆章（双击或长按重新召唤立绘）';
+    if (petDock) {
+      var skDock = (typeof skinId === 'function') ? skinId() : 'ultra';
+      var pDockConf = (skDock !== 'ultra' && typeof lkSkinPetConf === 'function') ? lkSkinPetConf(skDock) : null;
+      baseTip += ' · ✦ ' + (pDockConf ? pDockConf.petName : '闪耀迪迦') + '已合入圆章（双击或长按重新召唤立绘）';
+    }
     p.setAttribute('title', baseTip);
 
     var tierNow = on ? String((cfg && cfg.jail) || 'off') : 'off';
@@ -2044,7 +2048,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.74') throw new Error('VERSION 应为 5.74，实际 ' + VERSION);
+      if (VERSION !== '5.75') throw new Error('VERSION 应为 5.75，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2394,6 +2398,62 @@ function runSelfTest() {
     }
   });
 
+  T('T114 V5.75 非奥特四皮肤高燃弹窗 / 全屏觉醒 / 8态3D透明桌宠 & 原皮零回归', function () {
+    var oldSkin = cfg.skin;
+    var oldRm = cfg.rm;
+    var oldFx = cfg.fx;
+    try {
+      var assetKeys = ['plain_core', 'xianxia_hanli', 'xianxia_lifeiyu', 'xuanhuan_xiaoyan', 'xuanhuan_xiaoyan_ruler', 'xuanhuan_huntiandi', 'pink_chibi_sakura', 'pink_dark_lady'];
+      if (typeof AR6_SKIN_PET_ASSETS !== 'object' || !AR6_SKIN_PET_ASSETS) throw new Error('AR6_SKIN_PET_ASSETS 缺失');
+      for (var ai = 0; ai < assetKeys.length; ai++) {
+        var ak = assetKeys[ai];
+        var ao = AR6_SKIN_PET_ASSETS[ak];
+        if (!ao || !ao.alphaReady || String(ao.raw || '').indexOf('data:image/webp;base64,') !== 0) {
+          throw new Error('3D 皮肤资产异常：' + ak);
+        }
+      }
+      var nonUltra = ['plain', 'xianxia', 'xuanhuan', 'pink'];
+      for (var si = 0; si < nonUltra.length; si++) {
+        var sk = nonUltra[si];
+        cfg.skin = sk;
+        var h1 = jailSuperHTML();
+        var h2 = jailSupremeHTML();
+        var h3 = lkUltHTML('gatanothor');
+        var h4 = lkUltHTML('abyss');
+        var hc = jailConfirmHTML({ code: 'trunc', note: 'test' }, { msg: { mes: 'abc' } });
+        var ht = toolConfirmHTML();
+        var joined = h1 + h2 + h3 + h4 + hc + ht;
+        if (joined.indexOf('data-skin="' + sk + '"') < 0) throw new Error(sk + ' 弹窗缺少 data-skin');
+        if (/迪迦|诺亚|神光棒|迪拉休姆/.test(joined)) throw new Error(sk + ' 弹窗残留奥特曼文案');
+        var pHtml = petSettingsHTML();
+        if (/迪迦|神光棒/.test(pHtml)) throw new Error(sk + ' 桌宠设置页残留迪迦/神光棒文案');
+        cfg.rm = false; cfg.fx = 'on';
+        if (typeof triggerAwakenFx === 'function') {
+          var fxOk = triggerAwakenFx('noa');
+          var fxEl = DOC && DOC.getElementById('ar6-fx');
+          if (DOC && DOC.body && (!fxOk || !fxEl || fxEl.getAttribute('data-skin') !== sk)) {
+            throw new Error(sk + ' 全屏觉醒未按皮肤挂载');
+          }
+          clearAwakenFx();
+        }
+        cfg.rm = true;
+        if (typeof triggerAwakenFx === 'function' && triggerAwakenFx('abyss') !== false) {
+          throw new Error(sk + ' cfg.rm=true 时未跳过觉醒动效');
+        }
+      }
+      cfg.skin = 'ultra';
+      if (jailSuperHTML().indexOf('迪拉休姆') < 0 || lkUltHTML('gatanothor').indexOf('诺亚') < 0) {
+        throw new Error('ultra 原皮破甲仪式弹窗回归异常');
+      }
+      return true;
+    } finally {
+      cfg.skin = oldSkin;
+      cfg.rm = oldRm;
+      cfg.fx = oldFx;
+      try { clearAwakenFx(); } catch (eClFx) {}
+    }
+  });
+
   try { if (__bkLog != null) ar6LsSet(LOG_KEY, __bkLog); else ar6LsDel(LOG_KEY); } catch (eRs0) {}
   try { if (__hasHostLog && HOST && HOST.localStorage && __hostLogRaw != null && __bkLog == null) HOST.localStorage.setItem(LOG_KEY, __hostLogRaw); } catch (eRs4) {}
   try { if (__bkLed != null) ar6LsSet(LED_KEY, __bkLed); else ar6LsDel(LED_KEY); } catch (eRs1) {}
@@ -2618,8 +2678,10 @@ function dispose() {
     if (DOC && ON_DOC_CLK) { try { DOC.removeEventListener('click', ON_DOC_CLK, true); } catch (eClk) {} ON_DOC_CLK = null; }
     if (DOC && ON_DOC_KD) { try { DOC.removeEventListener('keydown', ON_DOC_KD); } catch (eK) {} ON_DOC_KD = null; }
     OUTSIDE_BOUND = false;
-    var st = DOC ? DOC.querySelectorAll('style#ar6-style,style#ar6-style82,style#ar6-gold-style,style#ar6-temple-style-v2,style#ar6-logwin-style') : [];
+    var st = DOC ? DOC.querySelectorAll('style#ar6-style,style#ar6-style82,style#ar6-gold-style,style#ar6-temple-style-v2,style#ar6-logwin-style,style#ar6-skinfx-style') : [];
     for (var i = 0; i < st.length; i++) if (st[i].parentNode) st[i].parentNode.removeChild(st[i]);
+    try { if (typeof AR6_SKIN_SUMMON_TIMER !== 'undefined' && AR6_SKIN_SUMMON_TIMER) { clearTimeout(AR6_SKIN_SUMMON_TIMER); AR6_SKIN_SUMMON_TIMER = null; } } catch (eSkSumT) {}
+    try { var skSum = DOC ? DOC.getElementById('ar6-skin-summon') : null; if (skSum && skSum.parentNode) skSum.parentNode.removeChild(skSum); } catch (eSkSum) {}
     BTN_BOUND = {}; BTN_OK = 0;
     try { closePvpDlg(); } catch (ePd) {}
     try {
@@ -2634,6 +2696,7 @@ function dispose() {
     } catch (ePw) {}
     try { if (typeof HOST !== 'undefined' && HOST && typeof AR6_API !== 'undefined' && HOST.__AR6__ === AR6_API) delete HOST.__AR6__; } catch (eA1) {}
     try { if (typeof SELF_WIN !== 'undefined' && SELF_WIN && typeof AR6_API !== 'undefined' && SELF_WIN.__AR6__ === AR6_API) delete SELF_WIN.__AR6__; } catch (eA2) {}
+    try { if (typeof unmountActiveSibling === 'function') unmountActiveSibling(); } catch (eSibU) {}
     try { if (typeof prismUnbindStHooks === 'function') prismUnbindStHooks(); } catch (ePrU) {}
     try { if (typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrL2) {}
     try { uiTimersClear(); } catch (eUt) {}
@@ -2781,7 +2844,7 @@ var AR6_API = {
   dockedHTML: dockedHTML,
   getCfg: function () { return cfg; },
   cfg: function () { return cfg; },
-  setCfg: function (k, v) { cfg[k] = v; saveCfg(); if ((k === 'know' || k === 'charm' || k === 'ooc') && typeof prismSyncSynergyGuard === 'function') { try { prismSyncSynergyGuard(); } catch (eSgA) {} } },
+  setCfg: function (k, v) { cfg[k] = v; saveCfg(); if (k === 'skin' && typeof prismEmitSkinChanged === 'function') { try { prismEmitSkinChanged(v); } catch (eSkC) {} } if ((k === 'know' || k === 'charm' || k === 'ooc') && typeof prismSyncSynergyGuard === 'function') { try { prismSyncSynergyGuard(); } catch (eSgA) {} } },
   runSelfTest: runSelfTest,
   render: render,
   onPanelClick: onPanelClick,
@@ -3217,9 +3280,23 @@ var AR6_API = {
   prismPromptId: (typeof prismPromptId === 'function') ? prismPromptId : null,
   prismCollectSnapshot: (typeof prismCollectSnapshot === 'function') ? prismCollectSnapshot : null,
   prismInjectTextValue: (typeof prismInjectTextValue === 'function') ? prismInjectTextValue : null,
+  /* ---- V5.75 四皮肤高燃弹窗 / 觉醒特效 / 8态3D雕像桌宠导出 ---- */
+  AR6_SKIN_RITUALS: (typeof AR6_SKIN_RITUALS !== 'undefined') ? AR6_SKIN_RITUALS : null,
+  AR6_SKIN_AUX_MODALS: (typeof AR6_SKIN_AUX_MODALS !== 'undefined') ? AR6_SKIN_AUX_MODALS : null,
+  AR6_SKIN_PET_CFG: (typeof AR6_SKIN_PET_CFG !== 'undefined') ? AR6_SKIN_PET_CFG : null,
+  AR6_SKIN_PET_ASSETS: (typeof AR6_SKIN_PET_ASSETS !== 'undefined') ? AR6_SKIN_PET_ASSETS : null,
+  triggerSkinAwakenFx: (typeof triggerSkinAwakenFx === 'function') ? triggerSkinAwakenFx : null,
+  triggerSkinSummon: (typeof triggerSkinSummon === 'function') ? triggerSkinSummon : null,
+  /* ---- 三生合体：同生态兄弟面板注册与调度导出 (ST-LightLens 等) ---- */
+  registerSibling: (typeof registerSibling === 'function') ? registerSibling : null,
+  openSiblingPanel: (typeof openSiblingPanel === 'function') ? openSiblingPanel : null,
+  listSiblings: (typeof listSiblings === 'function') ? listSiblings : null,
+  unmountActiveSibling: (typeof unmountActiveSibling === 'function') ? unmountActiveSibling : null,
+  syncGlobalSiblings: (typeof syncGlobalSiblings === 'function') ? syncGlobalSiblings : null,
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}
 try { if (typeof HOST !== 'undefined' && HOST) HOST.__AR6__ = AR6_API; } catch (eH) {}
 try { if (typeof SELF_WIN !== 'undefined' && SELF_WIN) SELF_WIN.__AR6__ = AR6_API; } catch (eS) {}
+try { if (booted && !DISPOSED && typeof syncGlobalSiblings === 'function') syncGlobalSiblings(); } catch (eSibB) {}
 try { if (booted && !DISPOSED && typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrA) {}

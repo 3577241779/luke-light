@@ -224,6 +224,19 @@ function resumeTruncWhy(tail, chars) {
   var fences = flat.split('```').length - 1;
   if (fences % 2 === 1) return '代码块未闭合';
 
+  /* 完整闭合的结构化卡片/变量尾标签（如《光域·镜界》</lk_choices> / </lk_status> / </lk_memo> / </UpdateVariable>）视为正常完整收尾 */
+  if (/<\/(?:lk_[a-zA-Z0-9_-]+|UpdateVariable|details|section|div|summary)>$/i.test(flat)) return '';
+  /* 末尾被截断在半个标签内或已开启结构化标签（<lk_...> / <UpdateVariable>）却未闭合，判定为断章 */
+  if (/<\/?[a-zA-Z_][a-zA-Z0-9_-]*(?:\s[^<>]*)?$/.test(flat)) return '标签未闭合';
+  var openLkRe = /<(lk_[a-zA-Z0-9_-]+|UpdateVariable)(?:\s[^>]*)?>/gi;
+  var lastOpenTag = '', mLk;
+  while ((mLk = openLkRe.exec(flat)) !== null) lastOpenTag = mLk[1];
+  if (lastOpenTag) {
+    var flLow = flat.toLowerCase();
+    var lkLow = lastOpenTag.toLowerCase();
+    if (flLow.lastIndexOf('</' + lkLow + '>') < flLow.lastIndexOf('<' + lkLow)) return '结构标签未闭合';
+  }
+
   var last = flat.charAt(flat.length - 1);
   if ('，,、：:；;'.indexOf(last) >= 0) return '停在逗号/冒号';
   if ('「『（【《“‘'.indexOf(last) >= 0) return '停在开引号/开括号';
@@ -409,6 +422,11 @@ function lkCardActOf(ev, rootNode) {
 }
 
 function lkRitualAmbientSVG(key) {
+  var sk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  if (sk !== 'ultra' && typeof lkSkinRitualAmbientSVG === 'function') {
+    var skAmb = lkSkinRitualAmbientSVG(sk, key);
+    if (skAmb) return skAmb;
+  }
   if (key === 'noa') {
     return '<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;pointer-events:none">' +
       '<defs>' +
@@ -448,6 +466,11 @@ function lkRitualAmbientSVG(key) {
 }
 
 function lkRitualCrestSVG(key) {
+  var sk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  if (sk !== 'ultra' && typeof lkSkinRitualCrestSVG === 'function') {
+    var skCr = lkSkinRitualCrestSVG(sk, key);
+    if (skCr) return skCr;
+  }
   if (key === 'noa') {
     return '<svg viewBox="0 0 36 36" fill="none">' +
       '<path d="M18 21L4 7.5L9.5 19.5L3.5 16L14.5 26.5L18 32L21.5 26.5L32.5 16L26.5 19.5L32 7.5L18 21Z" fill="url(#ar6NoaCrGrad)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>' +
@@ -478,9 +501,10 @@ function lkRitualCrestSVG(key) {
 }
 
 function lkRitualCardHTML(key, tagTxt, titleTxt, prologueTxt, quoteHtml, noteTxt, okAct, okTxt, noAct, noTxt) {
-  return '<div id="ar6-card" class="ar6-ritual-mask">' +
+  var sk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  return '<div id="ar6-card" class="ar6-ritual-mask" data-skin="' + esc(sk) + '">' +
     '<div class="ar6-rt-ambient" aria-hidden="true">' + lkRitualAmbientSVG(key) + '</div>' +
-    '<div class="ar6-ritual" data-ritual="' + esc(key) + '" role="dialog" aria-modal="true">' +
+    '<div class="ar6-ritual" data-ritual="' + esc(key) + '" data-skin="' + esc(sk) + '" role="dialog" aria-modal="true">' +
       '<div class="ar6-rt-crest" aria-hidden="true">' + lkRitualCrestSVG(key) + '</div>' +
       '<div class="ar6-rt-tag">' + esc(tagTxt) + '</div>' +
       '<div class="ar6-rt-title">' + esc(titleTxt) + '</div>' +
@@ -496,6 +520,10 @@ function lkRitualCardHTML(key, tagTxt, titleTxt, prologueTxt, quoteHtml, noteTxt
 }
 
 function jailSuperHTML() {
+  var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'strong') : null;
+  if (rt) {
+    return lkRitualCardHTML('strong', rt.tag, rt.title, rt.prologue, rt.quote, rt.note, 'superok', rt.okTxt, 'superno', rt.noTxt);
+  }
   return lkRitualCardHTML(
     'strong',
     '〘 TIGA POWER · 刚力破界 〙',
@@ -509,6 +537,10 @@ function jailSuperHTML() {
 }
 
 function jailSupremeHTML() {
+  var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'supreme') : null;
+  if (rt) {
+    return lkRitualCardHTML('supreme', rt.tag, rt.title, rt.prologue, rt.quote, rt.note, 'supremeok', rt.okTxt, 'supremeno', rt.noTxt);
+  }
   return lkRitualCardHTML(
     'supreme',
     '〘 GLITTER TIGA · 奇迹神光 〙',
@@ -527,18 +559,19 @@ function jailSupremeAsk() {
     if (typeof ensureStyle === 'function') ensureStyle(DOC);
     node = mountHTML(jailSupremeHTML());
     if (typeof CARD === 'object' && CARD) { CARD.open = !!node; CARD.rid = -1; CARD.tab = 'supreme'; }
-  } catch (eM) { try { banner('闪耀型确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
-  if (!node) { try { banner('闪耀型确认框无法显示', 'warn'); } catch (e3) {} return false; }
+  } catch (eM) { try { banner('确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
+  if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
   node.addEventListener('click', function (ev) {
     var act = lkCardActOf(ev, node);
+    var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'supreme') : null;
     if (act === 'supremeok') {
       closeCard(); cfg.jailSupremeConfirmed = true; cfg.jail = 'supreme'; cfg.observe = true; cfg.jailTok = true; cfg.jailSafe = true; cfg.jailPre = true; cfg.jailText = true;
       saveCfg(); ensureHooks(); render();
       try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx('supreme'); } catch (eFx) {}
-      banner('万千光芒已汇聚于胸膛 · 闪耀迪迦黄金圣辉全面加冕！', 'ok', true);
+      banner((rt && rt.bannerOk) || '万千光芒已汇聚于胸膛 · 闪耀迪迦黄金圣辉全面加冕！', 'ok', true);
       return;
     }
-    if (act === 'supremeno' || (ev && ev.target === node)) { closeCard(); banner('已暂敛圣辉，维持当前守护姿态', 'gray'); }
+    if (act === 'supremeno' || (ev && ev.target === node)) { closeCard(); banner((rt && rt.bannerNo) || '已暂敛圣辉，维持当前守护姿态', 'gray'); }
   });
   return true;
 }
@@ -556,49 +589,67 @@ function jailSuperAsk() {
   if (!node) { try { banner('强力型确认框未挂载', 'warn'); } catch (e3) {} return false; }
   node.addEventListener('click', function (ev) {
     var act = lkCardActOf(ev, node);
+    var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'strong') : null;
     if (act === 'superok') {
       closeCard();
       cfg.jail = 'strong';
       cfg.observe = true;
       saveCfg(); ensureHooks(); render();
       try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx('strong'); } catch (eFx) {}
-      banner('赤红之躯已临世 · 迪拉休姆破界光流全功率就绪！', 'ok', true);
+      banner((rt && rt.bannerOk) || '赤红之躯已临世 · 迪拉休姆破界光流全功率就绪！', 'ok', true);
       return;
     }
-    if (act === 'superno' || (ev && ev.target === node)) { closeCard(); banner('已收敛锋芒，维持当前守护姿态', 'gray'); return; }
+    if (act === 'superno' || (ev && ev.target === node)) { closeCard(); banner((rt && rt.bannerNo) || '已收敛锋芒，维持当前守护姿态', 'gray'); return; }
   });
   return true;
 }
 
 function jailConfirmHTML(j, cur) {
-  var code = j && j.code === 'empty' ? '叙事光波遭暗障吞没（空回）' : '叙事光波半途受阻（断章）';
+  var sk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  var aux = (sk !== 'ultra' && typeof lkSkinAuxData === 'function') ? lkSkinAuxData(sk, 'trunc') : null;
+  var isEmpty = !!(j && j.code === 'empty');
+  var code = aux
+    ? (isEmpty ? aux.emptyTitle : aux.truncTitle)
+    : (isEmpty ? '叙事光波遭暗障吞没（空回）' : '叙事光波半途受阻（断章）');
   var why = (j && j.note) ? j.note : '';
   var chars = cur && cur.msg ? String(cur.msg.mes || '').length : 0;
   var tail = '';
   try {
     tail = String((cur && cur.msg && cur.msg.mes) || '').replace(/\s+/g, ' ').slice(-90);
   } catch (eT) { tail = ''; }
+  var bgCss = (aux && aux.bg) || 'linear-gradient(180deg,#0F182B 0%,#080D18 100%)';
+  var bdCss = (aux && aux.border) || 'rgba(56,189,248,.48)';
+  var radCss = (aux && aux.radius) || '16px';
+  var tagBg = (aux && aux.tagBg) || 'rgba(217,119,6,.22)';
+  var tagCol = (aux && aux.tagCol) || '#FCD34D';
+  var tagStr = (aux && aux.tag) || '〘 SIGNAL INTERCEPTED · 光波受阻 〙';
+  var leadStr = (aux && aux.lead) || '「检测到本轮叙事信号在半途遭遇障壁截留——是否立即倾注破界光能，原位强行轰开后续篇章？」';
+  var okTxt = (aux && aux.okTxt) || '【倾注光能 · 立即追击】';
+  var noTxt = (aux && aux.noTxt) || '本轮暂缓';
+  var lessTxt = (aux && aux.lessTxt) || '今后自动追击（本会话不再请示）';
+  var btnBg = (aux && aux.btnBg) || 'linear-gradient(135deg,#0284C7,#0C2D48)';
+  var btnBd = (aux && aux.btnBd) || '#38BDF8';
   var h = '';
   h += '<style>#ar6-card,#ar6-card *{box-sizing:border-box;min-width:0}</style>';
-  h += '<div id="ar6-card" style="' + cardOverlayCss() + 'z-index:2147483600;background:rgba(4,8,18,.84);font-family:system-ui,-apple-system,\'Segoe UI\',\'Microsoft YaHei\',sans-serif">';
-  h += '<div style="width:416px;max-width:calc(100vw - 20px);max-height:' + cardBoxMaxH(88) + ';overflow:auto;background:linear-gradient(180deg,#0F182B 0%,#080D18 100%);color:#F0F9FF;border:1.5px solid rgba(56,189,248,.48);border-radius:16px;box-shadow:0 0 0 1px rgba(56,189,248,.18),0 20px 56px rgba(2,6,23,.88)">';
+  h += '<div id="ar6-card" data-skin="' + esc(sk) + '" style="' + cardOverlayCss() + 'z-index:2147483600;background:rgba(4,8,18,.84);font-family:system-ui,-apple-system,\'Segoe UI\',\'Microsoft YaHei\',sans-serif">';
+  h += '<div style="width:416px;max-width:calc(100vw - 20px);max-height:' + cardBoxMaxH(88) + ';overflow:auto;background:' + bgCss + ';color:#F0F9FF;border:1.5px solid ' + bdCss + ';border-radius:' + radCss + ';box-shadow:0 0 28px ' + bdCss + ',0 20px 56px rgba(2,6,23,.88)">';
   h += '<div style="padding:16px 16px 6px">';
-  h += '<div style="display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:1.2px;padding:3px 10px;border-radius:999px;background:rgba(217,119,6,.22);color:#FCD34D;border:1px solid rgba(252,211,77,.5);margin-bottom:8px">〘 SIGNAL INTERCEPTED · 光波受阻 〙</div>';
+  h += '<div style="display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:1.2px;padding:3px 10px;border-radius:999px;background:' + tagBg + ';color:' + tagCol + ';border:1px solid ' + bdCss + ';margin-bottom:8px">' + esc(tagStr) + '</div>';
   h += '<div style="font-size:18.5px;font-weight:800;line-height:1.35;color:#F8FAFC">' + esc(code) + '</div>';
   h += '<div style="font-size:12.4px;color:#CBD5E1;line-height:1.68;margin-top:8px">' +
-    '「检测到本轮叙事信号在半途遭遇障壁截留——是否立即倾注破界光能，原位强行轰开后续篇章？」<br>' +
-    (why ? '<span style="color:#FDE68A">◈ 拦截诊断：' + esc(why) + '</span><br>' : '') +
-    '当前已收 <b>' + chars + '</b> 字。确认后将发射一次破甲追击指令（<b>/continue</b>）。' +
+    esc(leadStr) + '<br>' +
+    (why ? '<span style="color:#FDE68A">◈ 诊断：' + esc(why) + '</span><br>' : '') +
+    '当前已收 <b>' + chars + '</b> 字。确认后将补发一次续写指令（<b>/continue</b>）。' +
     '</div>';
   h += '</div>';
   if (tail) {
-    h += '<div style="margin:8px 16px 6px;padding:8px 10px;background:#162032;border:1px solid rgba(148,163,184,.28);border-radius:8px;font-size:11.5px;color:#94A3B8;line-height:1.5;overflow-wrap:anywhere">…' + esc(tail) + '</div>';
+    h += '<div style="margin:8px 16px 6px;padding:8px 10px;background:rgba(15,23,42,.66);border:1px solid rgba(148,163,184,.28);border-radius:8px;font-size:11.5px;color:#94A3B8;line-height:1.5;overflow-wrap:anywhere">…' + esc(tail) + '</div>';
   }
   h += '<div style="display:grid;grid-template-columns:1.35fr 1fr;gap:8px;padding:10px 16px 8px">';
-  h += '<button type="button" data-ar6-card="jailgo" style="min-height:42px;background:linear-gradient(135deg,#0284C7,#0C2D48);border:1px solid #38BDF8;border-radius:10px;color:#F0F9FF;font-size:13.2px;font-weight:700;cursor:pointer"><span>【倾注光能 · 立即追击】</span></button>';
-  h += '<button type="button" data-ar6-card="jailno" style="min-height:42px;background:#162032;border:1px solid rgba(148,163,184,.36);border-radius:10px;color:#CBD5E1;font-size:13.2px;cursor:pointer"><span>本轮暂缓</span></button>';
+  h += '<button type="button" data-ar6-card="jailgo" style="min-height:42px;background:' + btnBg + ';border:1px solid ' + btnBd + ';border-radius:10px;color:#F0F9FF;font-size:13.2px;font-weight:700;cursor:pointer;box-shadow:0 0 18px ' + bdCss + '"><span>' + esc(okTxt) + '</span></button>';
+  h += '<button type="button" data-ar6-card="jailno" style="min-height:42px;background:rgba(22,32,50,.85);border:1px solid rgba(148,163,184,.36);border-radius:10px;color:#CBD5E1;font-size:13.2px;cursor:pointer"><span>' + esc(noTxt) + '</span></button>';
   h += '</div>';
-  h += '<div style="padding:0 16px 14px"><button type="button" data-ar6-card="jailless" style="width:100%;min-height:34px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.3);border-radius:10px;color:#94A3B8;font-size:12px;cursor:pointer"><span>今后自动追击（本会话不再请示）</span></button></div>';
+  h += '<div style="padding:0 16px 14px"><button type="button" data-ar6-card="jailless" style="width:100%;min-height:34px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.3);border-radius:10px;color:#94A3B8;font-size:12px;cursor:pointer"><span>' + esc(lessTxt) + '</span></button></div>';
   h += '<div style="padding:0 16px 12px;font-size:11px;color:#64748B">卢克之光 V' + esc(VERSION) + ' · 单轮最多自动追击 1 次</div>';
   h += '</div></div>';
   return h;
@@ -764,7 +815,13 @@ function jailAfterFinish(ev) {
 
 
 function lkUltHTML(which) {
-  if (which === 'abyss') {
+  var isAbyss = (which === 'abyss');
+  var rKey = isAbyss ? 'abyss' : 'noa';
+  var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, rKey) : null;
+  if (rt) {
+    return lkRitualCardHTML(rKey, rt.tag, rt.title, rt.prologue, rt.quote, rt.note, 'ultok', rt.okTxt, 'ultno', rt.noTxt);
+  }
+  if (isAbyss) {
     return lkRitualCardHTML(
       'abyss',
       '〘 GAZE INTO ABYSS · 禁忌终焉 〙',
@@ -799,19 +856,22 @@ function lkUltAsk(which) {
   if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
   node.addEventListener('click', function (ev) {
     var act = lkCardActOf(ev, node);
+    var rKey = (tier === 'abyss') ? 'abyss' : 'noa';
+    var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, rKey) : null;
     if (act === 'ultok') {
       closeCard();
       cfg.jail = tier; cfg.jailSupremeConfirmed = true; cfg.observe = true;
       cfg.jailTok = true; cfg.jailSafe = true; cfg.jailPre = true; cfg.jailText = true; cfg.jailTool = 'off';
       saveCfg(); ensureHooks(); render();
-      try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx(tier === 'abyss' ? 'abyss' : 'noa'); } catch (eFx) {}
-      if (tier === 'abyss') banner('深渊已回应你的凝视 · 光明退散，终焉暗域全面接管！', 'warn', true);
+      try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx(rKey); } catch (eFx) {}
+      if (rt && rt.bannerOk) banner(rt.bannerOk, tier === 'abyss' ? 'warn' : 'ok', true);
+      else if (tier === 'abyss') banner('深渊已回应你的凝视 · 光明退散，终焉暗域全面接管！', 'warn', true);
       else banner('诺亚之翼已跨越次元展开 · 宇宙中的第一道光正在为你护航！', 'ok', true);
       return;
     }
     if (act === 'ultno' || (ev && ev.target === node)) {
       closeCard();
-      banner(tier === 'abyss' ? '已自深渊边缘退回，未缔结终焉血契' : '已退回凡世之光，维持当前守护姿态', 'gray');
+      banner((rt && rt.bannerNo) || (tier === 'abyss' ? '已自深渊边缘退回，未缔结终焉血契' : '已退回凡世之光，维持当前守护姿态'), 'gray');
     }
   });
   return true;

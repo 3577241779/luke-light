@@ -1106,6 +1106,7 @@ function onPanelClick(e) {
       cfg.skin = skNext;
       SKIN_BAR_OPEN = false;
       saveCfg(); UI_SIG = {}; render();
+      try { if (typeof prismEmitSkinChanged === 'function') prismEmitSkinChanged(skNext); } catch (eSkEv) {}
       try { if (LOGW && LOGW.open) paintLogWin(true); } catch (eLwS) {}
       var spObj = AR6_SKINS[skNext];
       banner('🎨 皮肤已切换为「' + spObj.icon + ' ' + spObj.name + '」', 'ok', true);
@@ -1324,7 +1325,13 @@ function onPanelClick(e) {
     }
     TOOL_CONFIRM = !TOOL_CONFIRM;
     render();
-    if (TOOL_CONFIRM) banner('请确认下方「武装货舱」说明后再点【锁定圣柜信道】开启', 'warn');
+    if (TOOL_CONFIRM) {
+      var skTool = (typeof skinId === 'function') ? skinId() : 'ultra';
+      var auxTool = (skTool !== 'ultra' && typeof lkSkinAuxData === 'function') ? lkSkinAuxData(skTool, 'tool') : null;
+      banner(auxTool
+        ? ('请确认下方说明后再点 ' + auxTool.okTxt + ' 开启')
+        : '请确认下方「武装货舱」说明后再点【锁定圣柜信道】开启', 'warn');
+    }
     return;
   }
   if (act === 'tool-loop') {
@@ -1414,7 +1421,11 @@ function onPanelClick(e) {
     if (cfg.jail !== 'supreme' && cfg.jail !== 'gatanothor' && cfg.jail !== 'abyss') cfg.jailSupremeConfirmed = false;
     if (cfg.jail !== 'off' && !cfg.observe) cfg.observe = true;
     saveCfg(); ensureHooks(); render();
-    if (want === 'off') banner('光芒已敛入超古代石像 · 全信道静默待命', 'gray');
+    var spTier = (typeof skinSpec === 'function') ? skinSpec() : null;
+    var skTierKey = (want === 'off') ? 'idle' : want;
+    var skTierSub = (spTier && spTier.id !== 'ultra' && spTier.tiers && spTier.tiers[skTierKey] && spTier.tiers[skTierKey].sub) ? spTier.tiers[skTierKey].sub : '';
+    if (skTierSub) banner(skTierSub, want === 'off' ? 'gray' : 'ok');
+    else if (want === 'off') banner('光芒已敛入超古代石像 · 全信道静默待命', 'gray');
     else if (want === 'safe') banner('迪迦·空中型已展开 · 极速轻装掠行姿态就绪', 'ok');
     else if (want === 'mid') banner('迪迦·复合型已展开 · 光之巨人双轨破障姿态就绪', 'ok');
     else banner('迪迦形态切换：' + ((typeof jailFormName === 'function') ? jailFormName() : jailLabel()), 'ok');

@@ -245,22 +245,39 @@ function petSummonFromPill() {
   try { avatarMount(); } catch (e1) {}
   try { if (AR6_PET_CTRL && AR6_PET_CTRL.setVisualState) AR6_PET_CTRL.setVisualState('edge-materialize'); } catch (eM) {}
   try { if (typeof syncPill === 'function') syncPill(); } catch (e2) {}
-  try { banner('✦ 3D 迪迦已化光展开（拖回边缘再次合入圆章，面板内可随时重温神光棒变身）', 'ok'); } catch (e3) {}
+  var skP = (typeof skinId === 'function') ? skinId() : 'ultra';
+  var pCfgP = (skP !== 'ultra' && typeof lkSkinPetConf === 'function') ? lkSkinPetConf(skP) : null;
+  try {
+    banner(pCfgP
+      ? ('✦ ' + pCfgP.petName + ' 已展开守护（拖回边缘可收归圆章，面板内可随时重温' + pCfgP.summonName + '）')
+      : '✦ 3D 迪迦已化光展开（拖回边缘再次合入圆章，面板内可随时重温神光棒变身）', 'ok');
+  } catch (e3) {}
 }
 
 function petSettingsHTML() {
   var p = AR6_PET_STATE || petRead();
+  var skNow = (typeof skinId === 'function') ? skinId() : 'ultra';
+  var pConf = (skNow !== 'ultra' && typeof lkSkinPetConf === 'function') ? lkSkinPetConf(skNow) : null;
+  var petTitle = pConf ? (pConf.petName + ' 桌宠') : '3D 迪迦 · 光之伙伴桌宠';
+  var petHead = pConf ? (pConf.petName + ' &amp; ' + esc(pConf.summonName)) : '3D 迪迦 · 光之伙伴桌宠 &amp; 神光棒召唤';
+  var sumLabel = pConf ? ('✦ ' + pConf.summonName + ' · 召唤/复位') : '✦ 神光棒变身 · 召唤/复位';
+  var petMotionDesc = pConf
+    ? (pConf.petName + ' 随当前皮肤与破甲形态自动切换专属 3D 造型与光环，双击立绘开主面板。')
+    : '3D 迪迦随破甲形态自动变身（诺亚展动态圣翼 / 深渊黑曜化红），雷达抓到调包时胸口计时器红灯急闪；双击立绘开主面板。';
+  var petIdleTip = pConf
+    ? ('召唤时播放当前皮肤专属「' + esc(pConf.summonName) + '」演出并唤醒 3D 雕像立绘至边缘守护；切换皮肤即时换宠，全屏最多保留一个悬浮物。')
+    : '召唤时在屏幕中央升起可点击 3D 神光棒，变身登场后化光飞掠至边缘守护；全屏始终最多保留一个悬浮物。';
   var petSt = p.show ? (p.docked ? '已合入圆章' : '守护中') : '待机';
-  var h = '<div class="ar6-mmore-h">3D 迪迦 · 光之伙伴桌宠 &amp; 神光棒召唤</div>';
+  var h = '<div class="ar6-mmore-h">' + petHead + '</div>';
   h += '<div class="ar6-tgrid">' +
-    '<button type="button" class="ar6-b span-2' + (p.show ? ' gold on' : '') + '" data-ar6="pet-show"><span class="ar6-b-lbl">3D 迪迦 · 光之伙伴桌宠</span><em class="ar6-b-st">' + petSt + '</em></button>' +
+    '<button type="button" class="ar6-b span-2' + (p.show ? ' gold on' : '') + '" data-ar6="pet-show"><span class="ar6-b-lbl">' + esc(petTitle) + '</span><em class="ar6-b-st">' + petSt + '</em></button>' +
     '<button type="button" class="ar6-b' + (p.voice ? ' on' : '') + '" data-ar6="pet-voice"><span class="ar6-b-lbl">互动台词气泡</span><em class="ar6-b-st">' + (p.voice ? '已开启' : '待机') + '</em></button>' +
     '<button type="button" class="ar6-b' + (p.autoDock ? ' on' : '') + '" data-ar6="pet-auto"><span class="ar6-b-lbl">靠边自动合入圆章</span><em class="ar6-b-st">' + (p.autoDock ? '已开启' : '待机') + '</em></button>' +
-    actBtn('pet-reset', 'refresh', '✦ 神光棒变身 · 召唤/复位', 'gold on span-2') +
+    actBtn('pet-reset', 'refresh', sumLabel, 'gold on span-2') +
     '</div>';
   if (p.show) {
     h += '<div class="ar6-tgrid" style="margin-top:6px">' +
-      '<button type="button" class="ar6-b' + (p.sfx ? ' on' : '') + '" data-ar6="pet-sfx"><span class="ar6-b-lbl">特摄变身音效 · 纯合成</span><em class="ar6-b-st">' + (p.sfx ? '已开启' : '静音') + '</em></button>' +
+      '<button type="button" class="ar6-b' + (p.sfx ? ' on' : '') + '" data-ar6="pet-sfx"><span class="ar6-b-lbl">变身音效 · 纯合成</span><em class="ar6-b-st">' + (p.sfx ? '已开启' : '静音') + '</em></button>' +
       actBtn('pet-sfx-alert', 'bell', '试听红灯警报') +
       '</div>';
     var curP = p.sfxPreset || 'tiga1996';
@@ -272,7 +289,7 @@ function petSettingsHTML() {
     }
     h += '</div></div>';
 
-    h += segBarHTML('桌宠动效', '3D 迪迦随破甲形态自动变身（诺亚展动态圣翼 / 深渊黑曜化红），雷达抓到调包时胸口计时器红灯急闪；双击立绘开主面板。', [
+    h += segBarHTML('桌宠动效', petMotionDesc, [
       ['全效律动', 'full'],
       ['柔和呼吸', 'calm'],
       ['完全静止', 'off']
@@ -280,7 +297,7 @@ function petSettingsHTML() {
     h += segBarHTML('桌宠不透明度', '', [['70% 半透', 0.7], ['90% 适中', 0.9], ['100% 实心', 1]], p.opacity, 'gm:opacity', '');
     h += segBarHTML('桌宠显示比例', '', [['80% 小巧', 0.8], ['100% 标准', 1], ['115% 偏大', 1.15], ['150% 特大', 1.5]], p.size, 'gm:size', '');
   } else {
-    h += '<div class="ar6-dline">召唤时在屏幕中央升起可点击 3D 神光棒，变身登场后化光飞掠至边缘守护；全屏始终最多保留一个悬浮物。</div>';
+    h += '<div class="ar6-dline">' + petIdleTip + '</div>';
   }
   return h;
 }
@@ -358,8 +375,9 @@ var AR6_PET_CSS = [
   '.abyss-rift{position:absolute;left:-14%;right:-14%;top:10%;aspect-ratio:1/1;pointer-events:none;opacity:0;transition:opacity .45s ease;animation:ar6abPulse 3.6s ease-in-out infinite;z-index:1}',
   ':host([data-form="abyss"]) .abyss-rift{opacity:1}',
   '.portrait{position:relative;z-index:2;height:100%;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d;transition:transform .16s ease}',
-  '.sframe{position:relative;height:100%;display:block}',
-  '.simg{display:block;width:100%;height:100%;pointer-events:none;transition:filter .32s ease}',
+  '.sframe{position:relative;height:100%;display:flex;align-items:center;justify-content:center}',
+  '.simg{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;transition:filter .32s ease}',
+  ':host([data-skin]:not([data-skin="ultra"])) .noa-wings,:host([data-skin]:not([data-skin="ultra"])) .tgem,:host([data-skin]:not([data-skin="ultra"])) .thalo{display:none!important}',
   '.tgem,.thalo{position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,-50%);mix-blend-mode:screen}',
   '.tgem{clip-path:polygon(50% 0%,100% 42%,50% 100%,0% 42%);background:radial-gradient(circle at 50% 45%,#fff5f5 0%,#ff2a55 48%,#e11d48 85%,transparent 100%)}',
   '.thalo{border-radius:9999px;background:radial-gradient(circle,rgba(255,42,85,.85) 0%,rgba(255,42,85,.25) 45%,transparent 72%)}',
@@ -474,12 +492,14 @@ function avatarMount() {
     side: p.side,
     paused: p.paused,
     form: petCurrentForm(),
+    skin: (typeof skinId === 'function') ? skinId() : 'ultra',
     alert: false,
     visualMode: 'landed'
   };
   var drag = null, down = null, timers = [], last = 0, recent = [];
   var lastTapAt = 0;
   var visSeq = 0;
+  var syncSeq = 0;
 
   function later(fn, ms) {
     var id = w.setTimeout(function () {
@@ -489,14 +509,30 @@ function avatarMount() {
     timers.push(id);
   }
 
-  function applySpriteAsset(formKey) {
-    var prof = AR6_PET_FORMS[formKey] || AR6_PET_FORMS.multi;
-    var aKey = prof.asset || 'multi';
-    var aObj = (typeof AR6_PET_ASSETS !== 'undefined' && AR6_PET_ASSETS[aKey]) ? AR6_PET_ASSETS[aKey] : null;
+  function resolvePetProfile(formKey, skKey) {
+    var sk = skKey || ((typeof skinId === 'function') ? skinId() : 'ultra');
+    if (sk !== 'ultra' && typeof lkSkinPetConf === 'function') {
+      var pc = lkSkinPetConf(sk);
+      if (pc && pc.forms) {
+        var pf = pc.forms[formKey] || pc.forms.multi;
+        var aObjSk = (typeof AR6_SKIN_PET_ASSETS !== 'undefined' && AR6_SKIN_PET_ASSETS[pf.asset]) ? AR6_SKIN_PET_ASSETS[pf.asset] : null;
+        if (pf && aObjSk) return { sk: sk, prof: pf, aKey: pf.asset, aObj: aObjSk, pConf: pc };
+      }
+    }
+    var profU = AR6_PET_FORMS[formKey] || AR6_PET_FORMS.multi;
+    var aKeyU = profU.asset || 'multi';
+    var aObjU = (typeof AR6_PET_ASSETS !== 'undefined' && AR6_PET_ASSETS[aKeyU]) ? AR6_PET_ASSETS[aKeyU] : null;
+    return { sk: 'ultra', prof: profU, aKey: aKeyU, aObj: aObjU, pConf: null };
+  }
+
+  function applySpriteAsset(formKey, skKey) {
+    var res = resolvePetProfile(formKey, skKey);
+    var prof = res.prof, aKey = res.aKey, aObj = res.aObj, effSk = res.sk;
     var ratio = (aObj && aObj.w && aObj.h) ? (aObj.w / aObj.h) : 0.4023;
-    var fw = Math.round(imgBoxH * ratio);
+    var rawFw = Math.round(imgBoxH * ratio);
+    var fw = (effSk === 'ultra') ? rawFw : Math.max(76, Math.min(Math.round(ww * 1.18), rawFw));
     if (sframe) sframe.style.width = fw + 'px';
-    if (aObj && aObj.timer && tgem && thalo) {
+    if (effSk === 'ultra' && aObj && aObj.timer && tgem && thalo) {
       tgem.style.left = aObj.timer.x + '%';
       tgem.style.top = aObj.timer.y + '%';
       tgem.style.width = aObj.timer.w + '%';
@@ -507,11 +543,18 @@ function avatarMount() {
       thalo.style.height = (aObj.timer.h * 2.5) + '%';
     }
     if (simg && aObj) {
-      simg.src = (typeof AR6_PET_ALPHA_CACHE !== 'undefined' && AR6_PET_ALPHA_CACHE[aKey]) ? AR6_PET_ALPHA_CACHE[aKey] : aObj.raw;
-      if (typeof ar6MatteSprite === 'function') {
-        ar6MatteSprite(aKey, function (u) {
-          try { if (simg && u && (AR6_PET_FORMS[state.form] || AR6_PET_FORMS.multi).asset === aKey) simg.src = u; } catch (eM) {}
-        });
+      if (aObj.alphaReady) {
+        simg.src = aObj.raw;
+      } else {
+        simg.src = (typeof AR6_PET_ALPHA_CACHE !== 'undefined' && AR6_PET_ALPHA_CACHE[aKey]) ? AR6_PET_ALPHA_CACHE[aKey] : aObj.raw;
+        if (typeof ar6MatteSprite === 'function') {
+          ar6MatteSprite(aKey, function (u) {
+            try {
+              var curRes = resolvePetProfile(state.form, state.skin);
+              if (simg && u && curRes.aKey === aKey) simg.src = u;
+            } catch (eM) {}
+          });
+        }
       }
       simg.style.filter = prof.filter;
     }
@@ -521,6 +564,14 @@ function avatarMount() {
       holoR1.style.boxShadow = '0 0 16px ' + prof.ring + ',inset 0 0 12px ' + prof.ring;
     }
     b.setAttribute('data-form', formKey);
+    b.setAttribute('data-skin', effSk);
+    if (face && res.pConf) {
+      face.setAttribute('aria-label', res.pConf.petName + '：双击打开控制面板');
+      face.setAttribute('title', '拖动可移位（靠边松手合入侧边圆章），双击打开主面板');
+    } else if (face) {
+      face.setAttribute('aria-label', '3D 迪迦光之伙伴：双击打开控制面板');
+      face.setAttribute('title', '拖动可移位（靠边松手合入计时器圆章），双击打开主面板');
+    }
   }
 
   function layout() {
@@ -544,16 +595,30 @@ function avatarMount() {
     if (!p.voice || p.docked || p.paused) return;
     var txt = customText ? String(customText) : '';
     if (!txt) {
-      var lines = {
-        tap: ['收到你的光了。', '光芒稳定，放心吧。', '今天也一起守护。'],
-        rub: ['这束光很温柔。', '能量补满，随时出击。', '有你在，很安心。'],
-        drag: ['抵达新阵位，光线稳定。', '这里视野不错。'],
-        open: ['光，已回应你的呼唤。', '光之伙伴，重新连接。']
-      };
-      var a = lines[kind] || lines.tap;
-      var pool = a.filter(function (t) { return recent.indexOf(t) < 0; });
-      if (!pool.length) pool = a;
-      txt = pool[Math.floor(Math.random() * pool.length)];
+      var curRes = resolvePetProfile(state.form, state.skin);
+      if (curRes.pConf) {
+        if (kind === 'summon' || kind === 'open' || kind === 'form') {
+          txt = (curRes.prof && curRes.prof.line) || curRes.pConf.summonLine;
+        } else {
+          var skPool = (state.form === 'abyss' && curRes.pConf.abyssPokes)
+            ? curRes.pConf.abyssPokes
+            : ((state.form === 'noa' && curRes.pConf.noaPokes) ? curRes.pConf.noaPokes : curRes.pConf.pokes);
+          var fPool = (skPool || []).filter(function (t) { return recent.indexOf(t) < 0; });
+          if (!fPool.length) fPool = skPool || ['守护在线。'];
+          txt = fPool[Math.floor(Math.random() * fPool.length)];
+        }
+      } else {
+        var lines = {
+          tap: ['收到你的光了。', '光芒稳定，放心吧。', '今天也一起守护。'],
+          rub: ['这束光很温柔。', '能量补满，随时出击。', '有你在，很安心。'],
+          drag: ['抵达新阵位，光线稳定。', '这里视野不错。'],
+          open: ['光，已回应你的呼唤。', '光之伙伴，重新连接。']
+        };
+        var a = lines[kind] || lines.tap;
+        var pool = a.filter(function (t) { return recent.indexOf(t) < 0; });
+        if (!pool.length) pool = a;
+        txt = pool[Math.floor(Math.random() * pool.length)];
+      }
     }
     if (!customText && Date.now() - last < 450) return;
     last = Date.now();
@@ -571,6 +636,7 @@ function avatarMount() {
       setVisualState('landed');
     }
     var nextForm = petCurrentForm();
+    var nextSkin = (typeof skinId === 'function') ? skinId() : 'ultra';
     var alertNow = !!(cfg && cfg.enabled && typeof pillHasAlert === 'function' && pillHasAlert());
     var liveNow = !!(typeof LIVE !== 'undefined' && LIVE && LIVE.on);
     b.setAttribute('data-live', liveNow ? '1' : '0');
@@ -584,9 +650,12 @@ function avatarMount() {
       state.alert = false;
     }
 
-    if (nextForm !== state.form) {
+    if (nextForm !== state.form || nextSkin !== state.skin) {
       state.form = nextForm;
-      var prof = AR6_PET_FORMS[nextForm] || AR6_PET_FORMS.multi;
+      state.skin = nextSkin;
+      var mySync = ++syncSeq;
+      var nextRes = resolvePetProfile(nextForm, nextSkin);
+      var prof = nextRes.prof;
       var isAbyss = (nextForm === 'abyss');
       if (animate && state.visualMode === 'landed' && p.motion !== 'off' && !(cfg && cfg.rm)) {
         if (typeof ar6SfxPlay === 'function') ar6SfxPlay(isAbyss ? 'typeDark' : 'typeChange', false);
@@ -606,11 +675,13 @@ function avatarMount() {
           ar6PlayTypeChangeFx(state.x + ww / 2, state.y + hh * 0.54, nextForm);
         }
         later(function () {
-          applySpriteAsset(nextForm);
-          say('form', prof.line);
+          if (mySync !== syncSeq) return;
+          var liveRes = resolvePetProfile(state.form, state.skin);
+          applySpriteAsset(state.form, state.skin);
+          say('form', (liveRes && liveRes.prof && liveRes.prof.line) || prof.line);
         }, 190);
       } else {
-        applySpriteAsset(nextForm);
+        applySpriteAsset(state.form, state.skin);
       }
     }
   }
@@ -620,7 +691,7 @@ function avatarMount() {
     state.visualMode = mode || 'landed';
     var vp = petViewport(w, d);
     var vw = vp.w, vh = vp.h;
-    var prof = AR6_PET_FORMS[state.form] || AR6_PET_FORMS.multi;
+    var prof = resolvePetProfile(state.form, state.skin).prof;
     if (mode === 'hidden-for-summon') {
       b.style.cssText = 'position:fixed!important;left:50%!important;top:50%!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:translate(-50%,-50%) scale(.6)!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;z-index:2147483642!important;';
       return;
@@ -639,8 +710,9 @@ function avatarMount() {
       }
       later(function () {
         if (mySeq !== visSeq) return;
-        if (simg) simg.style.filter = prof.filter;
-        say('open', '光，已回应你的呼唤。');
+        var resC = resolvePetProfile(state.form, state.skin);
+        if (simg) simg.style.filter = (resC && resC.prof && resC.prof.filter) || prof.filter;
+        say('open', (resC && resC.pConf) ? ((resC.prof && resC.prof.line) || resC.pConf.summonLine) : '光，已回应你的呼唤。');
       }, 220);
       return;
     }
@@ -658,8 +730,9 @@ function avatarMount() {
       b.style.cssText = 'position:fixed!important;left:' + Math.round(state.x) + 'px!important;top:' + Math.round(state.y) + 'px!important;width:' + ww + 'px!important;height:' + hh + 'px!important;transform:scale(1)!important;opacity:' + p.opacity + '!important;visibility:visible!important;pointer-events:none!important;z-index:2147483642!important;transition:transform .36s cubic-bezier(.16,1,.3,1),opacity .22s ease!important;';
       later(function () {
         if (mySeq !== visSeq) return;
-        if (simg) simg.style.filter = prof.filter;
-        say('open', '抵达边缘阵位 · 光之守护已就绪！');
+        var resE = resolvePetProfile(state.form, state.skin);
+        if (simg) simg.style.filter = (resE && resE.prof && resE.prof.filter) || prof.filter;
+        say('open', (resE && resE.pConf) ? ((resE.prof && resE.prof.line) || resE.pConf.summonLine) : '抵达边缘阵位 · 光之守护已就绪！');
       }, 220);
       later(function () {
         if (mySeq !== visSeq) return;
@@ -773,7 +846,7 @@ function avatarMount() {
   w.addEventListener('resize', layout);
   d.addEventListener('visibilitychange', visibility);
   d.body.appendChild(b);
-  applySpriteAsset(state.form);
+  applySpriteAsset(state.form, state.skin);
   layout();
   visibility();
   syncForm(false);

@@ -376,9 +376,17 @@ function truncApply(x) {
 
   var idx = -1;
   var i;
-  for (i = msgs.length - 1; i >= 0; i--) {
-    var mm = msgs[i];
-    if (mm && String(mm.role || '') === 'user') { idx = i; break; }
+  try {
+    if (typeof narrFindRealUserIndices === 'function') {
+      var nfT = narrFindRealUserIndices({ arr: msgs, proto: 'messages' });
+      if (nfT && nfT.real && nfT.real.length) idx = nfT.real[0];
+    }
+  } catch (eNfT) {}
+  if (idx < 0) {
+    for (i = msgs.length - 1; i >= 0; i--) {
+      var mm = msgs[i];
+      if (mm && String(mm.role || '') === 'user' && !(typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(mm))) { idx = i; break; }
+    }
   }
   if (idx < 0) return false;
 

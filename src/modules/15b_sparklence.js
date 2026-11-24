@@ -393,6 +393,10 @@ function ar6SparkDelay(w, fn, ms) {
 
 function triggerSparklenceSummon(opts) {
   opts = opts || {};
+  var curSk = (typeof skinId === 'function') ? skinId() : 'ultra';
+  if (curSk !== 'ultra' && typeof triggerSkinSummon === 'function') {
+    return triggerSkinSummon(curSk, opts);
+  }
   var d = (typeof wandDoc === 'function') ? wandDoc() : DOC;
   if (!d || !d.body || DISPOSED) return false;
   var w = d.defaultView || HOST;
