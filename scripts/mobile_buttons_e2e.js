@@ -976,7 +976,7 @@ async function runSuiteForTarget(fileName) {
     check(win.document.lastCopiedText.length > 10, '局域网 HTTP 环境 exportlog 走 textarea+execCommand 成功复制');
     win.document.lastCopiedText = '';
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcopy', true));
-    check(win.document.lastCopiedText.includes('版本 5.90'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
+    check(win.document.lastCopiedText.includes('版本 5.91'), '局域网 HTTP 环境 diagcopy 同步落剪贴板');
 
     await mobileTouchTap(win, () => findAr6Btn(win, 'diagcheck', true));
     const bnAfterDiag = win.document.getElementById('ar6-bn2');

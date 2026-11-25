@@ -53,6 +53,7 @@ function normModelName(m) {
   var s = String(m == null ? '' : m).trim().toLowerCase();
   s = s.replace(/^(?:models\/)+/, '');
   s = s.replace(/^(?:google|openrouter|vertex_ai|vertex|gemini|anthropic|openai|pggo|bdgo|aihubmix)\//, '');
+  s = s.replace(/^(?:[^\x00-\x7f]+[-_\s]*|(?:fake|pseudo|non)[-_]?stream[-_\s]*|nostream[-_\s]*)+/i, '');
   s = s.replace(/^pg-/, '');
   s = s.replace(/-\d{4}-\d{2}-\d{2}$/, '').replace(/-\d{3}$/, '');
   return s;

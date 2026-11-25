@@ -491,6 +491,9 @@ function lkClassifyErrorCode(ev, rec) {
 
 /* ---------------- 四维硬指纹交叉评估器（核心：抓“无硬证 + 零思考极速倒挂”，零误杀真 4H） ---------------- */
 
+/* V5.91：渠道显式标注的假流式/非流式模型名（单块整吐属站方预期行为，不按掉包误标 V3） */
+var LK_FAKE_STREAM_NAME_RE = /(?:假流式|伪流式|非流式|fake[-_ ]?stream|pseudo[-_ ]?stream|non[-_ ]?stream|nostream)/i;
+
 function lkCalcNetCps(chars, totalMs, ttftMs) {
   var c = Number(chars) || 0;
   var tot = Number(totalMs) || 0;
@@ -530,8 +533,14 @@ function lkEvalFingerprint(ev, rec, baseVerdict) {
     var thinkChars = Number((ev && ev.thinkChars) || (rec && rec.capture && rec.capture.thinkChars) || 0);
     var hasThink = !!(thinkTok > 0 || thinkChars > 0 || (ev && ev.hasThink) || (rec && rec.think === 1));
     var reqThinkOff = !!(ev && ev.reqThinkOff);
-    var netCps = lkCalcNetCps(chars, total, ttft);
+    var rawModelNames = String(req || '') + ' ' + String(fp.respModel || '') + ' ' + String(fp.nativeModelVersion || '') + ' ' +
+      String((ev && ev.servedModel) || (rec && (rec.served || rec.obs)) || '');
+    var declaredFakeStream = LK_FAKE_STREAM_NAME_RE.test(rawModelNames);
+    var netCps = (declaredFakeStream && fp.nonStreamDump && total > 0)
+      ? Math.round((chars * 1000) / total)
+      : lkCalcNetCps(chars, total, ttft);
     out.netCps = netCps;
+    out.declaredFakeStream = declaredFakeStream;
 
     /* 8 项证据位掩码 */
     var hasNativeMV = !!fp.nativeModelVersion;
@@ -588,8 +597,11 @@ function lkEvalFingerprint(ev, rec, baseVerdict) {
           cadenceWhy = '回显渠道 + 高档模型零思考且偏快(' + netCps + '字/s)';
         }
       }
-      if (!cadenceWhy && fp.nonStreamDump && noHardProof && !hasThoughtSig && !hasThink) {
+      if (!cadenceWhy && fp.nonStreamDump && noHardProof && !hasThoughtSig && !hasThink && !declaredFakeStream) {
         cadenceWhy = '请求流式却单块整吐 ' + fp.firstTextChunkChars + ' 字，且无原生硬指纹（疑似伪流式代理缓存/替换）';
+      }
+      if (declaredFakeStream && fp.nonStreamDump) {
+        out.proofs.push('通道明标假流式（单块吐字属预期）');
       }
       /* 叠加行为基线/结构指纹（样本达标且非纯网络慢时，在无硬证条件下触发预警） */
       if (!cadenceWhy && noHardProof && rec) {
@@ -639,7 +651,9 @@ function lkEvalFingerprint(ev, rec, baseVerdict) {
         out.summary = '硬证验真：' + (out.proofs.length ? out.proofs.slice(0, 3).join(' + ') : '官方直连一致');
       } else {
         out.grade = 'V2';
-        out.summary = '仅名称一致（未采到原生 modelVersion / thoughtSignature 等硬指纹，中转可能仅回显模型名）';
+        out.summary = (declaredFakeStream && fp.nonStreamDump)
+          ? '通道明标假流式，单块吐字属预期；未采到原生硬指纹（仅名称一致）'
+          : '仅名称一致（未采到原生 modelVersion / thoughtSignature 等硬指纹，中转可能仅回显模型名）';
       }
       return out;
     }

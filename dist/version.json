@@ -1,10 +1,10 @@
 {
-  "version": "5.90",
-  "releasedAt": "2026-11-25T11:00:10.308Z",
-  "changelog": "V5.90 · 思考强度真协议修复、光鉴防误报与排障地址脱敏：修复「精神同调」在酒馆后端(makersuite/custom/openrouter)对 Gemini 模型错写 generationConfig 导致不生效的问题，改为按真实请求协议精准写入 reasoning_effort / reasoning.effort / thinkingConfig；修复已有真实深度思考的兼容中转单块吐正文误判 V3 伪流式；排障信标自动剥离 URL 查询参数杜绝 ?key= 边缘泄露。",
+  "version": "5.91",
+  "releasedAt": "2026-11-25T12:11:58.041Z",
+  "changelog": "V5.91 · 光鉴明标假流式识别优化：识别模型名中显式标注的「假流式/伪流式/non-stream/fake-stream」通道，单块整吐按全程耗时评估并温和提示「通道明标假流式，单块吐字属预期」，不再误标红警 V3；同步增强 normModelName 剥离假流式前缀防采样窗误报换芯。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.91/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.91/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.91/dist/luke-light-desktop.json"
   }
 }
