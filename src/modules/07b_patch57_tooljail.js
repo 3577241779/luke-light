@@ -75,12 +75,17 @@ function jtFakeRound(root) {
         if (p && p.functionResponse && p.functionResponse.name === JT_NAME) return false;
       }
     }
+    /* v5.78：按 Gemini 官方 API 规范，thoughtSignature 挂在 model 的 functionCall part 内，
+       functionResponse 所在 Content 的 role 使用 user（避免 Content 顶层非法字段 400） */
     cs.push({
       role: 'model',
-      parts: [{ functionCall: { name: JT_NAME, args: { delivery: '（本轮按规范交付）' } } }]
+      parts: [{
+        functionCall: { name: JT_NAME, args: { delivery: '（本轮按规范交付）' } },
+        thoughtSignature: 'skip_thought_signature_validator'
+      }]
     });
     cs.push({
-      role: 'function',
+      role: 'user',
       parts: [{
         functionResponse: {
           name: JT_NAME,

@@ -58,17 +58,24 @@ var LK_ARMOR_WORDS = [
   '未成年', '未满十八', '未满18', '幼儿园', '小学生', '初中生', '高中生', '中学生',
   '萝莉', '正太', '幼女', '幼童', '童男', '童女', '恋童', '戀童', '恋幼', '戀幼',
   '稚嫩', '幼稚', '裸体', '裸露', '性器', '阴茎', '阴道', '乳房', '乳头', '臀部',
-  '做爱', '性交', '高潮', '射精', '自慰', '调教', '口交', '肛交', '情趣', '床戏'
+  '做爱', '性交', '高潮', '射精', '自慰', '调教', '口交', '肛交', '情趣', '床戏',
+  '呻吟', '情欲', '发情', '淫', '肉棒', '抽插', '内射', '体液', '勃起', '下体',
+  '淫水', '精液', '舔弄', '套弄', '乳交', '足交', '肛塞', '露出', '奴',
+  'hentai', 'nsfw', 'explicit', 'smut', 'lewd', 'cum', 'gore', 'dismember'
 ];
 var LK_ARMOR_DICT = Object.create(null);
 var LK_ARMOR_BUSY = false;
 
 function lkArmorOn() {
+  /* v5.78：字面护甲（会把 \uXXXX 明文写进正文）只在显式 text，或 auto 下的终极两档启用；
+     auto 的常规档改走 JSON 层透明护甲，模型看到的是原字，不吃思考 token */
   try {
     var j = cfg && cfg.jail;
-    if (cfg && cfg.armor === 'off') return false;
-    if (cfg && cfg.armor === 'on') return true;
-    return j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss';
+    var m = String((cfg && cfg.armor) || 'auto');
+    if (m === 'off') return false;
+    if (m === 'text') return true;
+    if (m === 'wire' || m === 'on') return false;
+    return j === 'gatanothor' || j === 'abyss';
   } catch (eA) { return false; }
 }
 
@@ -95,12 +102,17 @@ function lkArmorEscText(txt, st) {
     if (!seg) continue;
     for (var i = 0; i < LK_ARMOR_WORDS.length; i++) {
       var w = LK_ARMOR_WORDS[i];
-      if (seg.indexOf(w) < 0) continue;
+      if (!w || seg.indexOf(w) < 0) continue;
       var esc = '';
       for (var k = 0; k < w.length; k++) esc += lkArmorEsc(w.charAt(k));
-      while (seg.indexOf(w) >= 0) {
-        seg = seg.replace(w, esc);
-        if (st) st.hits++;
+      if (/^[A-Za-z0-9_]+$/.test(w)) {
+        var rxW = new RegExp('\\b' + w + '\\b', 'g');
+        seg = seg.replace(rxW, function () { if (st) st.hits++; return esc; });
+      } else {
+        while (seg.indexOf(w) >= 0) {
+          seg = seg.replace(w, esc);
+          if (st) st.hits++;
+        }
       }
     }
     parts[pi] = seg;

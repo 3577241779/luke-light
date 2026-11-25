@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist';
-const CHANGELOG_LATEST = 'V5.77 · 光鉴引擎全面升级：四维上游硬指纹验真（V1~V4，抓出无硬证+零思考极速掉包且零误杀真4H）+ 离线防篡改一码通诊断码（OFF/LOC/SLF/AGG/RLP/RLO + 4位匿名域哈希 + 标准报错归因）+ 内置离线解码器与本机私有公益站白名单。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist';
+const CHANGELOG_LATEST = 'V5.78 · 破甲与传输护甲协同优化：新增 JSON 层透明传输护甲（强力/闪耀默认走透明 \\uXXXX 绕过中转关键词扫描且不耗思考 token，含 ASCII 词边界防误伤）、先降权再清洗避免归位/下沉漏命、修复 assistantSnapshot 下标偏移误回退、修复 Gemini safetySettings 嵌套与非 BLOCK_NONE 升级、修复工具破甲 thoughtSignature 挂载位置（model.parts[0]）、柔化连载续写/任务单/至尊声明保留状态栏并补齐中档 2400 稀释垫片与拒答正则。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.77·ST酒馆适配.json',
+    fileName: '卢克之光 V5.78·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.77·ST酒馆适配',
-    info: '卢克之光 V5.77「光之守护」· 手机 ST 酒馆适配（光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / 三生合体 / 全档破甲格式适配）',
+    name: '卢克之光 V5.78·ST酒馆适配',
+    info: '卢克之光 V5.78「光之守护」· 手机 ST 酒馆适配（JSON透明护甲 / 降权清洗重排 / 光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / 三生合体）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.77·TT酒馆适配.json',
+    fileName: '卢克之光 V5.78·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.77·TT酒馆适配',
-    info: '卢克之光 V5.77「光之守护」· TT 酒馆适配（光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / 三生合体 / TT 双入口）',
+    name: '卢克之光 V5.78·TT酒馆适配',
+    info: '卢克之光 V5.78「光之守护」· TT 酒馆适配（JSON透明护甲 / 降权清洗重排 / 光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.77·桌面版.json',
+    fileName: '卢克之光 V5.78·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.77·桌面版',
-    info: '卢克之光 V5.77「光之守护」· 电脑桌面版（光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / 三生合体 / 桌面宽屏拖拽）',
+    name: '卢克之光 V5.78·桌面版',
+    info: '卢克之光 V5.78「光之守护」· 电脑桌面版（JSON透明护甲 / 降权清洗重排 / 光鉴四维硬指纹V1~V4 / 离线一码通与本机公益站白名单 / 五皮肤3D雕像桌宠 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

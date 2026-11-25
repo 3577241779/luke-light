@@ -1,10 +1,10 @@
 {
-  "version": "5.77",
-  "releasedAt": "2026-11-24T16:51:22.404Z",
-  "changelog": "V5.77 · 光鉴引擎全面升级：四维上游硬指纹验真（V1~V4，抓出无硬证+零思考极速掉包且零误杀真4H）+ 离线防篡改一码通诊断码（OFF/LOC/SLF/AGG/RLP/RLO + 4位匿名域哈希 + 标准报错归因）+ 内置离线解码器与本机私有公益站白名单。",
+  "version": "5.78",
+  "releasedAt": "2026-11-25T03:56:11.437Z",
+  "changelog": "V5.78 · 破甲与传输护甲协同优化：新增 JSON 层透明传输护甲（强力/闪耀默认走透明 \\uXXXX 绕过中转关键词扫描且不耗思考 token，含 ASCII 词边界防误伤）、先降权再清洗避免归位/下沉漏命、修复 assistantSnapshot 下标偏移误回退、修复 Gemini safetySettings 嵌套与非 BLOCK_NONE 升级、修复工具破甲 thoughtSignature 挂载位置（model.parts[0]）、柔化连载续写/任务单/至尊声明保留状态栏并补齐中档 2400 稀释垫片与拒答正则。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.77/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-desktop.json"
   }
 }

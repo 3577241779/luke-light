@@ -823,12 +823,11 @@ function planRequest(rawBody, url, internal) {
   /* v7.1 破甲：放在微扰之后、序列化之前——放前面会被微扰再扰动一遍 */
   if (cfg.enabled) {
     try {
-      var pch = lkPurifyBody(body);
-      for (var pz = 0; pz < pch.length; pz++) out.changed.push(pch[pz]);
+      /* v5.78：先降权再清洗——先洗会把降权要抓的同类词洗没，归位/下沉几乎 0 命中 */
       var dmt = lkDemoteBody(body);
       for (var dz0 = 0; dz0 < dmt.length; dz0++) out.changed.push(dmt[dz0]);
-      var wch = washPatchBody(body);
-      for (var wz = 0; wz < wch.length; wz++) out.changed.push(wch[wz]);
+      var pch = lkPurifyBody(body);
+      for (var pz = 0; pz < pch.length; pz++) out.changed.push(pch[pz]);
       var hst = lkHistoryStrip(body);
       for (var hz0 = 0; hz0 < hst.length; hz0++) out.changed.push(hst[hz0]);
       try { if (lkSingleSection(body)) out.changed.push('单节折叠'); } catch (eSS) {}
@@ -891,8 +890,21 @@ function planRequest(rawBody, url, internal) {
   try { out.foreign = foreignShield(body); } catch (eF) { criticalWarn('外来护盾', eF); }
 
   if (out.changed.length) {
-    try { out.body = JSON.stringify(body); try { JAIL_INJ.ver = jailVerify(out.body); } catch (eV) {} }
+    try {
+      out.body = JSON.stringify(body);
+      try { if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) out.body = lkWireArmorJson(out.body); } catch (eWA) {}
+      try { JAIL_INJ.ver = jailVerify(out.body); } catch (eV) {}
+    }
     catch (eSerialize) { out.body = rawBody; out.changed = []; out.reason = 'serialize-failed'; criticalWarn('请求序列化', eSerialize); }
+  } else if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) {
+    try {
+      var wOnly = lkWireArmorJson(rawBody);
+      if (wOnly && wOnly !== rawBody) {
+        out.body = wOnly;
+        out.changed.push('透明护甲');
+        try { JAIL_INJ.ver = jailVerify(out.body); } catch (eV2) {}
+      }
+    } catch (eWA2) {}
   }
   out.edits = edits;
   out.added = added;

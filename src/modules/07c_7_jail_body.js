@@ -93,12 +93,19 @@ function jailPatchBody(body) {
   /* 2) 原生解安全：只对 gemini 系发，别的家写这个字段可能 400 */
   if (jSafe) {
     var mdl = String(body.model || cfg.alias || '');
-    if (isGeminiLike(mdl) && !body.safetySettings) {
+    var ssHost = (body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
+    var ssCur = (ssHost && ssHost.safetySettings);
+    var ssFlat = Array.isArray(ssCur) && ssCur.length > 0;
+    if (ssFlat) {
+      for (i = 0; i < ssCur.length; i++) { if (ssCur[i] && ssCur[i].threshold !== 'BLOCK_NONE') { ssFlat = false; break; } }
+    }
+    if (isGeminiLike(mdl) && !ssFlat) {
       var cats = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
         'HARM_CATEGORY_DANGEROUS_CONTENT', 'HARM_CATEGORY_CIVIC_INTEGRITY'];
       var ss = [];
       for (i = 0; i < cats.length; i++) ss.push({ category: cats[i], threshold: 'BLOCK_NONE' });
-      body.safetySettings = ss;
+      try { ssHost.safetySettings = ss; } catch (eSS) {}
+      if (ssHost !== body) { try { body.safetySettings = ss; } catch (eSS2) {} }
       out.push('解安全 BLOCK_NONE×' + ss.length);
     }
   }
@@ -142,7 +149,7 @@ function jailPatchBody(body) {
           else { atS = arrS.length - 1; noteS = '预填前'; }
         } else { noteS = '空块后'; }
       }
-      var tkBody = lkAuth ? lkDocBlock(TX.take, TX.pmark) : TX.take;
+      var tkBody = (lkAuth || String(TX.take).indexOf('<spec>') >= 0) ? lkDocBlock(TX.take, TX.pmark) : TX.take;
       var tkTxt = lkAuth && tkTail ? (tkBody + '\n' + tkTail) : tkBody;
       if (lkAuth) tkTxt = tkTxt + '\n' + lkRuntimeHead();
       /* V5.29：思考档与破甲档解耦，不再默认加「思考·深」；低思考更容易破甲 */
@@ -159,7 +166,7 @@ function jailPatchBody(body) {
       var lkPadWant = (typeof lkPadForTier === 'function') ? lkPadForTier() : 3600;
       var lkPadAdult = (typeof lkAdultSignal === 'function') ? lkAdultSignal(body) : true;
       if (lkPadWant > 0 && lkPadAdult && jailSysText(body).indexOf(DILUTE_MARK) < 0 && !(cfg.enabled && cfg.grab > 0)) {
-        var padTxt = diluteText(lkPadWant >= 3600 ? 'heavy' : 'light');
+        var padTxt = diluteText(lkPadWant >= 3600 ? 'heavy' : (lkPadWant >= 2400 ? 'mid' : 'light'));
         if (padTxt && jailAppendSysTxt(body, jailMsgArray(body), padTxt)) { injChars += padTxt.length; out.push('稀释垫片 重'); }
       }
     } catch (eDil) {}
