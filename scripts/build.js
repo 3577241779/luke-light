@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist';
-const CHANGELOG_LATEST = 'V5.81 · 迪迦技能面板美化、结构层升级与 BUG 修复：新增「细胞转换光束 · 传输转译」（4档：关闭/细胞转换/光粒子化/自动）+ 内嵌「计时器光印 · 会话盐」、「奥特念力 · 原生思考头」（6档防挤行）、「幻影折射 · 隐语侧写」（柔光通栏开关卡），五皮肤适配与内置图鉴重写；修复 iOS<16.4 正则后行断言兼容、接管并入末条幂等去重、孤儿工具误删预设引擎与空数组、原生思考头被稀释垫片顶下及转译后回扫误判。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist';
+const CHANGELOG_LATEST = 'V5.90 · 思考强度真协议修复、光鉴防误报与排障地址脱敏：修复「精神同调」在酒馆后端(makersuite/custom/openrouter)对 Gemini 模型错写 generationConfig 导致不生效的问题，改为按真实请求协议精准写入 reasoning_effort / reasoning.effort / thinkingConfig；修复已有真实深度思考的兼容中转单块吐正文误判 V3 伪流式；排障信标自动剥离 URL 查询参数杜绝 ?key= 边缘泄露。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.81·ST酒馆适配.json',
+    fileName: '卢克之光 V5.90·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.81·ST酒馆适配',
-    info: '卢克之光 V5.81「光之守护」· 手机 ST 酒馆适配（细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / 三生合体）',
+    name: '卢克之光 V5.90·ST酒馆适配',
+    info: '卢克之光 V5.90「光之守护」· 手机 ST 酒馆适配（真协议思考强度切换 / 细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / 三生合体）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.81·TT酒馆适配.json',
+    fileName: '卢克之光 V5.90·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.81·TT酒馆适配',
-    info: '卢克之光 V5.81「光之守护」· TT 酒馆适配（细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / TT 双入口）',
+    name: '卢克之光 V5.90·TT酒馆适配',
+    info: '卢克之光 V5.90「光之守护」· TT 酒馆适配（真协议思考强度切换 / 细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.81·桌面版.json',
+    fileName: '卢克之光 V5.90·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.81·桌面版',
-    info: '卢克之光 V5.81「光之守护」· 电脑桌面版（细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / 桌面宽屏拖拽）',
+    name: '卢克之光 V5.90·桌面版',
+    info: '卢克之光 V5.90「光之守护」· 电脑桌面版（真协议思考强度切换 / 细胞转换光束传输转译 / 奥特念力原生思考头 / 幻影折射隐语侧写 / 光鉴四维硬指纹与一码通 / 五皮肤3D雕像桌宠 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

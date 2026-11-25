@@ -189,7 +189,7 @@ async function runSuite(fileName) {
   const api = loadBundle(fullPath, win);
 
   try {
-    check(api && api.VERSION === '5.81', 'VERSION 为 5.81', `got=${api && api.VERSION}`);
+    check(api && api.VERSION === '5.90', 'VERSION 为 5.90', `got=${api && api.VERSION}`);
 
     // =========================================================================
     // 1. 路由雷达页全按键实效校验（微扰 / 钉参数 / 思考档 / 总开关）

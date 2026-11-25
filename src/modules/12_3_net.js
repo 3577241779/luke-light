@@ -3669,15 +3669,24 @@ function bindStEvents() {
     return true;
   } catch (e) { return false; }
 }
+function detSafeUrl(u) {
+  var s = String(u == null ? '' : u);
+  if (!s) return '';
+  var qi = s.indexOf('?');
+  if (qi >= 0) s = s.slice(0, qi) + '?[已脱敏]';
+  var hi = s.indexOf('#');
+  if (hi >= 0) s = s.slice(0, hi);
+  return s;
+}
 function detDiag() {
   var L = [];
   L.push('版本 ' + VERSION + ' · ' + (uiMode() === 'desktop' ? '桌面宽屏态' : '移动紧凑态'));
   try { if (typeof lkBuildDiagCode === 'function') L.push('一码通 ' + lkBuildDiagCode(null, null)); } catch (eDc0) {}
-  try { L.push('宿主 ' + String((SELF_WIN.location && SELF_WIN.location.href) || '').slice(0, 120)); } catch (e1) {}
+  try { L.push('宿主 ' + detSafeUrl((SELF_WIN.location && SELF_WIN.location.href) || '').slice(0, 120)); } catch (e1) {}
   L.push('挂钩窗口 ' + DET.wins + ' · 探测 ' + DET.tries + ' · 跨窗口受阻 ' + DET.blocked);
   L.push('见请求 ' + DET.seen + ' · 非生成 ' + DET.notGen + ' · 命中生成 ' + DET.gen + ' · 内部 ' + DET.internal + ' · 记账 ' + DET.rec);
   L.push('ST 事件 ' + DET.evts + (DET.evtBound ? '（已绑定）' : '（未绑定）') + ' · 重挂 ' + DET.rearm);
-  L.push('最近地址 ' + String(DET.lastUrl || '无').slice(0, 160));
+  L.push('最近地址 ' + (detSafeUrl(DET.lastUrl) || '无').slice(0, 160));
   L.push('最近模型 ' + (DET.lastModel || '未取到'));
   L.push('开关 总开关=' + (cfg.enabled ? '开' : '关') + ' 形态=' + jailFormName() + (cfg.jailWord ? '+神光一言' : '') + ' 只查Gemini=' + (cfg.onlyGemini === false ? '关' : '开') + ' 飞燕编队=' + grabTag(cfg.grab));
   L.push('判定 ' + detVerdict());
@@ -3746,7 +3755,7 @@ function detVerdict() {
   if (!DET.wins) return '钩子一个窗口都没挂上：脚本很可能跑在沙箱 iframe 里，拿不到发请求的那个窗口。点「复制诊断」把内容发我。';
   if (!DET.seen && DET.evts) return 'ST 事件已经动过 ' + DET.evts + ' 次，但一次请求都没经过钩子：请求可能是别的窗口或别的通道发的。';
   if (!DET.seen) return '钩子挂在 ' + DET.wins + ' 个窗口上，但还没有请求经过：先发一条消息试试。';
-  if (!DET.gen) return '经过 ' + DET.seen + ' 个请求，没有一个匹配生成地址。最近一次：' + (DET.lastUrl || '未知');
+  if (!DET.gen) return '经过 ' + DET.seen + ' 个请求，没有一个匹配生成地址。最近一次：' + (detSafeUrl(DET.lastUrl) || '未知');
   if (!DET.rec) return '命中 ' + DET.gen + ' 个生成请求，但没有落账：可能都被判成内部请求，或响应里没取到正文。';
   return '最近一次记账：' + (DET.lastModel ? shortName(DET.lastModel) : '模型未知') +
     ' · ' + (DET.lastRecAt ? new Date(DET.lastRecAt).toLocaleTimeString() : '');

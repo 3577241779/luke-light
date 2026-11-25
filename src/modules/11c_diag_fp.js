@@ -588,7 +588,7 @@ function lkEvalFingerprint(ev, rec, baseVerdict) {
           cadenceWhy = '回显渠道 + 高档模型零思考且偏快(' + netCps + '字/s)';
         }
       }
-      if (!cadenceWhy && fp.nonStreamDump && noHardProof && !hasThoughtSig) {
+      if (!cadenceWhy && fp.nonStreamDump && noHardProof && !hasThoughtSig && !hasThink) {
         cadenceWhy = '请求流式却单块整吐 ' + fp.firstTextChunkChars + ' 字，且无原生硬指纹（疑似伪流式代理缓存/替换）';
       }
       /* 叠加行为基线/结构指纹（样本达标且非纯网络慢时，在无硬证条件下触发预警） */

@@ -520,8 +520,21 @@ function thinkApply(body, out) {
   if (!root || typeof root !== 'object') return res;
   var mdl = String((body && body.model) || (out && out.model) || '');
   if (/anthropic|claude/i.test(mdl)) return res;
+  var reqUrl = String((body && body.__lkUrl) || (out && out.url) || '');
+  var srcLow = String((body && body.chat_completion_source) || (root && root.chat_completion_source) || '').toLowerCase();
+  var isStProxy = !!(
+    srcLow ||
+    (body && (body.custom_url || body.reverse_proxy)) ||
+    /\/api\/backends\/(?:chat-completions|text-completions)|\/chat-completions\/generate\b/i.test(reqUrl)
+  );
+  var isGeminiNative = !isStProxy && (
+    Array.isArray(root.contents) ||
+    !!root.systemInstruction ||
+    /:(?:stream)?[gG]enerateContent\b/i.test(reqUrl) ||
+    (!!root.generationConfig && !Array.isArray(root.messages))
+  );
   var up = lv.toUpperCase();
-  if (/gemini/i.test(mdl)) {
+  if (isGeminiNative) {
     var gen = root.generationConfig;
     if (!gen || typeof gen !== 'object' || Array.isArray(gen)) { gen = {}; root.generationConfig = gen; }
     var tc = gen.thinkingConfig;
@@ -537,6 +550,19 @@ function thinkApply(body, out) {
     }
   } else {
     root.reasoning_effort = lv;
+    if (srcLow === 'openrouter' || (root.reasoning && typeof root.reasoning === 'object' && !Array.isArray(root.reasoning))) {
+      if (!root.reasoning || typeof root.reasoning !== 'object' || Array.isArray(root.reasoning)) root.reasoning = {};
+      root.reasoning.effort = lv;
+    }
+    if (root.generationConfig && typeof root.generationConfig === 'object' && root.generationConfig.thinkingConfig && typeof root.generationConfig.thinkingConfig === 'object') {
+      if (/gemini-?4/i.test(mdl)) {
+        root.generationConfig.thinkingConfig.thinkingLevel = up;
+        try { delete root.generationConfig.thinkingConfig.thinkingBudget; } catch (e3) {}
+      } else if (/gemini/i.test(mdl)) {
+        root.generationConfig.thinkingConfig.thinkingBudget = (lv === 'low' ? 1024 : (lv === 'medium' ? 8192 : 24576));
+        try { delete root.generationConfig.thinkingConfig.thinkingLevel; } catch (e4) {}
+      }
+    }
     res.push('思考:' + lv + '(reasoning_effort)');
   }
   return res;

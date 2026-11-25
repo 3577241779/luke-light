@@ -1,10 +1,10 @@
 {
-  "version": "5.81",
-  "releasedAt": "2026-11-25T09:50:54.098Z",
-  "changelog": "V5.81 · 迪迦技能面板美化、结构层升级与 BUG 修复：新增「细胞转换光束 · 传输转译」（4档：关闭/细胞转换/光粒子化/自动）+ 内嵌「计时器光印 · 会话盐」、「奥特念力 · 原生思考头」（6档防挤行）、「幻影折射 · 隐语侧写」（柔光通栏开关卡），五皮肤适配与内置图鉴重写；修复 iOS<16.4 正则后行断言兼容、接管并入末条幂等去重、孤儿工具误删预设引擎与空数组、原生思考头被稀释垫片顶下及转译后回扫误判。",
+  "version": "5.90",
+  "releasedAt": "2026-11-25T11:00:10.308Z",
+  "changelog": "V5.90 · 思考强度真协议修复、光鉴防误报与排障地址脱敏：修复「精神同调」在酒馆后端(makersuite/custom/openrouter)对 Gemini 模型错写 generationConfig 导致不生效的问题，改为按真实请求协议精准写入 reasoning_effort / reasoning.effort / thinkingConfig；修复已有真实深度思考的兼容中转单块吐正文误判 V3 伪流式；排障信标自动剥离 URL 查询参数杜绝 ?key= 边缘泄露。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.90/dist/luke-light-desktop.json"
   }
 }

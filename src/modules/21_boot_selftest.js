@@ -985,21 +985,33 @@ function runSelfTest() {
     return ok1 && ok2 && ok3 && ok4;
   });
 
-  T('T48 思考档三档：Gemini4 thinkingLevel / Gemini3 thinkingBudget / 兼容面 reasoning_effort', function () {
+  T('T48 思考档三档：Gemini原生 thinkingLevel/thinkingBudget 与 ST/OpenAI兼容面 reasoning_effort', function () {
     var keep = cfg.think;
     try {
       function g4(lv, preset) {
         cfg.think = lv;
-        var b = { model: 'gemini-4-hydrogen', messages: [] };
+        var b = { model: 'gemini-4-hydrogen', contents: [] };
         if (preset) b.generationConfig = { thinkingConfig: { thinkingLevel: preset } };
         thinkApply(b, { model: b.model });
         return b.generationConfig && b.generationConfig.thinkingConfig && b.generationConfig.thinkingConfig.thinkingLevel;
       }
       function g3(lv) {
         cfg.think = lv;
-        var b = { model: 'gemini-3.8-flash', messages: [] };
+        var b = { model: 'gemini-3.8-flash', contents: [] };
         thinkApply(b, { model: b.model });
         return b.generationConfig && b.generationConfig.thinkingConfig && b.generationConfig.thinkingConfig.thinkingBudget;
+      }
+      function gCompat(lv) {
+        cfg.think = lv;
+        var b = { model: 'pg-gemini-4-hydrogen', chat_completion_source: 'custom', messages: [] };
+        thinkApply(b, { model: b.model });
+        return b.reasoning_effort === lv && !b.generationConfig;
+      }
+      function gOr(lv) {
+        cfg.think = lv;
+        var b = { model: 'google/gemini-3-pro', chat_completion_source: 'openrouter', messages: [] };
+        thinkApply(b, { model: b.model });
+        return b.reasoning_effort === lv && b.reasoning && b.reasoning.effort === lv;
       }
       function gf(lv) {
         cfg.think = lv;
@@ -1010,16 +1022,17 @@ function runSelfTest() {
       var a = g4('low') === 'LOW' && g4('medium') === 'MEDIUM' && g4('high') === 'HIGH';
       var b = g4('medium', 'LOW') === 'MEDIUM';
       var c = g3('low') === 1024 && g3('high') === 24576;
+      var c2 = gCompat('low') && gCompat('high') && gOr('low');
       var d = gf('low') === 'low' && gf('medium') === 'medium' && gf('high') === 'high';
       cfg.think = 'bogus';
-      var bx = { model: 'gemini-4-hydrogen', messages: [] };
+      var bx = { model: 'gemini-4-hydrogen', contents: [] };
       thinkApply(bx, { model: bx.model });
       var e = bx.generationConfig.thinkingConfig.thinkingLevel === 'MEDIUM';
       cfg.think = 'low';
       var bc = { model: 'claude-sonnet-4', messages: [] };
       var c4 = thinkApply(bc, { model: bc.model });
       var f = c4.length === 0 && bc.reasoning_effort === undefined;
-      return a && b && c && d && e && f;
+      return a && b && c && c2 && d && e && f;
     } finally { cfg.think = keep; }
   });
 
@@ -1773,9 +1786,12 @@ function runSelfTest() {
       cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'strong', jailSupremeConfirmed: true, think: 'high' });
       var b = { model: 'gemini-4-argon', messages: [{ role: 'user', content: '写' }] };
       thinkApply(b, {});
-      var tc = b.generationConfig && b.generationConfig.thinkingConfig;
+      if (b.reasoning_effort !== 'medium') throw new Error('4A 兼容面思考档 ' + b.reasoning_effort);
+      var bNat = { model: 'gemini-4-argon', contents: [{ role: 'user', parts: [{ text: '写' }] }] };
+      thinkApply(bNat, {});
+      var tc = bNat.generationConfig && bNat.generationConfig.thinkingConfig;
       var lvl = tc && tc.thinkingLevel;
-      if (lvl !== 'MEDIUM') throw new Error('4A 思考档 ' + lvl);
+      if (lvl !== 'MEDIUM') throw new Error('4A 原生思考档 ' + lvl);
       jailPatchBody(b);
       var all = b.messages.map(function (m) { return String(m.content || ''); }).join(String.fromCharCode(10));
       if (all.indexOf('【思考·') >= 0) throw new Error('委托块仍有思考档');
@@ -2063,7 +2079,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.81') throw new Error('VERSION 应为 5.81，实际 ' + VERSION);
+      if (VERSION !== '5.90') throw new Error('VERSION 应为 5.90，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
