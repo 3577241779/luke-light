@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.78';
+var VERSION = '5.81';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -87,6 +87,10 @@ var CFG_DEFAULT = {
   enabled: true,          // 总开关
   pin: true,              // 钉死路由参数（删 models[] / allow_fallbacks=false）
   think: 'auto',
+  effort: 'auto', /* off/auto/0.05/0.50/0.80/1.00：原生思考头 */
+  semantic: 'off', /* off/on：语义层隐语侧写（只改行文口径，不改输入正文） */
+  wire: 'auto', /* off/mask/all/auto：mask=65 词表，all=整包字符串全量 \uXXXX，auto=强力档以上全量、复合型词表 */
+  salt: 'auto', /* off/auto：会话盐 */
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
   toolChan: 'off',       // off | on（武装货舱）

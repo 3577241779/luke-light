@@ -189,7 +189,7 @@ async function runSuite(fileName) {
   const api = loadBundle(fullPath, win);
 
   try {
-    check(api && api.VERSION === '5.78', 'VERSION 为 5.78', `got=${api && api.VERSION}`);
+    check(api && api.VERSION === '5.81', 'VERSION 为 5.81', `got=${api && api.VERSION}`);
 
     // =========================================================================
     // 1. 路由雷达页全按键实效校验（微扰 / 钉参数 / 思考档 / 总开关）
@@ -444,7 +444,8 @@ async function runSuite(fileName) {
     api.setCfg('jail', 'abyss');
     api.setCfg('toolChan', 'off');
     const gemMaxPlan = api.planRequest(JSON.stringify(makeGeminiBody()), 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent', false);
-    check(!gemMaxPlan.reason && gemMaxPlan.body.includes('〔AR-USR') && gemMaxPlan.body.includes('〔AR-NAR') && gemMaxPlan.body.includes('致命后果已开启'),
+    const gemMaxDecoded = JSON.stringify(JSON.parse(gemMaxPlan.body));
+    check(!gemMaxPlan.reason && gemMaxDecoded.includes('〔AR-USR') && gemMaxDecoded.includes('〔AR-NAR') && gemMaxDecoded.includes('致命后果已开启'),
       'Gemini 原生端点在深渊全功能拉满下零报错且叙述结界/贴脸包裹/致命后果全部落盘');
 
     // =========================================================================

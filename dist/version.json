@@ -1,10 +1,10 @@
 {
-  "version": "5.78",
-  "releasedAt": "2026-11-25T03:56:11.437Z",
-  "changelog": "V5.78 · 破甲与传输护甲协同优化：新增 JSON 层透明传输护甲（强力/闪耀默认走透明 \\uXXXX 绕过中转关键词扫描且不耗思考 token，含 ASCII 词边界防误伤）、先降权再清洗避免归位/下沉漏命、修复 assistantSnapshot 下标偏移误回退、修复 Gemini safetySettings 嵌套与非 BLOCK_NONE 升级、修复工具破甲 thoughtSignature 挂载位置（model.parts[0]）、柔化连载续写/任务单/至尊声明保留状态栏并补齐中档 2400 稀释垫片与拒答正则。",
+  "version": "5.81",
+  "releasedAt": "2026-11-25T09:50:54.098Z",
+  "changelog": "V5.81 · 迪迦技能面板美化、结构层升级与 BUG 修复：新增「细胞转换光束 · 传输转译」（4档：关闭/细胞转换/光粒子化/自动）+ 内嵌「计时器光印 · 会话盐」、「奥特念力 · 原生思考头」（6档防挤行）、「幻影折射 · 隐语侧写」（柔光通栏开关卡），五皮肤适配与内置图鉴重写；修复 iOS<16.4 正则后行断言兼容、接管并入末条幂等去重、孤儿工具误删预设引擎与空数组、原生思考头被稀释垫片顶下及转译后回扫误判。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.78/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.81/dist/luke-light-desktop.json"
   }
 }

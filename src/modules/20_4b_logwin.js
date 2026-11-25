@@ -1387,6 +1387,20 @@ function onPanelClick(e) {
   if (act.indexOf('gm:') === 0) {
     var gparts = act.slice(3).split(':');
     var gk = gparts[0], gidx = Number(gparts[1]);
+    if (gk === 'effort' && MENU_SPEC.effort && MENU_SPEC.effort.items[gidx]) {
+      cfg.effort = MENU_SPEC.effort.items[gidx][1];
+      saveCfg(); UI_SIG = {}; render();
+      var efLbl = (typeof effortTag === 'function') ? effortTag() : String(cfg.effort);
+      banner((typeof sk === 'function' ? sk('effortTitle', '奥特念力 · 原生思考头') : '奥特念力') + '：' + efLbl, cfg.effort === 'off' ? 'gray' : 'ok');
+      return;
+    }
+    if (gk === 'wire' && MENU_SPEC.wire && MENU_SPEC.wire.items[gidx]) {
+      cfg.wire = MENU_SPEC.wire.items[gidx][1];
+      saveCfg(); UI_SIG = {}; render();
+      var wLbl = (typeof wireTag === 'function') ? wireTag() : MENU_SPEC.wire.items[gidx][0];
+      banner((typeof sk === 'function' ? sk('wireTitle', '细胞转换光束 · 传输转译') : '细胞转换光束') + '：' + wLbl, cfg.wire === 'off' ? 'gray' : 'ok');
+      return;
+    }
     if (gk === 'know' && gidx === 3 && String(cfg.know || 'off') !== 'full' && narrTipNeeded('full', cfg.knowTip)) {
       knowTipDialog('full');
       return;
@@ -1428,6 +1442,26 @@ function onPanelClick(e) {
     cfg.jailWord = !cfg.jailWord;
     saveCfg(); ensureHooks(); render();
     banner(cfg.jailWord ? '神光一言已挂载：将在开启形态末尾附虚构续写契约' : '神光一言已卸下', cfg.jailWord ? 'ok' : 'gray');
+    return;
+  }
+  if (act === 'salt:toggle') {
+    var curSaltOff = String((cfg && cfg.salt) || 'auto') === 'off';
+    cfg.salt = curSaltOff ? 'auto' : 'off';
+    saveCfg(); UI_SIG = {}; render();
+    var wOffS = (typeof lkWireMode === 'function') ? (lkWireMode() === 'off') : (String((cfg && cfg.wire) || 'auto') === 'off');
+    var sTag = (typeof lkSaltTag === 'function') ? lkSaltTag() : 'SID-5EED';
+    banner(cfg.salt !== 'off'
+      ? ('✦ 计时器光印已开启（' + sTag + (wOffS ? '，请先开启上方细胞转换光束后生效' : '，已为当前会话注入独立盐印') + '）')
+      : '计时器光印已关闭（不再注入 Session-ID）', cfg.salt !== 'off' ? (wOffS ? 'warn' : 'ok') : 'gray');
+    return;
+  }
+  if (act.indexOf('sem:') === 0) {
+    var wantSem = act.slice(4);
+    cfg.semantic = (wantSem === 'toggle') ? ((typeof lkSemOn === 'function' && lkSemOn()) ? 'off' : 'on') : (wantSem === 'on' ? 'on' : 'off');
+    saveCfg(); ensureHooks(); UI_SIG = {}; render();
+    var semOnTxt = (typeof sk === 'function') ? sk('semBannerOn', '🌙 幻影折射已展开：亲密段落改走意象侧写') : '🌙 幻影折射已展开：亲密段落改走意象侧写';
+    var semOffTxt = (typeof sk === 'function') ? sk('semBannerOff', '幻影折射已收起：恢复直写') : '幻影折射已收起：恢复直写';
+    banner(cfg.semantic === 'on' ? semOnTxt : semOffTxt, cfg.semantic === 'on' ? 'ok' : 'gray');
     return;
   }
   if (act.indexOf('tier:') === 0) {

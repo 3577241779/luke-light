@@ -318,10 +318,49 @@ function uiJailHTML() {
         '</span>' +
       '</button>' +
     '</div>' + jstBlock +
+    '<div class="ar6-sem-wrap">' +
+      '<button type="button" class="ar6-sem-card' + ((typeof lkSemOn === 'function' && lkSemOn()) ? ' on' : '') + '" data-ar6="sem:toggle" aria-pressed="' + ((typeof lkSemOn === 'function' && lkSemOn()) ? 'true' : 'false') + '">' +
+        '<span class="ar6-sem-main">' +
+          '<span class="ar6-sem-title">' + esc(sk('semLabel', '🌙 幻影折射 · 隐语侧写')) + '</span>' +
+          '<span class="ar6-sem-sub">' + esc(sk('semSub', '亲密与高烈度段落改用文学意象与侧写代称，不改动输入原文')) + '</span>' +
+        '</span>' +
+        '<em class="ar6-sem-st">' + ((typeof lkSemOn === 'function' && lkSemOn()) ? '已开启' : '待机') + '</em>' +
+      '</button>' +
+    '</div>' +
   '</div>';
 
   var formSub = sk('jailSub', '石像静默待命 · 空中型轻装掠行 · 复合型双轨破障 · 强力型赤红强攻 · 闪耀型黄金圣盾 · 诺亚太古圣翼统御 · 深渊暗域全量吞噬');
   h += segBarHTML(sk('jailTitle', '迪迦形态切换 · 正面破甲'), formSub, jailRows, curJail, 'tier:', 'supreme', tm.badgeTxt, tm.badgeCls, ultHTML);
+
+  /* V5.81 · 细胞转换光束（传输转译 4 档）+ 内嵌计时器光印（会话盐） */
+  var wireCur = (typeof lkWireMode === 'function') ? lkWireMode() : String((cfg && cfg.wire) || 'auto');
+  var wireOff = (wireCur === 'off');
+  var wireItems = sk('wireItems', MENU_SPEC.wire.items);
+  var wireBdg = (typeof wireTag === 'function') ? wireTag() : wireCur;
+  var wireBdgCls = wireOff ? '' : (wireCur === 'all' ? 'noa' : (wireCur === 'auto' ? 'gold' : 'cyan'));
+  var saltOn = !wireOff && String((cfg && cfg.salt) || 'auto') !== 'off';
+  var saltRawOn = String((cfg && cfg.salt) || 'auto') !== 'off';
+  var saltTagTxt = (typeof lkSaltTag === 'function') ? lkSaltTag() : 'SID-5EED';
+  var saltSt = wireOff ? '随光束待机' : (saltOn ? ('已开启 · ' + saltTagTxt) : '待机');
+  var wireBar = '<div class="ar6-ubar ar6-wire-bar">';
+  for (var wi = 0; wi < wireItems.length; wi++) {
+    var wIt = wireItems[wi];
+    var wVal = String(wIt[1]);
+    var wIsOn = (wVal === wireCur);
+    var wCls = 'ar6-ubtn' + (wIsOn ? ' on' : '') + (wVal === 'off' ? ' off' : '') + (wVal === 'auto' ? ' gold' : '');
+    wireBar += '<button type="button" class="' + wCls + '" data-wire="' + esc(wVal) + '" data-ar6="gm:wire:' + wi + '">' + esc(wIt[0]) + '</button>';
+  }
+  wireBar += '</div>';
+  var saltGrid = '<div class="ar6-tgrid ar6-salt-row">' +
+    swCell('salt:toggle', sk('saltLabel', '✦ 计时器光印 · 会话盐'), saltOn, 'span-2', saltSt, wireOff ? 'data-off="1"' : (!saltRawOn ? '' : '')) +
+    '</div>';
+  var wireSub = sk('wireSub', '在 JSON 传输层将敏感词或整包非 ASCII 粒子化转为 \\uXXXX 绕过中转关键词扫描，上游解析无损还原且不耗思考预算；「自动」在强力型及以上启全量粒子化。');
+  h += '<div class="ar6-ugroup ar6-wire-card">' +
+    '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('wireTitle', '细胞转换光束 · 传输转译')) + '</span>' +
+      '<span class="ar6-badge' + (wireBdgCls ? ' ' + wireBdgCls : '') + '">' + esc(wireBdg) + '</span></div>' +
+    wireBar + saltGrid +
+    '<div class="ar6-ug-sub">' + esc(wireSub) + '</div>' +
+  '</div>';
   return h;
 }
 
@@ -458,6 +497,25 @@ function uiMoreHTML() {
       ((typeof refractStatusLine === 'function') ? ('<div class="ar6-dline" style="margin-top:6px">' + esc(refractStatusLine()) + '</div>') : '');
     h += segBarHTML(sk('refractTitle', '光波折射 · 随机微扰'), '四轨随机排列组合微扰（空白/语篇词/锚点/随机数）+ 一键换套，大幅打散公共预设前缀指纹，规避路由偷换与旧缓存敷衍。', MENU_SPEC.refract.items, refCur, 'gm:refract', '', refBdg, refCur === 'off' ? '' : 'cyan', routeGrid);
     h += segBarHTML(sk('thinkTitle', '精神同调 · 思考强度'), '选「跟随预设」完全保留预设原有思考预算（零覆写）；手动指定则按模型协议写入对应档位。', MENU_SPEC.think.items, String(cfg.think || 'auto'), 'gm:think', 'auto', thinkTag(), String(cfg.think || 'auto') === 'auto' ? '' : 'cyan');
+    var efCur = String((cfg && cfg.effort) || 'auto');
+    var efBdg = (typeof effortTag === 'function') ? effortTag() : efCur;
+    var efBdgCls = efCur === 'off' ? '' : (efCur === 'auto' ? 'gold' : 'cyan');
+    var efBar = '<div class="ar6-ubar ar6-effort-bar">';
+    for (var efi = 0; efi < MENU_SPEC.effort.items.length; efi++) {
+      var efIt = MENU_SPEC.effort.items[efi];
+      var efVal = String(efIt[1]);
+      var efOn = (efVal === efCur);
+      var efCls = 'ar6-ubtn' + (efOn ? ' on' : '') + (efVal === 'off' ? ' off' : '') + (efVal === 'auto' ? ' gold' : '');
+      efBar += '<button type="button" class="' + efCls + '" data-effort="' + esc(efVal) + '" data-ar6="gm:effort:' + efi + '">' + esc(efIt[0]) + '</button>';
+    }
+    efBar += '</div>';
+    var efSub = sk('effortSub', '向系统首行写入原生思考预算指令；选「随破甲」按当前形态自动映射（终极 0.05 / 闪耀·强力 0.50 / 复合 0.80 / 其余 1.00）。');
+    h += '<div class="ar6-ugroup ar6-effort-card">' +
+      '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('effortTitle', '奥特念力 · 原生思考头')) + '</span>' +
+        '<span class="ar6-badge' + (efBdgCls ? ' ' + efBdgCls : '') + '">' + esc(efBdg) + '</span></div>' +
+      efBar +
+      '<div class="ar6-ug-sub">' + esc(efSub) + '</div>' +
+    '</div>';
 
     h += '<div class="ar6-mmore-h">' + esc(sk('routeSecHead', '诊断报告、主动探针与数据维护')) + '</div>';
     h += '<div class="ar6-tgrid">' +

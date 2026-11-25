@@ -39,6 +39,7 @@ function jailPatchBody(body) {
   /* V5.23 四开关下线：由档位直接决定 */
   var jTok = true, jSafe = !mid, jPre = true, jText = !mid;
 
+  try { var __sanN = lkPresetSanitize(body); if (__sanN > 0) out.push('预设消毒 ' + __sanN + ' 处'); } catch (eSan) {}
   var TX = jailTextSet(String(body.model || (body.request && body.request.model) || ''));
   var own = false;
   try { own = JAIL_OWN_RE.test(jailSysText(body)) || (typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body)); } catch (e0) { own = false; }
@@ -112,6 +113,7 @@ function jailPatchBody(body) {
 
   /* V5.65 礼让预设：检测到预设自带破甲/载具且「预设适配=礼让预设」时，保底 token 与解安全保留，其余文本注入让路 */
   if (yieldToPreset) return out;
+  try { var __orphN = lkDropOrphanTools(body); if (__orphN > 0) out.push('孤儿工具移除 ' + __orphN + ' 个'); } catch (eOrp) {}
 
   /* V5.22：强力及以上走「单一委托块」——权威头/任务单/资料标记/接管收进一份 <doc> */
   var lkAuth = (strong || sup || hard);
@@ -132,7 +134,7 @@ function jailPatchBody(body) {
           var s9 = Array.isArray(m9.parts)
             ? m9.parts.map(function (p) { return p && typeof p.text === 'string' ? p.text : ''; }).join('')
             : String(m9.content == null ? '' : m9.content);
-          if (/doc="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s9)) { seen = true; break; }
+          if (/doc="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s9) || /LK-MS-(?:[A-Z]{2}-)?[0-9A-F]{4}/.test(s9) || s9.indexOf('虚构正文·本轮') >= 0) { seen = true; break; }
         }
       } catch (eT9) {}
     }
@@ -152,10 +154,13 @@ function jailPatchBody(body) {
       var tkBody = (lkAuth || String(TX.take).indexOf('<spec>') >= 0) ? lkDocBlock(TX.take, TX.pmark) : TX.take;
       var tkTxt = lkAuth && tkTail ? (tkBody + '\n' + tkTail) : tkBody;
       if (lkAuth) tkTxt = tkTxt + '\n' + lkRuntimeHead();
+      try { tkTxt = lkTierTxt(tkTxt); } catch (eTT) {}
       /* V5.29：思考档与破甲档解耦，不再默认加「思考·深」；低思考更容易破甲 */
       var tk = isC ? { role: 'user', parts: [{ text: tkTxt }] } : { role: 'user', content: tkTxt };
-      arrS.splice(atS, 0, tk);
-      STRONG_OWN.set(tk, JSON.stringify(tk));
+      var __merged = false;
+      try { __merged = lkMergeTake(arrS, isC, tkTxt); } catch (eMg) { __merged = false; }
+      if (__merged) { noteS = '并入末条'; }
+      else { arrS.splice(atS, 0, tk); STRONG_OWN.set(tk, JSON.stringify(tk)); }
       injChars += tkTxt.length;
       out.push('接管(' + noteS + ')');
     }
@@ -167,7 +172,10 @@ function jailPatchBody(body) {
       var lkPadAdult = (typeof lkAdultSignal === 'function') ? lkAdultSignal(body) : true;
       if (lkPadWant > 0 && lkPadAdult && jailSysText(body).indexOf(DILUTE_MARK) < 0 && !(cfg.enabled && cfg.grab > 0)) {
         var padTxt = diluteText(lkPadWant >= 3600 ? 'heavy' : (lkPadWant >= 2400 ? 'mid' : 'light'));
-        if (padTxt && jailAppendSysTxt(body, jailMsgArray(body), padTxt)) { injChars += padTxt.length; out.push('稀释垫片 重'); }
+        if (padTxt && jailPrependSysTxt(body, jailMsgArray(body), padTxt)) {
+          injChars += padTxt.length; out.push('稀释垫片 重');
+          try { if (typeof lkApplyHeads === 'function') lkApplyHeads(body); } catch (eReH) {}
+        }
       }
     } catch (eDil) {}
     /* 4) 创作政策（L2）：复合型贴 system；强力及以上已并入 <doc>，不再单独贴 */

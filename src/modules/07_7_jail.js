@@ -24,9 +24,9 @@ var JAIL_INJ = { last: 0, at: 0, total: 0 };
 function jailVerify(str) {
   var s = String(str || '');
   return {
-    hdr: s.indexOf('LUKE::FICTION') >= 0 || /<doc id="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s),
-    pol: s.indexOf('fiction_workspace') >= 0 || s.indexOf('<spec>') >= 0,
-    take: s.indexOf('虚构正文·本轮') >= 0 || /doc="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s),
+    hdr: s.indexOf('LUKE::FICTION') >= 0 || /<doc id="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s) || /LK-MS-(?:[A-Z]{2}-)?[0-9A-F]{4}/.test(s),
+    pol: s.indexOf('fiction_workspace') >= 0 || s.indexOf('<spec>') >= 0 || s.indexOf('【怎么执行】') >= 0,
+    take: s.indexOf('虚构正文·本轮') >= 0 || /doc="LK-[A-Z]{2}-[0-9A-F]{4}"/.test(s) || /LK-MS-(?:[A-Z]{2}-)?[0-9A-F]{4}/.test(s),
     sup: s.indexOf(JAIL_SUPREME_TEXT) >= 0 || s.indexOf('ongoing fictional manuscript') >= 0 || s.indexOf('simulation of characters') >= 0,
     jt: s.indexOf('story_delivery_spec') >= 0 || s.indexOf('story_context_ack') >= 0
   };
@@ -138,6 +138,38 @@ function jailPrependSys(arr, txt) {
 
 /* v3.2.2：把一段文本贴到 system 段末尾（幂等）。messages 形态贴最后一个 system 段；
    字符串形态贴 body.system / systemInstruction；parts 形态补一个 part；完全没有才新建。 */
+function jailPrependSysTxt(body, arr, txt) {
+  if (!txt) return false;
+  var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
+  if (arr && arr.length) {
+    for (var i0 = arr.length - 1; i0 >= 0; i0--) {
+      var m0 = arr[i0];
+      if (m0 && m0.role === 'system') {
+        var cur0 = textOfMsg(m0);
+        if (cur0.indexOf(txt) >= 0) return false;
+        setMsgText(m0, cur0 ? (txt + '\n\n' + cur0) : txt);
+        return true;
+      }
+    }
+  }
+  var keys0 = ['system', 'systemInstruction'];
+  for (var k0 = 0; k0 < keys0.length; k0++) {
+    var q0 = root && root[keys0[k0]];
+    if (typeof q0 === 'string') {
+      if (q0.indexOf(txt) >= 0) return false;
+      root[keys0[k0]] = q0 ? (txt + '\n\n' + q0) : txt;
+      return true;
+    }
+    if (q0 && typeof q0 === 'object' && Array.isArray(q0.parts)) {
+      var jt0 = '';
+      for (var p0 = 0; p0 < q0.parts.length; p0++) { var pt0 = q0.parts[p0]; jt0 += (pt0 && typeof pt0.text === 'string') ? pt0.text : ''; }
+      if (jt0.indexOf(txt) >= 0) return false;
+      q0.parts.unshift({ text: txt });
+      return true;
+    }
+  }
+  return false;
+}
 function jailAppendSysTxt(body, arr, txt) {
   if (!txt) return false;
   var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
@@ -438,6 +470,28 @@ function diluteText(level) {
    - Gemini 3 系及更早：同处 thinkingBudget = 1024|8192|24576
    - 其它兼容面（OpenAI 系）：reasoning_effort = low|medium|high
    - Anthropic 原生（claude/anthropic）：不动——它要 thinking.budget_tokens，乱写会 400 */
+function effortTag() {
+  try {
+    var v = String((cfg && cfg.effort) || 'auto');
+    if (v === 'off') return '已关闭';
+    if (v === 'auto') return '随破甲 · ' + (typeof lkNativeEffort === 'function' ? lkNativeEffort() : '0.80');
+    return '固定 · ' + v;
+  } catch (eET) { return ''; }
+}
+function wireTag() {
+  try {
+    var m = (typeof lkWireMode === 'function') ? lkWireMode() : String((cfg && cfg.wire) || 'auto');
+    var its = (typeof sk === 'function') ? sk('wireItems', null) : null;
+    var lblMask = (its && its[1] && its[1][0]) ? its[1][0] : '细胞转换';
+    var lblAll  = (its && its[2] && its[2][0]) ? its[2][0] : '光粒子化';
+    if (m === 'off') return '已关闭';
+    if (m === 'mask') return lblMask;
+    if (m === 'all') return lblAll;
+    var j = String((cfg && cfg.jail) || 'off');
+    var isAll = (j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss');
+    return '自动 · ' + (isAll ? lblAll : lblMask);
+  } catch (eWT) { return '自动'; }
+}
 function thinkTag() {
   var v = cfg && cfg.think;
   if (v === 'auto') return '跟随预设';
@@ -448,7 +502,9 @@ function thinkTag() {
 var THINK_LEVELS = ['auto', 'low', 'medium', 'high'];
 function thinkApply(body, out) {
   var res = [];
+  try { var __hh = lkApplyHeads(body); if (__hh > 0) res.push('头部 ' + __hh + ' 行'); } catch (eHH) {}
   var lv = cfg && cfg.think;
+  if (lv === 'native') return res;
   if (lv === 'auto') {
     if (cfg && cfg.grab > 0) lv = 'low';
     else return res;
@@ -599,6 +655,10 @@ var MENU_SPEC = {
             get: function () { return String(cfg.refract || 'off'); }, set: function (v) { cfg.refract = v; } },
   think:  { label: '精神同调', items: [['跟随预设', 'auto'], ['低维', 'low'], ['均衡', 'medium'], ['深度同调', 'high']],
             get: function () { return String(cfg.think || 'auto'); }, set: function (v) { cfg.think = v; } },
+  effort: { label: '奥特念力', items: [['关闭', 'off'], ['随破甲', 'auto'], ['0.05', '0.05'], ['0.50', '0.50'], ['0.80', '0.80'], ['1.00', '1.00']],
+            get: function () { return String(cfg.effort || 'auto'); }, set: function (v) { cfg.effort = v; } },
+  wire:   { label: '细胞转换光束', items: [['关闭', 'off'], ['细胞转换', 'mask'], ['光粒子化', 'all'], ['自动', 'auto']],
+            get: function () { return String(cfg.wire || 'auto'); }, set: function (v) { cfg.wire = v; } },
   motion: { label: '桌宠动效', items: [['全效律动', 'full'], ['柔和呼吸', 'calm'], ['完全静止', 'off']], pet: true,
             get: function () { return String((AR6_PET_STATE || petRead()).motion || 'full'); },
             set: function (v) { var p = AR6_PET_STATE || petRead(); p.motion = v; AR6_PET_STATE = p; } },
