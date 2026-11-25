@@ -94,7 +94,7 @@ async function runForTarget(fileName) {
   };
   const win = makeSandbox(baseFetch);
   const api = loadBundle(fullPath, win);
-  check(api && api.VERSION === '5.91', '版本号为 5.91');
+  check(api && api.VERSION === '5.92', '版本号为 5.92');
 
   const cfg = api.getCfg();
   check(cfg.contentOnly === 'on', '默认开启「纯净正轨 · 放行外部插件」');
@@ -314,7 +314,7 @@ async function runForTarget(fileName) {
   });
   const wbmApi = loadBundle(fullPath, wbmWin);
   await wbmWin.fetch('http://127.0.0.1:8000/api/ping', { method: 'GET' });
-  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.91', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
+  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.92', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
 
   // 7) 面板落位 A 校验：防卫设置出现「星域协同 · 插件与预设兼容」专卡（双独立开关）+ 形态破甲底栏含「预设适配」状态 + 采样窗星轨路由条
   const jailHtml = api.uiJailHTML();
@@ -345,7 +345,7 @@ async function runForTarget(fileName) {
     }), { status: 200 });
   });
   const fakePlat = /(?:ST|-st\.json)/i.test(fileName) ? 'st' : (/(?:TT|-tt\.json)/i.test(fileName) ? 'tt' : 'desktop');
-  const fakeScript = { id: 'lk-1', name: '卢克之光 V5.91 (' + fakePlat + ')', content: "var VERSION = '5.91';\nvar PLATFORM = '" + fakePlat + "';" };
+  const fakeScript = { id: 'lk-1', name: '卢克之光 V5.92 (' + fakePlat + ')', content: "var VERSION = '5.92';\nvar PLATFORM = '" + fakePlat + "';" };
   updWin.TavernHelper = {
     getScriptTrees() { return [fakeScript]; },
     updateScriptTreesWith(fn) { fn([fakeScript]); return true; },
@@ -480,8 +480,8 @@ async function runForTarget(fileName) {
   const metaOut = api.narrApply(metaBody);
   check(metaOut.includes('叙述:元模式避让') && !metaBody.messages[1].content.includes('〔AR-USR'), '非故事元模式（闲聊/复盘）自动暂停剧情铁律与三明治包裹');
 
-  // 10) 多皮肤引擎校验：默认 ultra 原皮 + 顶栏 🎨 抽屉切换 5 套皮肤（极简直白 / 修仙 / 玄幻 / 绯粉 / 原皮）无报错且文案实时切换
-  check(api.skinId() === 'ultra' && Array.isArray(api.AR6_SKIN_ORDER) && api.AR6_SKIN_ORDER.length === 5, '默认原奥特曼皮肤 ultra，共注册 5 套皮肤');
+  // 10) 多皮肤引擎校验：默认 ultra 原皮 + 顶栏 🎨 抽屉切换 10 套皮肤无报错且文案实时切换
+  check(api.skinId() === 'ultra' && Array.isArray(api.AR6_SKIN_ORDER) && api.AR6_SKIN_ORDER.length === 10, '默认原奥特曼皮肤 ultra，共注册 10 套皮肤');
   cfg.skin = 'plain';
   check(api.skinId() === 'plain' && api.uiJailHTML().includes('破限强度档位'), '切换皮肤一「极简直白」后文案实时切换为直白功能名');
   cfg.skin = 'xianxia';
@@ -490,6 +490,16 @@ async function runForTarget(fileName) {
   check(api.skinId() === 'xuanhuan' && api.uiJailHTML().includes('大千境界'), '切换皮肤三「焚天帝炎·玄幻」后文案实时切换为玄幻大千境界');
   cfg.skin = 'pink';
   check(api.skinId() === 'pink' && api.uiJailHTML().includes('微醺热度'), '切换皮肤四「绯樱微醺·粉欲」后文案实时切换为微醺色气风格');
+  cfg.skin = 'marvel';
+  check(api.skinId() === 'marvel' && api.uiJailHTML().includes('武装等级'), '切换皮肤五「方舟协议·漫威」后文案实时切换为复联武装等级');
+  cfg.skin = 'imperial';
+  check(api.skinId() === 'imperial' && api.uiJailHTML().includes('帝王威仪'), '切换皮肤六「天命玉玺·帝皇」后文案实时切换为帝王敕令');
+  cfg.skin = 'westfantasy';
+  check(api.skinId() === 'westfantasy' && api.uiJailHTML().includes('奥术阶位'), '切换皮肤七「圣殿秘典·西幻」后文案实时切换为奥术阶位');
+  cfg.skin = 'eldritch';
+  check(api.skinId() === 'eldritch' && api.uiJailHTML().includes('魔药序列'), '切换皮肤八「绯月秘仪·诡秘」后文案实时切换为魔药序列');
+  cfg.skin = 'cyberpunk';
+  check(api.skinId() === 'cyberpunk' && api.uiJailHTML().includes('破冰等级'), '切换皮肤九「黑墙协议·赛博」后文案实时切换为破冰等级');
   cfg.skin = 'ultra';
   check(api.skinId() === 'ultra' && api.uiJailHTML().includes('迪迦形态切换'), '切回默认皮肤「光之守护」完整还原原皮文案');
 }

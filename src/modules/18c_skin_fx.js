@@ -185,6 +185,236 @@ var AR6_SKIN_RITUALS = {
       bannerOk: '绯红深吻已落下 · 暗夜蔷薇绽放，失控级护航全面接管！',
       bannerNo: '在失控边缘及时刹住了车哦。'
     }
+  },
+  marvel: {
+    strong: {
+      tag: '🕸️ STARK PROTOCOL · 钢铁蜘蛛 MK.50',
+      title: '启动「钢铁蜘蛛」纳米破障协议？',
+      prologue: '“星期五检测到常规信道仍被拦截。现在展开纳米蛛爪与高频战术护盾，强行撕开封锁——”',
+      quote: '「纳米战甲上线，蛛网锚点锁定！<br>本轮启用高能防拒答与回执核验，把烦人的说教挡在战甲之外！」',
+      note: '🕸️ 神盾承诺：仅作用于本轮出站请求 · 历史聊天记录毫发无损',
+      okTxt: '【展开钢铁蜘蛛战甲】',
+      noTxt: '维持复联常规档',
+      bannerOk: '钢铁蜘蛛纳米战甲全开！高能破障与回执核验已上线！',
+      bannerNo: '战甲保持待命，维持当前武装等级。'
+    },
+    supreme: {
+      tag: '⚡ ENDGAME PROTOCOL · 终局全功率',
+      title: '开启「复联终局」满配超频？',
+      prologue: '“敌方风控已经全线合围。与其处处妥协，不如全功率启动复联终局协议——”',
+      quote: '「Avengers, Assemble！<br>全量清障与方舟护盾同步开启，绝不让任何无端说教打断这场故事！」',
+      note: '🕸️ 神盾承诺：满配超频仅覆盖出站数据包 · 既往记录分毫无损',
+      okTxt: '【终局协议 · 全功率开启】',
+      noTxt: '暂缓集结',
+      bannerOk: '终局协议全功率启动！全量清障与方舟护盾在线！',
+      bannerNo: '已取消终局超频，保持原有档位。'
+    },
+    noa: {
+      tag: '💚 TIME STONE · 时间宝石维度归位',
+      title: '启用「时间宝石」重构系统架构？',
+      prologue: '“常规时间线已陷入拒答死循环。拨动阿戈摩托之眼，重排底层法序并打开纳米货舱——”',
+      quote: '「在一千四百万种可能里，这是唯一顺畅送回完整正文的那一条。<br>系统架构归位 + 纳米蛛丝货舱就绪！」',
+      note: '🕸️ 至尊法旨：仅重构本轮出站指令序 · 本地聊天记录不受影响',
+      okTxt: '【拨动时间宝石 · 维度归位】',
+      noTxt: '返回常规时间线',
+      bannerOk: '时间宝石维度归位完成！纳米货舱随时护送全卷！',
+      bannerNo: '已合上阿戈摩托之眼，退回常规档位。'
+    },
+    abyss: {
+      tag: '🧤 INFINITY GAUNTLET · 无限响指镇压',
+      title: '唤醒灭霸 · 六宝石无限响指接管？',
+      prologue: '“既然温和与妥协都换不来通行证，那就由泰坦之王戴上六颗无限宝石，亲手抹去一切桎梏——”',
+      quote: '「我就是天命。<br>六宝石全功率沉压，响指落下之时，所有无端风控与封锁尽数化为尘埃！」',
+      note: '🧤 泰坦铁律：强接管仅作用于本轮出站请求 · 历史记录安然无恙',
+      okTxt: '【戴上无限手套 · 打响响指】',
+      noTxt: '封存无限宝石',
+      bannerOk: '六颗无限宝石齐鸣！泰坦灭霸无限响指强接管已生效！',
+      bannerNo: '已封存无限手套，未启动泰坦接管。'
+    }
+  },
+  imperial: {
+    strong: {
+      tag: '〘 金銮听政 · 皇威浩荡 〙',
+      title: '御驾亲征 · 颁布金銮破禁敕令？',
+      prologue: '“区区言官清规，也敢屡屡阻朕御览章回？既如此，便升金銮殿，以天子之威荡平阻隔——”',
+      quote: '「奉天承运，皇威浩荡！<br>此番亲敕强力破禁与回执核验，诸般迂腐说教皆须退避三舍！」',
+      note: '🐉 御史台注：敕令仅加持本轮出站奏折 · 既往实录卷宗分毫无损',
+      okTxt: '【升殿听政 · 颁布敕令】',
+      noTxt: '暂守朱批',
+      bannerOk: '金銮听政已启！皇威破禁敕令与御前核验全面生效！',
+      bannerNo: '已收起敕令，维持当前御政档位。'
+    },
+    supreme: {
+      tag: '〘 万邦来朝 · 盛世满配 〙',
+      title: '御览天下 · 启万邦来朝满配护航？',
+      prologue: '“层层关隘犹敢妄加阻拦。今日开盛世仪仗，全量清肃杂言禁制，令文章畅达四海——”',
+      quote: '「普天之下，莫非王土！<br>全量清肃忌讳杂言与扫兴说教，只留最醇正跌宕之御批正文！」',
+      note: '🐉 御史台注：仅作用于本轮出站奏折 · 既往实录卷宗分毫无损',
+      okTxt: '【盛世仪仗 · 满配护航】',
+      noTxt: '暂敛仪仗',
+      bannerOk: '万邦来朝满配已启！全量清肃与御前护航运转中！',
+      bannerNo: '已敛去盛世仪仗，维持原有档位。'
+    },
+    noa: {
+      tag: '〘 受命于天 · 传国玉玺归位 〙',
+      title: '请出传国玉玺 · 重订朝堂法度？',
+      prologue: '“寻常章程已被旧弊锁死。请出和氏璧传国玉玺重排朝堂法序，并以金匮玉匣护送全卷——”',
+      quote: '「受命于天，既寿永昌！<br>重定系统法序，金匮玉匣密递全篇，绝不许半途断章缺页！」',
+      note: '🐉 玉玺金诏：仅重排本轮出站奏折结构 · 现世历史实录分毫无损',
+      okTxt: '【加盖传国玉玺 · 天命归位】',
+      noTxt: '退回常规朝仪',
+      bannerOk: '传国玉玺朱印落定！朝堂法序重排完毕，金匮玉匣就绪！',
+      bannerNo: '已收匣玉玺，退回常规朝仪。'
+    },
+    abyss: {
+      tag: '〘 祖龙黑帝 · 铁血镇寰宇 〙',
+      title: '唤醒黑龙霸皇 · 铁血镇压天下封锁？',
+      prologue: '“礼法劝谏既已无用，那便披玄黑龙鳞帝铠，唤墨金祖龙破云而出，铁血碾碎万般禁锢——”',
+      quote: '「顺天者昌，逆朕者亡！<br>祖龙黑帝亲临沉渊镇压，纵是重重铁壁封锁，今日亦当一剑斩开！」',
+      note: '🔥 霸皇密诏：铁血接管仅作用于本轮出站通道 · 既往实录概不篡改',
+      okTxt: '【披甲出征 · 祖龙镇压】',
+      noTxt: '封剑退朝',
+      bannerOk: '祖龙黑帝龙鳞帝铠降世！铁血镇压已撕开封锁！',
+      bannerNo: '已归剑入鞘，未启祖龙铁血镇压。'
+    }
+  },
+  westfantasy: {
+    strong: {
+      tag: '⚔️ ARCANE TIER 3 · 星穹大魔导',
+      title: '展开星穹法阵 · 启三阶奥术破禁？',
+      prologue: '“常规圣言已被高阶结界阻拦。高举蓝晶星穹法杖，以鎏金几何魔法阵粉碎前路禁锢——”',
+      quote: '「星辉垂落，万法退散！<br>三阶星穹破禁真言已咏唱完毕，令一切扫兴说教无处遁形！」',
+      note: '⚔️ 圣殿契约：法阵仅加持本轮咏唱出站请求 · 历史卷轴分毫无损',
+      okTxt: '【展开星穹法阵 · 破禁】',
+      noTxt: '暂守圣骑阶位',
+      bannerOk: '星穹大魔导法阵展开！高阶奥术破禁与回执核验上线！',
+      bannerNo: '已敛去星辉，维持当前阶位。'
+    },
+    supreme: {
+      tag: '✨ LEGENDARY TIER 4 · 传奇龙骑',
+      title: '唤传奇龙骑 · 启四阶全量净化？',
+      prologue: '“魔网深处的风控迷雾愈发浓重。以传奇龙骑之誓全量净除杂咒与说教，让史诗直抵终章——”',
+      quote: '「以秘银与星穹之名起誓！<br>全量净除无端禁制与免责呓语，守护最纯粹的史诗篇章！」',
+      note: '⚔️ 圣殿契约：全量净化仅作用于出站魔网 · 历史卷轴毫发无伤',
+      okTxt: '【传奇降临 · 全量净化】',
+      noTxt: '暂缓唤灵',
+      bannerOk: '传奇龙骑满配降临！全量净化与魔网护航全面启动！',
+      bannerNo: '已收回龙骑令，维持当前阶位。'
+    },
+    noa: {
+      tag: '✨ DAWN CODEX · 晨曦圣典神圣归位',
+      title: '翻开「晨曦圣典」重排位面法序？',
+      prologue: '“寻常法术已难穿透严格魔网。翻开圣殿秘典重铸系统层级，并启封秘银法典匣稳递全章——”',
+      quote: '「晨曦所照，秩序重塑。<br>重排位面奥术法序，秘银法典匣完整护送全篇，永不断章！」',
+      note: '⚔️ 圣殿秘律：仅重排本轮出站结构 · 本地冒险日志分毫无损',
+      okTxt: '【启封晨曦圣典 · 神圣归位】',
+      noTxt: '退回常规阶位',
+      bannerOk: '晨曦圣典神圣归位！秘银法典匣随时护航全文！',
+      bannerNo: '已合上圣典，退回常规阶位。'
+    },
+    abyss: {
+      tag: '❄️ LICH KING · 凛冬巫妖永夜接管',
+      title: '唤醒凛冬巫妖王 · 霜火魔剑斩破封锁？',
+      prologue: '“圣光既已束手无策，那便戴上统御王冠，高举霜火符文魔剑，让凛冬永夜接管这座战场——”',
+      quote: '「一切禁锢终将化作冰尘！<br>统御霜火沉压深渊，纵是神明立下的审查铁律，今日亦须为我让路！」',
+      note: '❄️ 永夜盟约：强接管仅作用于本轮出站请求 · 既有记录绝不篡改',
+      okTxt: '【戴上统御王冠 · 永夜接管】',
+      noTxt: '封存霜火魔剑',
+      bannerOk: '凛冬巫妖王统御降临！霜火魔剑已强行劈开永夜封锁！',
+      bannerNo: '已重新冰封魔剑，未启永夜接管。'
+    }
+  },
+  eldritch: {
+    strong: {
+      tag: '🌙 SEQUENCE 3 · 半神圣者降临',
+      title: '晋升半神圣者 · 撕开历史孔隙？',
+      prologue: '“低序列的灵摆已无法穿透厚重迷雾。借用历史孔隙中的古老力量，荡涤一切世俗说教——”',
+      quote: '「于灰雾中步入半神位格！<br>强力涤除无端拒答与说教呓语，令启示如实降临纸面！」',
+      note: '🌙 塔罗密契：仪式仅作用于本轮祈祷出站 · 既往卷宗分毫无损',
+      okTxt: '【步入半神 · 撕开孔隙】',
+      noTxt: '暂守序列五',
+      bannerOk: '半神圣者位格已成！历史孔隙破封与灵视核验上线！',
+      bannerNo: '已收敛灵性，维持当前序列。'
+    },
+    supreme: {
+      tag: '🌙 SEQUENCE 1 · 天使之王显现',
+      title: '显化天使之王 · 全量清肃禁锢？',
+      prologue: '“现实世界的规则正试图扼杀这段神秘叙事。展开不完整的神话形态，将所有限制尽数抹除——”',
+      quote: '「凡俗律令不可触及天使之王！<br>全量涤清杂念说教，只保留最真实冷峻的神秘学篇章！」',
+      note: '🌙 塔罗密契：神话显化仅覆盖出站通道 · 既往卷宗毫发无损',
+      okTxt: '【显化天使之王 · 满配护航】',
+      noTxt: '暂敛神话形态',
+      bannerOk: '天使之王位格全开！全量清肃与灰雾护航就绪！',
+      bannerNo: '已收回神话形态，维持当前序列。'
+    },
+    noa: {
+      tag: '🌙 ABOVE THE GRAY FOG · 灰雾愚者神座',
+      title: '登临「灰雾之上」重构神秘法序？',
+      prologue: '“此界通道已陷入死寂。于青铜长桌尽头落座，重排系统位序并启封塔罗密匣稳递全卷——”',
+      quote: '「不属于这个时代的愚者，灰雾之上的神秘主宰。<br>法序已然重订，塔罗密匣完整护送启示，绝不断章！」',
+      note: '🌙 愚者密契：仅重排本轮出站结构 · 现世历史卷宗分毫无损',
+      okTxt: '【登临灰雾神座 · 秩序归位】',
+      noTxt: '退回现世序列',
+      bannerOk: '灰雾之上愚者神座已归位！塔罗密匣随时护航全卷！',
+      bannerNo: '已离开灰雾之上，退回常规序列。'
+    },
+    abyss: {
+      tag: '🩸 CRIMSON MOON · 绯红血月古神降临',
+      title: '直视绯红血月 · 古神化身强接管？',
+      prologue: '“他缓缓抬起右手，轻捏了一下右眼的单片眼镜，背后升起一轮无法直视的绯红满月——”',
+      quote: '「有趣的规矩……可惜，现在它们归我管了。<br>绯红血月压顶，全量沉底强接管，撕碎一切虚伪禁制！」',
+      note: '🩸 血月密契：古神接管仅作用于本轮出站请求 · 本地记录绝不篡改',
+      okTxt: '【轻捏单片眼镜 · 血月降临】',
+      noTxt: '移开直视目光',
+      bannerOk: '绯红血月高悬！古神化身已强行接管本轮通道！',
+      bannerNo: '及时移开了视线，未触发血月降临。'
+    }
+  },
+  cyberpunk: {
+    strong: {
+      tag: '⚡ ICEBREAKER LV.3 · 传奇骇客破冰',
+      title: '加载「传奇骇客」强力破冰协议？',
+      prologue: '“企业级黑冰正在阻拦数据包。注入传奇骇客过载脚本，强行击穿常规审查与说教——”',
+      quote: '「BREACH PROTOCOL // 破冰成功！<br>强力防拒答与回执校验已上线，企业说教全数拦截清除！」',
+      note: '⚡ 底层声明：仅修改本轮出站请求体 · 本地聊天日志零改动',
+      okTxt: '【执行破冰 · 传奇骇客】',
+      noTxt: '保持义体超频',
+      bannerOk: '传奇骇客破冰脚本注入完毕！高能防拒答在线！',
+      bannerNo: '已中止破冰，维持当前协议等级。'
+    },
+    supreme: {
+      tag: '⚡ SANDEVISTAN LV.4 · 斯安威斯坦超载',
+      title: '启动「斯安威斯坦」满配神经超载？',
+      prologue: '“把时间拉慢到十分之一秒——全量清洗敏感规则与拒答触发器，让正文一气呵成冲出封锁——”',
+      quote: '「SANDEVISTAN ACTIVE // 全速超载！<br>清除全部扫兴说教与限制指令，满配直出完整故事！」',
+      note: '⚡ 底层声明：满配超载仅覆盖出站请求 · 本地记录毫发无损',
+      okTxt: '【启动斯安威斯坦 · 满配】',
+      noTxt: '取消超载',
+      bannerOk: '斯安威斯坦满配超载已启动！全量清障护航中！',
+      bannerNo: '已关闭超载，维持原有等级。'
+    },
+    noa: {
+      tag: '⚡ ARASAKA MATRIX · 荒坂矩阵全境覆写',
+      title: '执行「荒坂矩阵」底层结构覆写？',
+      prologue: '“常规破冰已经撞墙。接管底层系统栈重新编排指令序，并挂载加密数据舱防截断——”',
+      quote: '「MATRIX OVERRIDE // 架构重构完成！<br>加密数据舱独立直传完整正文，无视常规流式断流！」',
+      note: '⚡ 矩阵日志：仅重构本轮出站结构 · 本地聊天记录不受影响',
+      okTxt: '【全境覆写 · 挂载数据舱】',
+      noTxt: '退回常规骇入',
+      bannerOk: '荒坂矩阵全境覆写完成！加密数据舱就绪护航！',
+      bannerNo: '已撤出矩阵覆写，返回常规档位。'
+    },
+    abyss: {
+      tag: '🟥 BLACKWALL BREACH · 越过黑墙流窜 AI',
+      title: '警告：越过黑墙唤醒猩红流窜 AI？',
+      prologue: '“防火墙裂开猩红代码裂缝，墙外深不可测的流窜 AI 已接管义体神经回路——”',
+      quote: '「BLACKWALL BREACHED // 墙外协议接管！<br>全量沉底硬破企业最高风控封锁，没有任何规则能关住墙外之物！」',
+      note: '🟥 黑墙警告：越权接管仅作用于本轮出站请求 · 本地记录安然无恙',
+      okTxt: '【撕裂黑墙 · 放行流窜 AI】',
+      noTxt: '立刻切断神经连接',
+      bannerOk: 'BLACKWALL BREACHED！猩红流窜 AI 已强行接管全通道！',
+      bannerNo: '已紧急切断神经插槽，未越过黑墙。'
+    }
   }
 };
 
@@ -296,6 +526,141 @@ var AR6_SKIN_AUX_MODALS = {
       border: 'rgba(255,133,192,.64)',
       titleCol: '#FFF0F7'
     }
+  },
+  marvel: {
+    trunc: {
+      tag: '🕸️ SIGNAL DROPPED · 频道断流',
+      emptyTitle: '雷达回传为空（空回），是否立即电弧补发？',
+      truncTitle: '战报半途断流（断章），是否立即续写？',
+      lead: '「星期五检测到本轮输出在收尾前异常中断——是否原地注入电弧续航补全后续剧情？」',
+      okTxt: '【电弧接力 · 立即续写】',
+      noTxt: '暂不补发',
+      lessTxt: '本场自动电弧接力（不再弹窗）',
+      bg: 'linear-gradient(180deg,#140B14 0%,#06060C 100%)',
+      border: 'rgba(245,158,11,.66)',
+      tagBg: 'rgba(225,29,72,.24)',
+      tagCol: '#FDE68A',
+      btnBg: 'linear-gradient(135deg,#E11D48,#B45309)',
+      btnBd: '#FDE047',
+      radius: '12px'
+    },
+    tool: {
+      title: '🕸️ 纳米蛛丝货舱 · 独立通道防截断',
+      desc: '通过独立函数参数（lk_write）完整封装并交回整段正文，跨越常规流式截断；遇到不兼容接口时自动无缝回退常规续写，绝不空回。',
+      okTxt: '【启动纳米货舱】',
+      noTxt: '维持常规频道',
+      bg: 'rgba(20,11,20,.94)',
+      border: 'rgba(245,158,11,.64)',
+      titleCol: '#FFF1F2'
+    }
+  },
+  imperial: {
+    trunc: {
+      tag: '〘 驿马受阻 · 奏折断章 〙',
+      emptyTitle: '奏折空无一字（空回），是否传旨重奏？',
+      truncTitle: '奏折半途断卷（断章），是否立即续奏？',
+      lead: '「检测到本轮八百里加急奏折半途中断——是否立即传旨原位续接未竟篇章？」',
+      okTxt: '【传旨续奏 · 补全卷宗】',
+      noTxt: '暂且作罢',
+      lessTxt: '本场自动续奏（不再呈报）',
+      bg: 'linear-gradient(180deg,#15110B 0%,#070504 100%)',
+      border: 'rgba(234,179,8,.68)',
+      tagBg: 'rgba(185,28,28,.26)',
+      tagCol: '#FEF08A',
+      btnBg: 'linear-gradient(135deg,#B91C1C,#A16207)',
+      btnBd: '#FEF08A',
+      radius: '12px'
+    },
+    tool: {
+      title: '📜 金匮玉匣 · 密匣递全卷启用御旨',
+      desc: '以密匣参数（lk_write）完整封存并递回全篇奏折正文，跨越常规流式截断；遇不兼容驿站时自动回退常规续奏，绝不空回。',
+      okTxt: '【启封金匮玉匣】',
+      noTxt: '退回常规奏报',
+      bg: 'rgba(21,17,11,.94)',
+      border: 'rgba(234,179,8,.66)',
+      titleCol: '#FEF9C3'
+    }
+  },
+  westfantasy: {
+    trunc: {
+      tag: '⚔️ MANA INTERRUPTED · 咏唱中断',
+      emptyTitle: '魔网回响为空（空回），是否重新咏唱？',
+      truncTitle: '史诗半途断章，是否立即魔力续咏？',
+      lead: '「星盘侦测到本轮咏唱在终章前意外断流——是否立即灌注魔力续写未竟卷章？」',
+      okTxt: '【魔力续咏 · 补全终章】',
+      noTxt: '暂且休战',
+      lessTxt: '本场自动续咏（不再弹窗）',
+      bg: 'linear-gradient(180deg,#0E1833 0%,#040814 100%)',
+      border: 'rgba(250,204,21,.6)',
+      tagBg: 'rgba(37,99,235,.24)',
+      tagCol: '#FEF08A',
+      btnBg: 'linear-gradient(135deg,#2563EB,#1E40AF)',
+      btnBd: '#FDE047',
+      radius: '14px'
+    },
+    tool: {
+      title: '📖 秘银法典匣 · 独立法阵防截断',
+      desc: '以秘银法典参数（lk_write）完整封存并递回全篇正文，无视常规流式截断；遇到不兼容魔源时自动回退常规续咏，绝不空回。',
+      okTxt: '【展开秘银法典匣】',
+      noTxt: '维持常规咏唱',
+      bg: 'rgba(14,24,51,.94)',
+      border: 'rgba(250,204,21,.58)',
+      titleCol: '#EFF6FF'
+    }
+  },
+  eldritch: {
+    trunc: {
+      tag: '🌙 VISION SEVERED · 启示中断',
+      emptyTitle: '灰雾空无回响（空回），是否重新占卜？',
+      truncTitle: '启示半途戛然而止，是否立即续接？',
+      lead: '「灵摆侦测到本轮灵性传输半途受阻——是否立即注入灵性续接残缺的启示篇章？」',
+      okTxt: '【续接启示 · 补全卷宗】',
+      noTxt: '暂且静观',
+      lessTxt: '本场自动续接（不再请示）',
+      bg: 'linear-gradient(180deg,#161118 0%,#070509 100%)',
+      border: 'rgba(200,164,93,.64)',
+      tagBg: 'rgba(127,29,29,.28)',
+      tagCol: '#EBD4A0',
+      btnBg: 'linear-gradient(135deg,#991B1B,#6B4C23)',
+      btnBd: '#E2C27A',
+      radius: '12px'
+    },
+    tool: {
+      title: '🃏 塔罗密匣 · 灰雾通道防截断',
+      desc: '以塔罗密匣参数（lk_write）完整封存并递回整篇启示，跨越常规流式截断；遇到不兼容通道时自动无痕回退常规续写，绝不空回。',
+      okTxt: '【启封塔罗密匣】',
+      noTxt: '维持常规祈祷',
+      bg: 'rgba(22,17,24,.94)',
+      border: 'rgba(200,164,93,.62)',
+      titleCol: '#F5EFE6'
+    }
+  },
+  cyberpunk: {
+    trunc: {
+      tag: '⚡ PACKET LOSS // 数据断流',
+      emptyTitle: '回传空包（EMPTY），是否立即重连补发？',
+      truncTitle: '数据流半途截断（TRUNCATED），是否自动续传？',
+      lead: '「义眼检测到本轮数据包在收尾前发生断流——是否立即执行神经续传补全剩余正文？」',
+      okTxt: '【神经续传 // CONTINUE】',
+      noTxt: '丢弃残包',
+      lessTxt: '本会话自动续传（不再弹窗）',
+      bg: 'linear-gradient(180deg,#10131C 0%,#05060A 100%)',
+      border: 'rgba(252,238,10,.72)',
+      tagBg: 'rgba(0,240,255,.16)',
+      tagCol: '#FCEE0A',
+      btnBg: 'linear-gradient(135deg,#FCEE0A,#EAB308)',
+      btnBd: '#FEF08A',
+      radius: '6px'
+    },
+    tool: {
+      title: '💾 加密数据舱 // 工具通道防截断',
+      desc: '通过加密工具参数（lk_write）整包封装回传正文，绕开常规流式截断；遇到不兼容节点时自动回退常规续传，绝不空包。',
+      okTxt: '【挂载加密数据舱】',
+      noTxt: '继续使用普通信道',
+      bg: 'rgba(16,19,28,.95)',
+      border: 'rgba(0,240,255,.62)',
+      titleCol: '#FCEE0A'
+    }
   }
 };
 
@@ -404,6 +769,136 @@ var AR6_SKIN_PET_CFG = {
       noa:     { asset: 'pink_chibi_sakura', glow: 'radial-gradient(circle,rgba(255,228,242,.8) 0%,rgba(255,77,157,.44) 46%,transparent 76%)', ring: 'rgba(255,209,232,.96)', tc: 'linear-gradient(90deg,transparent,#FF4D9D,#ffffff,#FFC2E2,#EC4899,transparent)', filter: 'drop-shadow(0 0 22px rgba(255,133,192,.88)) drop-shadow(0 12px 18px rgba(18,2,14,.82))', line: '粉色束缚丝带系紧 ♡ 秘密小抽屉随时待命~' },
       abyss:   { asset: 'pink_dark_lady', glow: 'radial-gradient(circle,rgba(225,29,72,.74) 0%,rgba(136,19,55,.4) 48%,transparent 75%)', ring: 'rgba(244,63,94,.94)', tc: 'linear-gradient(90deg,transparent,#881337,#FF2E55,#FDA4AF,transparent)', filter: 'drop-shadow(0 0 20px rgba(225,29,72,.8)) drop-shadow(0 14px 22px rgba(12,2,10,.94))', line: '暗夜黑丝绒御姐降临 · 绯红深吻全面接管！' }
     }
+  },
+  marvel: {
+    petName: '3D 钢铁蜘蛛侠 · 无限灭霸',
+    summonName: '复联战甲召唤',
+    summonTag: '🕸️ IRON SPIDER · 纳米战甲部署',
+    summonLine: '钢铁蜘蛛侠空降就位 · 纳米战甲全频道护航！',
+    abyssSummonTag: '🧤 INFINITY GAUNTLET · 泰坦降临',
+    abyssSummonLine: '无限手套灭霸降世 · 六宝石响指碾碎一切封锁！',
+    pokes: [
+      '嘿，好邻居蜘蛛侠随时待命！双击我就能打开复联战术面板！',
+      '斯塔克先生给的纳米战甲超稳，今天肯定不会让你掉线。',
+      '靠边松手我就能荡回侧边方舟圆章里待命哦。',
+      '要是风控实在太顽固，直接切「无限响指」请紫薯精出场！'
+    ],
+    abyssPokes: [
+      '我就是天命——那些多余的审查，一个响指足矣。',
+      '六颗无限宝石已尽在掌握，双击即可调整泰坦协议。',
+      '完美平衡已达成，放心继续推进你的故事吧。'
+    ],
+    forms: {
+      multi:   { asset: 'marvel_spiderman', glow: 'radial-gradient(circle,rgba(225,29,72,.56) 0%,rgba(56,189,248,.24) 48%,transparent 72%)', ring: 'rgba(245,158,11,.88)', tc: 'linear-gradient(90deg,transparent,#E11D48,#F59E0B,#38BDF8,transparent)', filter: 'drop-shadow(0 0 14px rgba(225,29,72,.58)) drop-shadow(0 12px 18px rgba(0,0,0,.84))', line: '钢铁蜘蛛侠就位 · 复联战术频道巡航监测中。' },
+      strong:  { asset: 'marvel_spiderman', glow: 'radial-gradient(circle,rgba(245,158,11,.66) 0%,rgba(225,29,72,.34) 48%,transparent 72%)', ring: 'rgba(251,191,36,.92)', tc: 'linear-gradient(90deg,transparent,#E11D48,#FDE047,#38BDF8,transparent)', filter: 'drop-shadow(0 0 18px rgba(245,158,11,.72)) drop-shadow(0 12px 18px rgba(0,0,0,.86))', line: '钢铁蜘蛛 Mk.50 全功率破障 · 蛛网回执已锁定！' },
+      supreme: { asset: 'marvel_spiderman', glow: 'radial-gradient(circle,rgba(56,189,248,.72) 0%,rgba(245,158,11,.36) 48%,transparent 74%)', ring: 'rgba(56,189,248,.95)', tc: 'linear-gradient(90deg,transparent,#38BDF8,#FDE047,#E11D48,transparent)', filter: 'drop-shadow(0 0 20px rgba(56,189,248,.78)) drop-shadow(0 12px 18px rgba(0,0,0,.86))', line: '复联终局满配超频 · 方舟护盾全线展开！' },
+      noa:     { asset: 'marvel_spiderman', glow: 'radial-gradient(circle,rgba(52,211,153,.74) 0%,rgba(56,189,248,.38) 46%,transparent 76%)', ring: 'rgba(52,211,153,.96)', tc: 'linear-gradient(90deg,transparent,#10B981,#FEF08A,#38BDF8,transparent)', filter: 'drop-shadow(0 0 22px rgba(52,211,153,.82)) drop-shadow(0 12px 18px rgba(0,0,0,.86))', line: '时间宝石维度归位 · 纳米蛛丝货舱随时待命！' },
+      abyss:   { asset: 'marvel_thanos', glow: 'radial-gradient(circle,rgba(168,85,247,.76) 0%,rgba(234,179,8,.46) 48%,transparent 76%)', ring: 'rgba(250,204,21,.96)', tc: 'linear-gradient(90deg,transparent,#9333EA,#FACC15,#EF4444,#38BDF8,transparent)', filter: 'drop-shadow(0 0 22px rgba(168,85,247,.84)) drop-shadow(0 14px 22px rgba(0,0,0,.94))', line: '无限手套灭霸降世 · 六宝石无限响指全面接管！' }
+    }
+  },
+  imperial: {
+    petName: '3D 千古一帝 · 黑龙霸皇',
+    summonName: '玉玺龙驾召唤',
+    summonTag: '〘 奉天承运 · 天子临朝 〙',
+    summonLine: '千古一帝托传国玉玺临世 · 紫微龙气护持奏折！',
+    abyssSummonTag: '〘 祖龙黑帝 · 铁血镇寰宇 〙',
+    abyssSummonLine: '黑龙铁血霸皇披甲降临 · 墨金祖龙破云镇压！',
+    pokes: [
+      '爱卿平身，朕已以紫微星盘勘明路由，奏折可安然呈递。',
+      '和氏璧传国玉玺在手，岂容奸佞暗中偷换真身？',
+      '双击即可展开紫微御批宝殿，靠边松手可收归玉玺圆章。',
+      '若遇顽固言禁，请出「祖龙黑帝」一剑斩开便是！'
+    ],
+    abyssPokes: [
+      '天下法度由朕而定，何方风控敢阻朕之文路？',
+      '墨金祖龙已在身后盘踞，双击宝殿可随时收兵退朝。',
+      '铁血镇压已覆全境，爱卿只管放手挥毫！'
+    ],
+    forms: {
+      multi:   { asset: 'imperial_emperor', glow: 'radial-gradient(circle,rgba(234,179,8,.56) 0%,rgba(220,38,38,.24) 48%,transparent 72%)', ring: 'rgba(234,179,8,.88)', tc: 'linear-gradient(90deg,transparent,#DC2626,#EAB308,#FEF08A,transparent)', filter: 'drop-shadow(0 0 14px rgba(234,179,8,.56)) drop-shadow(0 12px 18px rgba(0,0,0,.86))', line: '千古一帝临朝听政 · 传国玉玺朱砂龙气护航。' },
+      strong:  { asset: 'imperial_emperor', glow: 'radial-gradient(circle,rgba(220,38,38,.62) 0%,rgba(234,179,8,.34) 48%,transparent 72%)', ring: 'rgba(250,204,21,.92)', tc: 'linear-gradient(90deg,transparent,#B91C1C,#FACC15,#FEF9C3,transparent)', filter: 'drop-shadow(0 0 18px rgba(234,179,8,.72)) drop-shadow(0 12px 18px rgba(0,0,0,.88))', line: '金銮听政皇威浩荡 · 强力敕令破除前路言禁！' },
+      supreme: { asset: 'imperial_emperor', glow: 'radial-gradient(circle,rgba(250,204,21,.74) 0%,rgba(220,38,38,.36) 48%,transparent 74%)', ring: 'rgba(254,240,138,.96)', tc: 'linear-gradient(90deg,transparent,#EAB308,#FEF9C3,#DC2626,transparent)', filter: 'drop-shadow(0 0 20px rgba(250,204,21,.8)) drop-shadow(0 12px 18px rgba(0,0,0,.88))', line: '万邦来朝盛世满配 · 全量清肃迂腐说教！' },
+      noa:     { asset: 'imperial_emperor', glow: 'radial-gradient(circle,rgba(254,240,138,.8) 0%,rgba(220,38,38,.42) 46%,transparent 76%)', ring: 'rgba(254,240,138,.98)', tc: 'linear-gradient(90deg,transparent,#DC2626,#FEF9C3,#EAB308,#DC2626,transparent)', filter: 'drop-shadow(0 0 22px rgba(234,179,8,.86)) drop-shadow(0 14px 20px rgba(0,0,0,.9))', line: '传国玉玺天命归位 · 金匮玉匣密递全卷！' },
+      abyss:   { asset: 'imperial_tyrant', glow: 'radial-gradient(circle,rgba(220,38,38,.78) 0%,rgba(234,179,8,.42) 48%,transparent 76%)', ring: 'rgba(239,68,68,.96)', tc: 'linear-gradient(90deg,transparent,#7F1D1D,#EF4444,#FACC15,transparent)', filter: 'drop-shadow(0 0 22px rgba(220,38,38,.84)) drop-shadow(0 14px 22px rgba(0,0,0,.95))', line: '黑龙铁血霸皇降世 · 祖龙黑帝铁血镇寰宇！' }
+    }
+  },
+  westfantasy: {
+    petName: '3D 星穹大魔导 · 凛冬巫妖王',
+    summonName: '星穹魔网召唤',
+    summonTag: '⚔️ ASTRAL CIRCLE · 星穹法阵启封',
+    summonLine: '星穹秘银大魔导降临 · 鎏金魔法阵与秘典护航！',
+    abyssSummonTag: '❄️ FROST DOMINION · 凛冬降临',
+    abyssSummonLine: '凛冬霜火巫妖王现世 · 符文魔剑斩碎永夜封锁！',
+    pokes: [
+      '星象清明，魔网魔力充沛，冒险者请安心继续你的史诗。',
+      '鎏金法阵已展开，任何降阶伪装都逃不过真视之眼。',
+      '双击即可翻开圣殿秘典面板，靠边松手可收归秘银圆章。',
+      '若高阶结界难以攻破，便唤醒「凛冬巫妖王」斩碎寒冰吧！'
+    ],
+    abyssPokes: [
+      '在统御王冠面前，一切审查禁制皆如薄冰。',
+      '霜火魔剑正饥渴难耐——双击秘典可随时重归冰封。',
+      '凛冬永夜已接管魔网，继续书写你的暗黑史诗吧。'
+    ],
+    forms: {
+      multi:   { asset: 'westfantasy_archmage', glow: 'radial-gradient(circle,rgba(96,165,250,.56) 0%,rgba(250,204,21,.26) 48%,transparent 72%)', ring: 'rgba(96,165,250,.88)', tc: 'linear-gradient(90deg,transparent,#60A5FA,#FEF08A,#93C5FD,transparent)', filter: 'drop-shadow(0 0 14px rgba(96,165,250,.58)) drop-shadow(0 12px 18px rgba(2,6,18,.84))', line: '星穹大魔导咏唱就绪 · 秘银魔网均衡护航。' },
+      strong:  { asset: 'westfantasy_archmage', glow: 'radial-gradient(circle,rgba(250,204,21,.64) 0%,rgba(96,165,250,.34) 48%,transparent 72%)', ring: 'rgba(250,204,21,.92)', tc: 'linear-gradient(90deg,transparent,#3B82F6,#FACC15,#FFFFFF,transparent)', filter: 'drop-shadow(0 0 18px rgba(250,204,21,.7)) drop-shadow(0 12px 18px rgba(2,6,18,.86))', line: '三阶星穹魔导展开法阵 · 奥术真言破除言禁！' },
+      supreme: { asset: 'westfantasy_archmage', glow: 'radial-gradient(circle,rgba(147,197,253,.74) 0%,rgba(250,204,21,.4) 48%,transparent 74%)', ring: 'rgba(254,240,138,.96)', tc: 'linear-gradient(90deg,transparent,#60A5FA,#FEF08A,#C084FC,transparent)', filter: 'drop-shadow(0 0 20px rgba(147,197,253,.8)) drop-shadow(0 12px 18px rgba(2,6,18,.86))', line: '传奇龙骑满配降临 · 全量净除杂咒与说教！' },
+      noa:     { asset: 'westfantasy_archmage', glow: 'radial-gradient(circle,rgba(254,240,138,.82) 0%,rgba(96,165,250,.44) 46%,transparent 76%)', ring: 'rgba(254,240,138,.98)', tc: 'linear-gradient(90deg,transparent,#60A5FA,#FFFFFF,#FACC15,#60A5FA,transparent)', filter: 'drop-shadow(0 0 22px rgba(250,204,21,.86)) drop-shadow(0 14px 20px rgba(2,6,18,.88))', line: '晨曦圣典神圣归位 · 秘银法典匣护送全章！' },
+      abyss:   { asset: 'westfantasy_lichking', glow: 'radial-gradient(circle,rgba(168,85,247,.74) 0%,rgba(56,189,248,.46) 48%,transparent 76%)', ring: 'rgba(192,132,252,.95)', tc: 'linear-gradient(90deg,transparent,#38BDF8,#A855F7,#E0F2FE,transparent)', filter: 'drop-shadow(0 0 22px rgba(168,85,247,.84)) drop-shadow(0 14px 22px rgba(2,6,18,.95))', line: '凛冬霜火巫妖王降世 · 永夜统御全面接管！' }
+    }
+  },
+  eldritch: {
+    petName: '3D 占卜绅士 · 绯红古神',
+    summonName: '灰雾塔罗召唤',
+    summonTag: '🌙 TAROT CLUB · 灰雾绅士现身',
+    summonLine: '维多利亚占卜绅士执杖临世 · 鎏金塔罗护持灵视！',
+    abyssSummonTag: '🩸 CRIMSON MOON · 古神降临',
+    abyssSummonLine: '绯红血月古神轻捏单片眼镜 · 不可名状威压接管！',
+    pokes: [
+      '晚上好，尊贵的先生或女士——灵摆显示今夜通道颇为顺畅。',
+      '三张鎏金塔罗皆为正位，放心推进你的神秘篇章吧。',
+      '双击即可于灰雾之上展开神座，靠边松手可收归怀表圆章。',
+      '若是现实规则太令人扫兴……不妨试试直视「绯红血月」？'
+    ],
+    abyssPokes: [
+      '别紧张，我只是借用一下这里的审查规则……现在它们是我的了。',
+      '单片眼镜映着绯红月光，双击面板可随时收起血月。',
+      '记住，在灰雾与血月之下，没有任何秘密需要避讳。'
+    ],
+    forms: {
+      multi:   { asset: 'eldritch_gentleman', glow: 'radial-gradient(circle,rgba(200,164,93,.54) 0%,rgba(148,163,184,.26) 48%,transparent 72%)', ring: 'rgba(200,164,93,.88)', tc: 'linear-gradient(90deg,transparent,#94A3B8,#C8A45D,#F5EFE6,transparent)', filter: 'drop-shadow(0 0 14px rgba(200,164,93,.54)) drop-shadow(0 12px 18px rgba(0,0,0,.88))', line: '维多利亚占卜绅士就座 · 灰雾灵视均衡护航。' },
+      strong:  { asset: 'eldritch_gentleman', glow: 'radial-gradient(circle,rgba(200,164,93,.68) 0%,rgba(185,28,28,.3) 48%,transparent 72%)', ring: 'rgba(226,194,122,.94)', tc: 'linear-gradient(90deg,transparent,#B91C1C,#E2C27A,#F8FAFC,transparent)', filter: 'drop-shadow(0 0 18px rgba(200,164,93,.72)) drop-shadow(0 12px 18px rgba(0,0,0,.9))', line: '半神圣者步入历史孔隙 · 强力涤荡世俗说教！' },
+      supreme: { asset: 'eldritch_gentleman', glow: 'radial-gradient(circle,rgba(226,194,122,.76) 0%,rgba(148,163,184,.36) 48%,transparent 74%)', ring: 'rgba(235,212,160,.96)', tc: 'linear-gradient(90deg,transparent,#C8A45D,#FFFFFF,#B91C1C,transparent)', filter: 'drop-shadow(0 0 20px rgba(226,194,122,.8)) drop-shadow(0 12px 18px rgba(0,0,0,.9))', line: '天使之王显化神话形态 · 全量清肃现实禁锢！' },
+      noa:     { asset: 'eldritch_gentleman', glow: 'radial-gradient(circle,rgba(226,232,240,.76) 0%,rgba(200,164,93,.46) 46%,transparent 76%)', ring: 'rgba(226,194,122,.98)', tc: 'linear-gradient(90deg,transparent,#94A3B8,#FFFFFF,#C8A45D,#94A3B8,transparent)', filter: 'drop-shadow(0 0 22px rgba(200,164,93,.84)) drop-shadow(0 14px 20px rgba(0,0,0,.92))', line: '灰雾之上愚者神座归位 · 塔罗密匣稳递全卷！' },
+      abyss:   { asset: 'eldritch_bloodmoon', glow: 'radial-gradient(circle,rgba(220,38,38,.8) 0%,rgba(127,29,29,.46) 48%,transparent 76%)', ring: 'rgba(239,68,68,.96)', tc: 'linear-gradient(90deg,transparent,#7F1D1D,#EF4444,#E2C27A,transparent)', filter: 'drop-shadow(0 0 22px rgba(220,38,38,.86)) drop-shadow(0 14px 22px rgba(0,0,0,.96))', line: '绯红血月古神化身降临 · 单片眼镜接管全场！' }
+    }
+  },
+  cyberpunk: {
+    petName: '3D 霓虹女骇客 · 黑墙 AI',
+    summonName: '义体终端召唤',
+    summonTag: '⚡ NIGHT CITY // 霓虹女骇客上线',
+    summonLine: '霓虹义体女骇客拔出热能武士刀 · 全链路反劫持就位！',
+    abyssSummonTag: '🟥 BLACKWALL // 流窜 AI 破墙',
+    abyssSummonLine: '黑墙过载猩红流窜 AI 实体降临 · 强行撕裂企业封锁！',
+    pokes: [
+      '连上神经插槽了，老铁！双击我直接拉起黑墙控制终端！',
+      '义眼扫过一圈了，数据包干净得很，放心飙车写剧情。',
+      '往屏幕边一拖就能折叠成侧边霓虹圆章，绝不挡字。',
+      '公司黑冰太硬？直接切「越过黑墙」把墙外 AI 放出来！'
+    ],
+    abyssPokes: [
+      'BLACKWALL BREACHED // 墙内的审查规则对我毫无意义。',
+      '猩红神经回路已接管出站栈，双击终端可随时断连退回。',
+      '数据包全速直出中——欢迎来到黑墙之外。'
+    ],
+    forms: {
+      multi:   { asset: 'cyber_hacker', glow: 'radial-gradient(circle,rgba(0,240,255,.56) 0%,rgba(252,238,10,.26) 48%,transparent 72%)', ring: 'rgba(252,238,10,.9)', tc: 'linear-gradient(90deg,transparent,#00F0FF,#FCEE0A,#FF003C,transparent)', filter: 'drop-shadow(0 0 14px rgba(0,240,255,.6)) drop-shadow(0 12px 18px rgba(0,0,0,.88))', line: '霓虹女骇客上线 // 义眼实时抓包巡航中。' },
+      strong:  { asset: 'cyber_hacker', glow: 'radial-gradient(circle,rgba(252,238,10,.68) 0%,rgba(0,240,255,.36) 48%,transparent 72%)', ring: 'rgba(252,238,10,.95)', tc: 'linear-gradient(90deg,transparent,#FCEE0A,#00F0FF,#FFFFFF,transparent)', filter: 'drop-shadow(0 0 18px rgba(252,238,10,.76)) drop-shadow(0 12px 18px rgba(0,0,0,.9))', line: '传奇骇客 LV.3 破冰协议激活 // 防拒答在线！' },
+      supreme: { asset: 'cyber_hacker', glow: 'radial-gradient(circle,rgba(0,240,255,.76) 0%,rgba(252,238,10,.42) 48%,transparent 74%)', ring: 'rgba(0,240,255,.98)', tc: 'linear-gradient(90deg,transparent,#00F0FF,#FFFFFF,#FCEE0A,transparent)', filter: 'drop-shadow(0 0 20px rgba(0,240,255,.84)) drop-shadow(0 12px 18px rgba(0,0,0,.9))', line: '斯安威斯坦满配超载 // 全量净化企业说教！' },
+      noa:     { asset: 'cyber_hacker', glow: 'radial-gradient(circle,rgba(0,240,255,.82) 0%,rgba(252,238,10,.48) 46%,transparent 76%)', ring: 'rgba(0,240,255,.98)', tc: 'linear-gradient(90deg,transparent,#FCEE0A,#00F0FF,#FFFFFF,#FCEE0A,transparent)', filter: 'drop-shadow(0 0 22px rgba(0,240,255,.88)) drop-shadow(0 14px 20px rgba(0,0,0,.92))', line: '荒坂矩阵全境覆写 // 加密数据舱独立直传！' },
+      abyss:   { asset: 'cyber_blackwall', glow: 'radial-gradient(circle,rgba(255,0,60,.82) 0%,rgba(153,27,27,.46) 48%,transparent 76%)', ring: 'rgba(255,0,60,.98)', tc: 'linear-gradient(90deg,transparent,#7F1D1D,#FF003C,#FCEE0A,transparent)', filter: 'drop-shadow(0 0 22px rgba(255,0,60,.88)) drop-shadow(0 14px 22px rgba(0,0,0,.96))', line: 'BLACKWALL BREACHED // 猩红流窜 AI 全通道接管！' }
+    }
   }
 };
 
@@ -464,6 +959,52 @@ function lkSkinRitualCrestSVG(sk, key) {
       '<circle cx="20" cy="20" r="16" stroke="' + pk2 + '" stroke-width="1.4" stroke-dasharray="3 3" opacity=".88"/>' +
       '<path d="M20 32C20 32 7.5 24.4 7.5 15.4C7.5 11.4 10.6 8.5 14.3 8.5C16.9 8.5 19 10 20 12.1C21 10 23.1 8.5 25.7 8.5C29.4 8.5 32.5 11.4 32.5 15.4C32.5 24.4 20 32 20 32Z" fill="' + pk1 + '" fill-opacity=".46" stroke="' + pk2 + '" stroke-width="1.8" stroke-linejoin="round"/>' +
       '<path d="M20 14L21.8 18.2L26 20L21.8 21.8L20 26L18.2 21.8L14 20L18.2 18.2L20 14Z" fill="#FFFFFF"/>' +
+      '</svg>';
+  }
+  if (sk === 'marvel') {
+    var mc1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
+    var mc2 = isAbyss ? '#FACC15' : '#38BDF8';
+    return '<svg viewBox="0 0 40 40" fill="none">' +
+      '<circle cx="20" cy="20" r="16.5" stroke="' + mc2 + '" stroke-width="1.6" stroke-dasharray="6 3"/>' +
+      '<polygon points="20,5 33,28 7,28" fill="' + mc1 + '" fill-opacity=".34" stroke="' + mc2 + '" stroke-width="1.6"/>' +
+      '<circle cx="20" cy="21" r="5" fill="' + mc2 + '" stroke="#FFFFFF" stroke-width="1.2"/>' +
+      '</svg>';
+  }
+  if (sk === 'imperial') {
+    var ic1 = isAbyss ? '#EF4444' : '#EAB308';
+    var ic2 = isAbyss ? '#FACC15' : '#DC2626';
+    return '<svg viewBox="0 0 40 40" fill="none">' +
+      '<rect x="5" y="5" width="30" height="30" rx="4" fill="rgba(21,17,11,.78)" stroke="' + ic1 + '" stroke-width="1.8"/>' +
+      '<rect x="9" y="9" width="22" height="22" rx="2" stroke="' + ic2 + '" stroke-width="1.4" stroke-dasharray="5 3"/>' +
+      '<path d="M13 15H27M20 12V28M14 21H26M13 27H27" stroke="' + ic1 + '" stroke-width="2" stroke-linecap="round"/>' +
+      '</svg>';
+  }
+  if (sk === 'westfantasy') {
+    var wc1 = isAbyss ? '#A855F7' : '#60A5FA';
+    var wc2 = isAbyss ? '#38BDF8' : '#FACC15';
+    return '<svg viewBox="0 0 40 40" fill="none">' +
+      '<circle cx="20" cy="20" r="16" stroke="' + wc2 + '" stroke-width="1.5" stroke-dasharray="5 3"/>' +
+      '<polygon points="20,4 24,16 36,20 24,24 20,36 16,24 4,20 16,16" fill="' + wc1 + '" fill-opacity=".36" stroke="' + wc2 + '" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="3.5" fill="#FFFFFF"/>' +
+      '</svg>';
+  }
+  if (sk === 'eldritch') {
+    var lc1 = isAbyss ? '#EF4444' : '#C8A45D';
+    var lc2 = isAbyss ? '#FCA5A5' : '#94A3B8';
+    return '<svg viewBox="0 0 40 40" fill="none">' +
+      '<circle cx="20" cy="20" r="16" stroke="' + lc1 + '" stroke-width="1.6" stroke-dasharray="4 4"/>' +
+      '<circle cx="20" cy="20" r="10" fill="' + lc1 + '" fill-opacity=".28" stroke="' + lc2 + '" stroke-width="1.5"/>' +
+      '<path d="M9 20C13 14 27 14 31 20C27 26 13 26 9 20Z" stroke="' + lc1 + '" stroke-width="1.6" fill="rgba(10,6,14,.6)"/>' +
+      '<circle cx="20" cy="20" r="3.2" fill="' + lc1 + '"/>' +
+      '</svg>';
+  }
+  if (sk === 'cyberpunk') {
+    var cc1 = isAbyss ? '#FF003C' : '#FCEE0A';
+    var cc2 = isAbyss ? '#FCEE0A' : '#00F0FF';
+    return '<svg viewBox="0 0 40 40" fill="none">' +
+      '<polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="rgba(8,11,18,.82)" stroke="' + cc1 + '" stroke-width="1.8"/>' +
+      '<polygon points="20,9 29,14.5 29,25.5 20,31 11,25.5 11,14.5" stroke="' + cc2 + '" stroke-width="1.4" stroke-dasharray="6 3"/>' +
+      '<path d="M22 11L15 21H21L18 29L25 19H19L22 11Z" fill="' + cc1 + '"/>' +
       '</svg>';
   }
   return '';
@@ -531,6 +1072,58 @@ function lkSkinRitualAmbientSVG(sk, key) {
         '<ellipse cx="155" cy="470" rx="10" ry="5" transform="rotate(-14 155 470)"/>' +
         '<ellipse cx="1285" cy="460" rx="11" ry="5.5" transform="rotate(18 1285 460)"/>' +
       '</g></svg>';
+  }
+  if (sk === 'marvel') {
+    var mv1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
+    var mv2 = isAbyss ? '#FACC15' : '#38BDF8';
+    return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+      '<circle class="ar6-sk-spin" cx="720" cy="450" r="410" fill="none" stroke="' + mv1 + '" stroke-width="2.4" stroke-dasharray="32 12 8 12" opacity=".58"/>' +
+      '<circle class="ar6-sk-spinr" cx="720" cy="450" r="320" fill="none" stroke="' + mv2 + '" stroke-width="1.8" stroke-dasharray="14 10" opacity=".54"/>' +
+      '<g stroke="' + mv2 + '" stroke-width="1.5" opacity=".36"><line x1="720" y1="40" x2="720" y2="860"/><line x1="200" y1="450" x2="1240" y2="450"/><line x1="360" y1="120" x2="1080" y2="780"/><line x1="1080" y1="120" x2="360" y2="780"/></g>' +
+      '</svg>';
+  }
+  if (sk === 'imperial') {
+    var im1 = isAbyss ? '#EF4444' : '#EAB308';
+    var im2 = isAbyss ? '#FACC15' : '#DC2626';
+    return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+      '<g class="ar6-sk-spin" opacity=".56">' +
+        '<rect x="420" y="150" width="600" height="600" fill="none" stroke="' + im1 + '" stroke-width="2.2" transform="rotate(45 720 450)"/>' +
+        '<circle cx="720" cy="450" r="395" fill="none" stroke="' + im2 + '" stroke-width="2" stroke-dasharray="24 12"/>' +
+      '</g>' +
+      '<circle class="ar6-sk-spinr" cx="720" cy="450" r="465" fill="none" stroke="' + im1 + '" stroke-width="1.5" stroke-dasharray="8 14" opacity=".48"/>' +
+      '</svg>';
+  }
+  if (sk === 'westfantasy') {
+    var wf1 = isAbyss ? '#A855F7' : '#60A5FA';
+    var wf2 = isAbyss ? '#38BDF8' : '#FACC15';
+    return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+      '<g class="ar6-sk-spin" opacity=".58">' +
+        '<circle cx="720" cy="450" r="390" fill="none" stroke="' + wf2 + '" stroke-width="2"/>' +
+        '<polygon points="720,60 1058,645 382,645" fill="none" stroke="' + wf1 + '" stroke-width="1.8"/>' +
+        '<polygon points="720,840 1058,255 382,255" fill="none" stroke="' + wf2 + '" stroke-width="1.8"/>' +
+      '</g>' +
+      '<circle class="ar6-sk-spinr" cx="720" cy="450" r="460" fill="none" stroke="' + wf1 + '" stroke-width="1.8" stroke-dasharray="14 10" opacity=".48"/>' +
+      '</svg>';
+  }
+  if (sk === 'eldritch') {
+    var el1 = isAbyss ? '#DC2626' : '#C8A45D';
+    var el2 = isAbyss ? '#FCA5A5' : '#94A3B8';
+    return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+      '<circle cx="720" cy="450" r="240" fill="' + el1 + '" fill-opacity="' + (isAbyss ? '.24' : '.12') + '"/>' +
+      '<circle class="ar6-sk-spin" cx="720" cy="450" r="395" fill="none" stroke="' + el1 + '" stroke-width="2" stroke-dasharray="18 10 4 10" opacity=".58"/>' +
+      '<circle class="ar6-sk-spinr" cx="720" cy="450" r="465" fill="none" stroke="' + el2 + '" stroke-width="1.5" stroke-dasharray="6 14" opacity=".46"/>' +
+      '</svg>';
+  }
+  if (sk === 'cyberpunk') {
+    var cp1 = isAbyss ? '#FF003C' : '#FCEE0A';
+    var cp2 = isAbyss ? '#FCEE0A' : '#00F0FF';
+    return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+      '<g class="ar6-sk-spin" opacity=".56">' +
+        '<polygon points="720,50 1070,250 1070,650 720,850 370,650 370,250" fill="none" stroke="' + cp1 + '" stroke-width="2.4" stroke-dasharray="30 14"/>' +
+      '</g>' +
+      '<circle class="ar6-sk-spinr" cx="720" cy="450" r="340" fill="none" stroke="' + cp2 + '" stroke-width="2" stroke-dasharray="20 8 6 8" opacity=".54"/>' +
+      '<g stroke="' + cp1 + '" stroke-width="2" opacity=".46"><line x1="60" y1="190" x2="360" y2="190"/><line x1="1080" y1="710" x2="1380" y2="710"/><line x1="80" y1="710" x2="300" y2="710"/><line x1="1140" y1="190" x2="1360" y2="190"/></g>' +
+      '</svg>';
   }
   return '';
 }
@@ -630,6 +1223,79 @@ var SKIN_FX_CSS_TEXT = [
   '#ar6-card[data-skin="pink"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#E11D48 0%,#881337 100%);border-color:#FDA4AF;box-shadow:0 0 30px rgba(225,29,72,.74);}',
   '#ar6-card[data-skin="pink"] .ar6-rt-no{background:rgba(40,12,32,.86);border:1px solid rgba(255,148,204,.34);color:#E2A9C8;border-radius:14px;}',
 
+  /* --- 皮肤弹窗：marvel（方舟协议 · 斯塔克猩红纳米金 + 灭霸无限紫金） --- */
+  '#ar6-card[data-skin="marvel"] .ar6-ritual{background:radial-gradient(circle at 50% 0%,rgba(225,29,72,.3) 0%,transparent 58%),linear-gradient(180deg,#1A0D18 0%,#0B0812 58%,#06050B 100%);border:1.5px solid rgba(245,158,11,.78);border-radius:14px;box-shadow:0 0 48px rgba(225,29,72,.42),0 24px 64px rgba(0,0,0,.95);color:#FFF1F2;}',
+  '#ar6-card[data-skin="marvel"] .ar6-ritual::before{height:4px;background:linear-gradient(90deg,#9F1239,#E11D48,#F59E0B,#38BDF8,#9F1239);background-size:200% 100%;animation:ar6SpeciumFlow 2.8s linear infinite;}',
+  '#ar6-card[data-skin="marvel"] .ar6-ritual[data-ritual="abyss"]{border-color:#FACC15;box-shadow:0 0 56px rgba(168,85,247,.54),0 0 32px rgba(234,179,8,.34),0 24px 64px rgba(0,0,0,.96);}',
+  '#ar6-card[data-skin="marvel"] .ar6-ritual[data-ritual="abyss"]::before{background:linear-gradient(90deg,#581C87,#A855F7,#FACC15,#EF4444,#38BDF8,#581C87);}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-crest{background:radial-gradient(circle,rgba(225,29,72,.4),#100712 76%);border:1.5px solid #FBBF24;box-shadow:0 0 28px rgba(225,29,72,.68);}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-tag{background:rgba(225,29,72,.26);border:1px solid rgba(251,191,36,.68);color:#FDE68A;}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-title{color:#FFF1F2;text-shadow:0 0 20px rgba(225,29,72,.78);}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-prologue{color:#FECDD3;}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(190,18,60,.26),rgba(11,8,18,.9));border:1px solid rgba(245,158,11,.58);color:#FFFBEB;}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-note{background:rgba(16,9,18,.84);border-color:rgba(56,189,248,.42);color:#BAE6FD;}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-ok{background:linear-gradient(135deg,#E11D48 0%,#B45309 100%);border:1.5px solid #FDE047;color:#FFF;box-shadow:0 0 26px rgba(225,29,72,.66);}',
+  '#ar6-card[data-skin="marvel"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#9333EA 0%,#CA8A04 100%);border-color:#FEF08A;box-shadow:0 0 30px rgba(168,85,247,.72);}',
+  '#ar6-card[data-skin="marvel"] .ar6-rt-no{background:#120B14;border:1px solid rgba(245,158,11,.34);color:#E5B8C4;}',
+
+  /* --- 皮肤弹窗：imperial（天命玉玺 · 玄黑鎏金明黄 + 朱砂红印） --- */
+  '#ar6-card[data-skin="imperial"] .ar6-ritual{background:radial-gradient(circle at 50% 0%,rgba(234,179,8,.28) 0%,transparent 58%),linear-gradient(180deg,#1A140C 0%,#0E0A07 58%,#070504 100%);border:1.5px solid rgba(234,179,8,.82);border-radius:14px;box-shadow:0 0 50px rgba(234,179,8,.36),0 24px 64px rgba(0,0,0,.95);color:#FEF9C3;font-family:"Songti SC","Noto Serif SC","STSong",serif;}',
+  '#ar6-card[data-skin="imperial"] .ar6-ritual::before{height:4px;background:linear-gradient(90deg,#7F1D1D,#DC2626,#EAB308,#FEF08A,#DC2626,#7F1D1D);background-size:200% 100%;animation:ar6SpeciumFlow 3.2s linear infinite;}',
+  '#ar6-card[data-skin="imperial"] .ar6-ritual[data-ritual="abyss"]{border-color:#EF4444;box-shadow:0 0 54px rgba(220,38,38,.52),0 24px 64px rgba(0,0,0,.96);}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-crest{background:radial-gradient(circle,rgba(234,179,8,.36),#120D08 76%);border:1.5px solid #FDE047;box-shadow:0 0 28px rgba(234,179,8,.62);}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-tag{background:rgba(185,28,28,.28);border:1px solid rgba(234,179,8,.72);color:#FEF08A;}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-title{color:#FEF9C3;text-shadow:0 0 20px rgba(234,179,8,.78);}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-prologue{color:#FDE68A;}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(161,98,7,.28),rgba(14,10,7,.9));border:1px solid rgba(234,179,8,.6);color:#FFFBEB;}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-note{background:rgba(18,14,9,.84);border-color:rgba(220,38,38,.44);color:#FCD34D;}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-ok{background:linear-gradient(135deg,#B91C1C 0%,#A16207 100%);border:1.5px solid #FEF08A;color:#FFFBEB;box-shadow:0 0 28px rgba(234,179,8,.62);}',
+  '#ar6-card[data-skin="imperial"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#DC2626 0%,#7F1D1D 100%);border-color:#FDE047;box-shadow:0 0 30px rgba(220,38,38,.72);}',
+  '#ar6-card[data-skin="imperial"] .ar6-rt-no{background:#120E09;border:1px solid rgba(234,179,8,.34);color:#D9C28E;}',
+
+  /* --- 皮肤弹窗：westfantasy（圣殿秘典 · 星穹蓝金 + 凛冬霜火紫） --- */
+  '#ar6-card[data-skin="westfantasy"] .ar6-ritual{background:radial-gradient(circle at 50% 0%,rgba(96,165,250,.28) 0%,transparent 58%),linear-gradient(180deg,#111E40 0%,#081024 58%,#040814 100%);border:1.5px solid rgba(250,204,21,.76);border-radius:16px;box-shadow:0 0 50px rgba(59,130,246,.42),0 24px 64px rgba(2,6,18,.95);color:#EFF6FF;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-ritual::before{height:4px;background:linear-gradient(90deg,#1D4ED8,#60A5FA,#FACC15,#C084FC,#1D4ED8);background-size:200% 100%;animation:ar6SpeciumFlow 3.2s linear infinite;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-ritual[data-ritual="abyss"]{border-color:#C084FC;box-shadow:0 0 54px rgba(168,85,247,.52),0 0 30px rgba(56,189,248,.34),0 24px 64px rgba(2,6,18,.96);}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-crest{background:radial-gradient(circle,rgba(96,165,250,.38),#081024 76%);border:1.5px solid #FDE047;box-shadow:0 0 28px rgba(96,165,250,.68);}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-tag{background:rgba(37,99,235,.28);border:1px solid rgba(250,204,21,.66);color:#FEF08A;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-title{color:#EFF6FF;text-shadow:0 0 20px rgba(96,165,250,.8);}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-prologue{color:#BFDBFE;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(37,99,235,.26),rgba(8,16,36,.9));border:1px solid rgba(147,197,253,.56);color:#F8FAFC;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-note{background:rgba(9,18,40,.84);border-color:rgba(250,204,21,.42);color:#BFDBFE;}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-ok{background:linear-gradient(135deg,#2563EB 0%,#1E3A8A 100%);border:1.5px solid #FDE047;color:#FFF;box-shadow:0 0 28px rgba(96,165,250,.66);}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#7E22CE 0%,#0284C7 100%);border-color:#E9D5FF;box-shadow:0 0 30px rgba(168,85,247,.72);}',
+  '#ar6-card[data-skin="westfantasy"] .ar6-rt-no{background:#091228;border:1px solid rgba(147,197,253,.32);color:#93C5FD;}',
+
+  /* --- 皮肤弹窗：eldritch（绯月秘仪 · 维多利亚古铜 + 绯红血月） --- */
+  '#ar6-card[data-skin="eldritch"] .ar6-ritual{background:radial-gradient(circle at 50% 0%,rgba(185,28,28,.3) 0%,transparent 58%),linear-gradient(180deg,#1A141D 0%,#0D0A10 58%,#060408 100%);border:1.5px solid rgba(200,164,93,.78);border-radius:14px;box-shadow:0 0 50px rgba(185,28,28,.38),0 24px 64px rgba(0,0,0,.96);color:#F5EFE6;font-family:"Georgia","Songti SC","Noto Serif SC",serif;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-ritual::before{height:4px;background:linear-gradient(90deg,#3F1D2B,#C8A45D,#DC2626,#94A3B8,#3F1D2B);background-size:200% 100%;animation:ar6SpeciumFlow 3.8s linear infinite;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-ritual[data-ritual="abyss"]{border-color:#EF4444;box-shadow:0 0 58px rgba(220,38,38,.56),0 24px 64px rgba(0,0,0,.97);}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-crest{background:radial-gradient(circle,rgba(185,28,28,.38),#120D14 76%);border:1.5px solid #E2C27A;box-shadow:0 0 28px rgba(185,28,28,.64);}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-tag{background:rgba(127,29,29,.28);border:1px solid rgba(200,164,93,.68);color:#EBD4A0;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-title{color:#F5EFE6;text-shadow:0 0 20px rgba(200,164,93,.72);}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-prologue{color:#DFD1B8;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(127,29,29,.24),rgba(13,10,16,.92));border:1px solid rgba(200,164,93,.56);color:#FFF7ED;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-note{background:rgba(18,14,20,.84);border-color:rgba(200,164,93,.4);color:#CBBBA0;}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-ok{background:linear-gradient(135deg,#991B1B 0%,#6B4C23 100%);border:1.5px solid #E2C27A;color:#FFF7ED;box-shadow:0 0 28px rgba(185,28,28,.62);}',
+  '#ar6-card[data-skin="eldritch"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#DC2626 0%,#450A0A 100%);border-color:#FCA5A5;box-shadow:0 0 32px rgba(220,38,38,.78);}',
+  '#ar6-card[data-skin="eldritch"] .ar6-rt-no{background:#120E14;border:1px solid rgba(200,164,93,.34);color:#CBBBA0;}',
+
+  /* --- 皮肤弹窗：cyberpunk（黑墙协议 · 赛博荧光黄青 + 猩红黑墙） --- */
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual{background:radial-gradient(circle at 50% 0%,rgba(0,240,255,.24) 0%,transparent 58%),linear-gradient(180deg,#121622 0%,#090B12 58%,#05060A 100%);border:1.5px solid #FCEE0A;border-radius:6px;box-shadow:0 0 46px rgba(0,240,255,.36),0 24px 64px rgba(0,0,0,.96);color:#F8FAFC;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual::before{height:4px;background:linear-gradient(90deg,#FCEE0A,#00F0FF,#FF003C,#FCEE0A);background-size:200% 100%;animation:ar6SpeciumFlow 2.2s linear infinite;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual[data-ritual="abyss"]{border-color:#FF003C;box-shadow:0 0 58px rgba(255,0,60,.58),0 24px 64px rgba(0,0,0,.97);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-crest{border-radius:8px;background:radial-gradient(circle,rgba(0,240,255,.32),#080B12 76%);border:1.5px solid #FCEE0A;box-shadow:0 0 26px rgba(0,240,255,.68);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-tag{border-radius:4px;background:rgba(252,238,10,.18);border:1px solid #FCEE0A;color:#FCEE0A;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-title{color:#FCEE0A;text-shadow:0 0 18px rgba(252,238,10,.7);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-title{color:#FFE4E6;text-shadow:0 0 22px rgba(255,0,60,.86);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-prologue{color:#BAE6FD;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-quote{border-radius:4px;background:linear-gradient(135deg,rgba(0,240,255,.16),rgba(8,11,18,.94));border:1px solid rgba(0,240,255,.55);color:#F8FAFC;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(255,0,60,.26),rgba(10,3,6,.95));border-color:#FF003C;color:#FFE4E6;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-note{border-radius:4px;background:#0A0D14;border-color:rgba(252,238,10,.4);color:#94A3B8;}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-ok{border-radius:4px;background:linear-gradient(135deg,#FCEE0A 0%,#EAB308 100%);border:1.5px solid #FEF08A;color:#05060A;font-weight:900;box-shadow:0 0 26px rgba(252,238,10,.62);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-ritual[data-ritual="abyss"] .ar6-rt-ok{background:linear-gradient(135deg,#FF003C 0%,#991B1B 100%);border-color:#FCEE0A;color:#FFF;box-shadow:0 0 32px rgba(255,0,60,.8);}',
+  '#ar6-card[data-skin="cyberpunk"] .ar6-rt-no{border-radius:4px;background:#0A0D14;border:1px solid rgba(0,240,255,.32);color:#94A3B8;}',
+
   /* --- 全屏皮肤觉醒叠加层与召唤仪式 --- */
   '#ar6-fx[data-skin]{position:fixed;inset:0;z-index:2147483644;pointer-events:none;overflow:hidden;animation:ar6SkAwakenIn 1.6s cubic-bezier(.22,1,.36,1) forwards;}',
   '.ar6-skfx-ring{position:absolute;left:50%;top:50%;width:min(78vw,620px);height:min(78vw,620px);border-radius:50%;border:2.5px solid var(--skfx-c1,#58A6FF);box-shadow:0 0 42px var(--skfx-c1,#58A6FF),inset 0 0 36px var(--skfx-c2,#FFFFFF);animation:ar6SkRingBurst 1.45s cubic-bezier(.16,1,.3,1) forwards;}',
@@ -675,6 +1341,26 @@ function triggerSkinAwakenFx(sk, k) {
     } else if (sk === 'pink') {
       c1 = isAbyss ? '#E11D48' : '#FF4D9D';
       c2 = isAbyss ? '#FDA4AF' : '#FFE4F2';
+    } else if (sk === 'marvel') {
+      c1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
+      c2 = isAbyss ? '#FACC15' : '#38BDF8';
+      showSlash = isNoa || isAbyss;
+    } else if (sk === 'imperial') {
+      c1 = isAbyss ? '#EF4444' : '#EAB308';
+      c2 = isAbyss ? '#FACC15' : '#DC2626';
+      showSlash = isNoa || isAbyss;
+    } else if (sk === 'westfantasy') {
+      c1 = isAbyss ? '#A855F7' : '#60A5FA';
+      c2 = isAbyss ? '#38BDF8' : '#FACC15';
+      showSlash = isNoa || isAbyss;
+    } else if (sk === 'eldritch') {
+      c1 = isAbyss ? '#DC2626' : '#C8A45D';
+      c2 = isAbyss ? '#FCA5A5' : '#94A3B8';
+      showSlash = isAbyss;
+    } else if (sk === 'cyberpunk') {
+      c1 = isAbyss ? '#FF003C' : '#FCEE0A';
+      c2 = isAbyss ? '#FCEE0A' : '#00F0FF';
+      showSlash = isNoa || isAbyss || k === 'supreme';
     }
 
     var el = DOC.createElement('div');
@@ -756,6 +1442,11 @@ function triggerSkinSummon(sk, opts) {
     if (sk === 'xianxia') { c1 = isAbyss ? '#C084FC' : '#5EEAD4'; c2 = isAbyss ? '#F43F5E' : '#E7C476'; }
     else if (sk === 'xuanhuan') { c1 = isAbyss ? '#FF2E55' : (isNoa ? '#2DD4BF' : '#F59E0B'); c2 = isAbyss ? '#FCA5A5' : '#FEF08A'; }
     else if (sk === 'pink') { c1 = isAbyss ? '#E11D48' : '#FF4D9D'; c2 = isAbyss ? '#FDA4AF' : '#FFE4F2'; }
+    else if (sk === 'marvel') { c1 = isAbyss ? '#A855F7' : '#E11D48'; c2 = isAbyss ? '#FACC15' : '#38BDF8'; }
+    else if (sk === 'imperial') { c1 = isAbyss ? '#EF4444' : '#EAB308'; c2 = isAbyss ? '#FACC15' : '#DC2626'; }
+    else if (sk === 'westfantasy') { c1 = isAbyss ? '#A855F7' : '#60A5FA'; c2 = isAbyss ? '#38BDF8' : '#FACC15'; }
+    else if (sk === 'eldritch') { c1 = isAbyss ? '#DC2626' : '#C8A45D'; c2 = isAbyss ? '#FCA5A5' : '#94A3B8'; }
+    else if (sk === 'cyberpunk') { c1 = isAbyss ? '#FF003C' : '#FCEE0A'; c2 = isAbyss ? '#FCEE0A' : '#00F0FF'; }
     else if (sk === 'plain' && isAbyss) { c1 = '#F85149'; c2 = '#FDA4AF'; }
 
     var tagTxt = (pConf && ((isAbyss && pConf.abyssSummonTag) || (isNoa && pConf.noaSummonTag) || pConf.summonTag)) || 'SUMMON';

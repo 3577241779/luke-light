@@ -530,7 +530,8 @@ function avatarMount() {
     var prof = res.prof, aKey = res.aKey, aObj = res.aObj, effSk = res.sk;
     var ratio = (aObj && aObj.w && aObj.h) ? (aObj.w / aObj.h) : 0.4023;
     var rawFw = Math.round(imgBoxH * ratio);
-    var fw = (effSk === 'ultra') ? rawFw : Math.max(76, Math.min(Math.round(ww * 1.18), rawFw));
+    var maxWCap = ratio > 1.2 ? Math.round(ww * 1.28) : Math.round(ww * 1.18);
+    var fw = (effSk === 'ultra') ? rawFw : Math.max(76, Math.min(maxWCap, rawFw));
     if (sframe) sframe.style.width = fw + 'px';
     if (effSk === 'ultra' && aObj && aObj.timer && tgem && thalo) {
       tgem.style.left = aObj.timer.x + '%';
