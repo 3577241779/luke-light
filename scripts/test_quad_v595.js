@@ -22,11 +22,29 @@ function loadTarget(fileName) {
     removeItem: k => { delete store[k]; },
   };
   const styles = [];
+  const rootEl = {
+    id: 'ar6-root',
+    tagName: 'DIV',
+    style: {},
+    attrs: Object.create(null),
+    isConnected: true,
+    _slot: { id: 'slot-memo', innerHTML: '', style: {}, setAttribute() {}, getAttribute() { return null; } },
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; },
+    hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k); },
+    removeAttribute(k) { delete this.attrs[k]; },
+    querySelector(sel) {
+      if (String(sel || '').includes('data-ar6-sib-slot')) return this._slot;
+      return null;
+    },
+    querySelectorAll() { return []; },
+    addEventListener() {}, removeEventListener() {},
+  };
   const doc = {
-    body: { appendChild() {}, removeChild() {}, children: [] },
+    body: { appendChild(el) { return el; }, removeChild() {}, children: [] },
     head: { appendChild(el) { styles.push(el); return el; }, removeChild() {} },
     documentElement: { clientWidth: 360, clientHeight: 800, style: {} },
-    getElementById() { return null; },
+    getElementById(id) { return id === 'ar6-root' ? rootEl : null; },
     querySelector() { return null; },
     querySelectorAll() { return []; },
     createElement(tag) {
@@ -40,6 +58,7 @@ function loadTarget(fileName) {
     },
     addEventListener() {}, removeEventListener() {},
   };
+  const winListeners = Object.create(null);
   const dispatched = [];
   const win = {
     document: doc, localStorage,
@@ -48,9 +67,15 @@ function loadTarget(fileName) {
     console: { log() {}, warn() {}, info() {}, error() {} },
     fetch: async () => new Response('{}', { status: 200 }),
     setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
-    addEventListener() {}, removeEventListener() {},
+    addEventListener(t, fn) { (winListeners[t] = winListeners[t] || []).push(fn); },
+    removeEventListener(t, fn) { if (winListeners[t]) winListeners[t] = winListeners[t].filter(f => f !== fn); },
     CustomEvent: function (t, o) { this.type = t; this.detail = o && o.detail; },
-    dispatchEvent(ev) { dispatched.push(ev); return true; },
+    dispatchEvent(ev) {
+      dispatched.push(ev);
+      const ls = (ev && ev.type && winListeners[ev.type]) || [];
+      for (const fn of ls.slice()) fn(ev);
+      return true;
+    },
     SillyTavern: {
       getContext: () => ({ chat: [{ is_user: true, mes: 'hi' }, { is_user: false, mes: 'story' }] }),
     },
@@ -66,7 +91,7 @@ for (const fileName of TARGETS) {
   console.log(`\n=== V5.95 四生合体专项回归: ${fileName} ===`);
   const { win, api, rawCode } = loadTarget(fileName);
 
-  check(api && api.VERSION === '5.95', `${fileName}: VERSION === 5.95`);
+  check(api && api.VERSION === '5.96', `${fileName}: VERSION === 5.96`);
 
   // P0-1 & P0-2: 动态成员数徽标 + ar6-quad 手机 2×2 网格类
   const unregLens = api.registerSibling({ id: 'lightlens', label: '光域·镜影', icon: '🎞️', mount() {}, unmount() {} });
@@ -130,6 +155,39 @@ for (const fileName of TARGETS) {
 
   // P1-3: ar6:turn-settled 载荷包含 finalChars 与 chatIndex 源码校验
   check(rawCode.includes('finalChars: settledChars, chatIndex: settledChatIdx'), `${fileName}: ar6:turn-settled 增补 finalChars 与 chatIndex`);
+
+  // V5.96 补强 A: syncGlobalSiblings() 过期队列兄弟清理 + 保留直连兄弟
+  let qUnmounted = 0;
+  const qSpec = { id: 'qmemo', label: '队列镜忆', icon: '🧠', mount() {}, unmount() { qUnmounted++; } };
+  const dSpec = { id: 'dlens', label: '直连镜影', icon: '🎞️', mount() {}, unmount() {} };
+  const unregDirect = api.registerSibling(dSpec);
+  win.__LK_SIBLINGS__ = [qSpec];
+  win.dispatchEvent(new win.CustomEvent('lk:siblings-changed'));
+  check(api.listSiblings().some(s => s.id === 'qmemo') && api.listSiblings().some(s => s.id === 'dlens'), `${fileName}: 队列兄弟与直连兄弟同时在线`);
+  api.openSiblingPanel('qmemo');
+  check(api.getPrismView() === 'sibling:qmemo', `${fileName}: 已切到队列兄弟 qmemo 视图`);
+  // 模拟队列兄弟仅从 __LK_SIBLINGS__ 移除并广播 lk:siblings-changed 退场
+  win.__LK_SIBLINGS__ = [];
+  win.dispatchEvent(new win.CustomEvent('lk:siblings-changed'));
+  check(!api.listSiblings().some(s => s.id === 'qmemo'), `${fileName}: syncGlobalSiblings() 清理已从共享队列退场的过期兄弟`);
+  check(api.listSiblings().some(s => s.id === 'dlens'), `${fileName}: 清理过期队列兄弟时不误删 direct 直连活跃兄弟`);
+  check(qUnmounted === 1 && api.getPrismView() === 'luke', `${fileName}: 过期兄弟退场时自动卸载并回退 luke 视图`, `unmounted=${qUnmounted}, view=${api.getPrismView()}`);
+  if (typeof unregDirect === 'function') unregDirect();
+
+  // V5.96 补强 B: render() 热更 AR6_SIB_MOUNTED.spec !== sibSpec 重挂载 + 同引用幂等
+  let m1 = 0, u1 = 0, m2 = 0, u2 = 0;
+  const hot1 = { id: 'lightmemo', label: '光域·镜忆', icon: '🧠', mount() { m1++; }, unmount() { u1++; } };
+  const hot2 = { id: 'lightmemo', label: '光域·镜忆 v2', icon: '🧠', mount() { m2++; }, unmount() { u2++; } };
+  api.registerSibling(hot1);
+  api.openSiblingPanel('lightmemo');
+  check(m1 === 1 && u1 === 0, `${fileName}: 首次挂载 hot1 成功`, `m1=${m1}, u1=${u1}`);
+  // 同引用重复注册必须幂等零重挂
+  api.registerSibling(hot1);
+  check(m1 === 1 && u1 === 0, `${fileName}: 同引用重复 registerSibling 严格幂等不重复挂载`, `m1=${m1}, u1=${u1}`);
+  // 热更替换为新 spec 引用 hot2：自动卸载旧 hot1 并挂载新 hot2
+  const unregHot2 = api.registerSibling(hot2);
+  check(u1 === 1 && m2 === 1 && u2 === 0, `${fileName}: 热更新引用触发 AR6_SIB_MOUNTED.spec !== sibSpec 自动卸载旧实例并重挂新实例`, `u1=${u1}, m2=${m2}, u2=${u2}`);
+  if (typeof unregHot2 === 'function') unregHot2();
 
   api.dispose();
 }

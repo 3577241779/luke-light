@@ -738,7 +738,7 @@ function bindOutsideDismiss() {
       if (ev && ev.detail === 0 && !ev.pointerType) return;
       if (LAST_SYNTH_SHIELD_AT > 0 && DOC_PD_SEQ === LAST_SYNTH_SHIELD_PD && (Date.now() - LAST_SYNTH_SHIELD_AT < 650)) {
         var ct = ev && ev.target;
-        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill,#ar6-spark,#ar6-notice-modal')) {
+        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill,#ar6-spark')) {
           LAST_SYNTH_SHIELD_AT = 0;
           try { ev.preventDefault(); } catch (eP0) {}
           try { ev.stopPropagation(); } catch (eP1) {}

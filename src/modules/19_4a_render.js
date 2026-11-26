@@ -983,7 +983,7 @@ function mountAll() {
     var sibId = wantMode.slice(8);
     var sibSpec = getSiblingById(sibId);
     var slotEl = r.querySelector ? r.querySelector('[data-ar6-sib-slot="' + sibId.replace(/"/g, '') + '"]') : null;
-    if (sibSpec && slotEl && (!AR6_SIB_MOUNTED || AR6_SIB_MOUNTED.id !== sibId || AR6_SIB_MOUNTED.el !== slotEl)) {
+    if (sibSpec && slotEl && (!AR6_SIB_MOUNTED || AR6_SIB_MOUNTED.id !== sibId || AR6_SIB_MOUNTED.el !== slotEl || AR6_SIB_MOUNTED.spec !== sibSpec)) {
       if (typeof unmountActiveSibling === 'function') unmountActiveSibling();
       try {
         sibSpec.mount(slotEl);

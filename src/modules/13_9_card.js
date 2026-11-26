@@ -897,7 +897,7 @@ function openDiagModal(initialCode, tab) {
 /* ---------------- V5.94 开源免费、防骗警示与法律免责声明弹窗 ---------------- */
 var NOTICE_KEY = 'ar6.notice.ack';
 var NOTICE_VER = '5.94-v1';
-var NOTICE_MODAL = { open: false, forced: false, waitLeft: 0, timer: null, bootTimer: null };
+var NOTICE_MODAL = { open: false, forced: false, waitLeft: 0, unlockAt: 0, timer: null, bootTimer: null, onResize: null };
 
 function isNoticeAcked() {
   try {
@@ -1012,31 +1012,55 @@ function noticeTheme() {
 function noticeBtnLabel(forced, waitLeft) {
   if (!forced) return '已阅 · 关闭声明';
   if (waitLeft > 0) return '请阅读声明（' + waitLeft + 's）';
-  return '我已满 18 周岁，知晓本插件免费开源并同意全部声明';
+  return '我已满 18 周岁，知晓免费开源并同意全部声明';
+}
+
+function noticeViewportH() {
+  var h = 0;
+  try {
+    if (HOST && HOST.visualViewport && HOST.visualViewport.height > 120) h = HOST.visualViewport.height;
+  } catch (e0) {}
+  try {
+    var ih = HOST && HOST.innerHeight ? Number(HOST.innerHeight) : 0;
+    if (ih > 120 && (!h || ih < h)) h = ih;
+  } catch (e1) {}
+  try {
+    var ch = DOC && DOC.documentElement && DOC.documentElement.clientHeight ? Number(DOC.documentElement.clientHeight) : 0;
+    if (ch > 120 && (!h || ch < h)) h = ch;
+  } catch (e2) {}
+  return h > 120 ? Math.floor(h) : 0;
+}
+
+function noticeBoxMaxH() {
+  var vh = noticeViewportH();
+  if (vh > 180) return Math.max(220, vh - 28) + 'px';
+  return '84dvh';
 }
 
 function noticeModalHTML(forced, waitLeft) {
   var th = noticeTheme();
   var locked = !!(forced && waitLeft > 0);
-  var secStyle = 'margin:0 0 9px;padding:9px 11px;border-radius:10px;background:' + th.secBg + ';border:1px solid ' + th.secBd + ';font-size:12.2px;line-height:1.68;color:' + th.ink;
-  var hTitleStyle = 'font-size:12.6px;font-weight:700;color:' + th.secTitle + ';margin:0 0 4px';
-  var btnStyle = 'width:100%;min-height:44px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;line-height:1.35;transition:all .16s ease;' +
+  var secStyle = 'margin:0 0 8px;padding:8px 10px;border-radius:10px;background:' + th.secBg + ';border:1px solid ' + th.secBd + ';font-size:12px;line-height:1.62;color:' + th.ink + ';word-break:break-word;overflow-wrap:anywhere';
+  var hTitleStyle = 'font-size:12.4px;font-weight:700;color:' + th.secTitle + ';margin:0 0 4px';
+  var btnStyle = 'display:block;width:100%;max-width:100%;min-height:44px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;line-height:1.35;white-space:normal;word-break:break-word;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .16s ease;' +
     (locked
       ? ('cursor:not-allowed;opacity:.78;background:' + th.btnOffBg + ';border:1px solid ' + th.btnOffBd + ';color:' + th.btnOffInk)
       : ('cursor:pointer;opacity:1;background:' + th.btnBg + ';border:1px solid ' + th.btnBd + ';color:' + th.btnInk + ';box-shadow:0 6px 20px rgba(2,6,23,.32)'));
+  var boxMaxH = noticeBoxMaxH();
 
-  var h = '<div id="ar6-notice-modal" role="dialog" aria-modal="true" aria-label="卢克之光版权防骗与法律免责声明" data-ar6-forced="' + (forced ? '1' : '0') + '" style="' + cardOverlayCss() + 'z-index:2147483606;background:rgba(4,8,18,.88);font-family:system-ui,-apple-system,Segoe UI,\'PingFang SC\',\'Microsoft YaHei\',sans-serif">';
-  h += '<div style="width:486px;max-width:calc(100vw - 18px);max-height:' + cardBoxMaxH(88) + ';display:flex;flex-direction:column;overflow:hidden;background:' + th.bg + ';color:' + th.ink + ';border:1.5px solid ' + th.bd + ';border-radius:16px;box-shadow:' + th.sh + '">';
+  var h = '<div id="ar6-notice-modal" role="dialog" aria-modal="true" aria-label="卢克之光版权防骗与法律免责声明" data-ar6-forced="' + (forced ? '1' : '0') + '" style="position:fixed;inset:0;left:0;top:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:10px;overflow:hidden;z-index:2147483606;background:rgba(4,8,18,.88);font-family:system-ui,-apple-system,Segoe UI,\'PingFang SC\',\'Microsoft YaHei\',sans-serif">';
+  h += '<style>#ar6-notice-modal,#ar6-notice-modal *{box-sizing:border-box!important;min-width:0}#ar6-notice-modal button[data-ar6-nm]{width:100%!important;max-width:100%!important;white-space:normal!important;word-break:break-word!important;pointer-events:auto!important;touch-action:manipulation!important;margin:0!important}</style>';
+  h += '<div data-ar6-nm-box="1" style="width:100%;max-width:460px;max-height:' + boxMaxH + ';display:flex;flex-direction:column;overflow:hidden;background:' + th.bg + ';color:' + th.ink + ';border:1.5px solid ' + th.bd + ';border-radius:14px;box-shadow:' + th.sh + '">';
 
   /* 固定顶栏（无外链、无关闭叉号） */
-  h += '<div style="flex:0 0 auto;padding:12px 15px 10px;background:' + th.headBg + ';border-bottom:1px solid ' + th.headBd + '">' +
-    '<div style="display:inline-block;padding:2px 8px;margin-bottom:5px;border-radius:999px;font-size:10.8px;font-weight:700;letter-spacing:.3px;background:' + th.badgeBg + ';border:1px solid ' + th.badgeBd + ';color:' + th.badgeInk + '">免费开源 · 严禁倒卖 · 使用前必读</div>' +
-    '<div style="font-size:15.5px;font-weight:800;line-height:1.35;color:' + th.title + '">《卢克之光》开源声明、防骗警示与法律免责协议</div>' +
-    '<div style="font-size:11.2px;color:' + th.dim + ';margin-top:3px">版本 V' + esc(VERSION) + ' · 类脑社区（类脑 ΟΔΥΣΣΕΙΑ）免费开源发布</div>' +
+  h += '<div style="flex:0 0 auto;padding:10px 13px 9px;background:' + th.headBg + ';border-bottom:1px solid ' + th.headBd + '">' +
+    '<div style="display:inline-block;padding:2px 8px;margin-bottom:4px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.3px;background:' + th.badgeBg + ';border:1px solid ' + th.badgeBd + ';color:' + th.badgeInk + '">免费开源 · 严禁倒卖 · 使用前必读</div>' +
+    '<div style="font-size:14.5px;font-weight:800;line-height:1.32;color:' + th.title + ';word-break:break-word">《卢克之光》开源声明、防骗警示与法律免责协议</div>' +
+    '<div style="font-size:11px;color:' + th.dim + ';margin-top:2px">版本 V' + esc(VERSION) + ' · 类脑社区（类脑 ΟΔΥΣΣΕΙΑ）免费开源发布</div>' +
     '</div>';
 
   /* 可滚动正文区 */
-  h += '<div style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px">';
+  h += '<div style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;padding:10px 12px">';
 
   /* 核心红框：反倒卖防诈骗警示 */
   h += '<div style="margin:0 0 10px;padding:10px 12px;border-radius:11px;background:' + th.alertBg + ';border:1.5px solid ' + th.alertBd + ';font-size:12.5px;line-height:1.68;color:' + th.alertInk + '">' +
@@ -1092,9 +1116,9 @@ function noticeModalHTML(forced, waitLeft) {
 
   h += '</div>';
 
-  /* 固定底栏：唯一主按钮 */
-  h += '<div style="flex:0 0 auto;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));background:' + th.footBg + ';border-top:1px solid ' + th.headBd + '">' +
-    '<button type="button" data-ar6-nm="agree" data-locked="' + (locked ? '1' : '0') + '"' + (locked ? ' disabled="disabled"' : '') + ' style="' + btnStyle + '">' + esc(noticeBtnLabel(forced, waitLeft)) + '</button>' +
+  /* 固定底栏：唯一主按钮（不用 disabled 硬锁，改用 data-locked + 实时时间戳解锁，防移动端 WebView 冻结卡死） */
+  h += '<div style="flex:0 0 auto;padding:9px 12px calc(10px + env(safe-area-inset-bottom,0px));background:' + th.footBg + ';border-top:1px solid ' + th.headBd + '">' +
+    '<button type="button" data-ar6-nm="agree" data-locked="' + (locked ? '1' : '0') + '" aria-disabled="' + (locked ? 'true' : 'false') + '" style="' + btnStyle + '">' + esc(noticeBtnLabel(forced, waitLeft)) + '</button>' +
     '</div>';
 
   h += '</div></div>';
@@ -1108,11 +1132,17 @@ function closeNoticeModal(forceClose) {
       clearInterval(NOTICE_MODAL.timer);
       NOTICE_MODAL.timer = null;
     }
+    if (NOTICE_MODAL.onResize) {
+      try { if (HOST && HOST.removeEventListener) HOST.removeEventListener('resize', NOTICE_MODAL.onResize); } catch (eR0) {}
+      try { if (HOST && HOST.visualViewport && HOST.visualViewport.removeEventListener) HOST.visualViewport.removeEventListener('resize', NOTICE_MODAL.onResize); } catch (eR1) {}
+      NOTICE_MODAL.onResize = null;
+    }
     var old = DOC && DOC.getElementById('ar6-notice-modal');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     NOTICE_MODAL.open = false;
     NOTICE_MODAL.forced = false;
     NOTICE_MODAL.waitLeft = 0;
+    NOTICE_MODAL.unlockAt = 0;
     return true;
   } catch (e) { return false; }
 }
@@ -1128,6 +1158,7 @@ function openNoticeModal(forced, opts) {
     }
     NOTICE_MODAL.forced = isForced;
     NOTICE_MODAL.waitLeft = waitSec;
+    NOTICE_MODAL.unlockAt = waitSec > 0 ? (Date.now() + waitSec * 1000) : 0;
     var wrap = DOC.createElement('div');
     wrap.innerHTML = noticeModalHTML(isForced, waitSec);
     var node = wrap.firstChild;
@@ -1136,6 +1167,16 @@ function openNoticeModal(forced, opts) {
     NOTICE_MODAL.open = true;
 
     var th = noticeTheme();
+    var syncBoxSize = function () {
+      try {
+        var bx = node.querySelector && node.querySelector('[data-ar6-nm-box="1"]');
+        if (bx) bx.style.maxHeight = noticeBoxMaxH();
+      } catch (eSz) {}
+    };
+    NOTICE_MODAL.onResize = syncBoxSize;
+    try { if (HOST && HOST.addEventListener) HOST.addEventListener('resize', syncBoxSize); } catch (eRs0) {}
+    try { if (HOST && HOST.visualViewport && HOST.visualViewport.addEventListener) HOST.visualViewport.addEventListener('resize', syncBoxSize); } catch (eRs1) {}
+
     var syncBtn = function () {
       try {
         var b = node.querySelector && node.querySelector('[data-ar6-nm="agree"]');
@@ -1143,9 +1184,8 @@ function openNoticeModal(forced, opts) {
         var lck = !!(NOTICE_MODAL.forced && NOTICE_MODAL.waitLeft > 0);
         b.textContent = noticeBtnLabel(NOTICE_MODAL.forced, NOTICE_MODAL.waitLeft);
         b.setAttribute('data-locked', lck ? '1' : '0');
-        b.disabled = lck;
+        b.setAttribute('aria-disabled', lck ? 'true' : 'false');
         if (!lck) {
-          b.removeAttribute('disabled');
           b.style.cursor = 'pointer';
           b.style.opacity = '1';
           b.style.background = th.btnBg;
@@ -1162,13 +1202,54 @@ function openNoticeModal(forced, opts) {
           if (NOTICE_MODAL.timer) { clearInterval(NOTICE_MODAL.timer); NOTICE_MODAL.timer = null; }
           return;
         }
-        NOTICE_MODAL.waitLeft = Math.max(0, NOTICE_MODAL.waitLeft - 1);
+        var byClock = NOTICE_MODAL.unlockAt ? Math.ceil((NOTICE_MODAL.unlockAt - Date.now()) / 1000) : 0;
+        var byTick = Math.max(0, NOTICE_MODAL.waitLeft - 1);
+        NOTICE_MODAL.waitLeft = Math.max(0, Math.min(byTick, byClock));
         syncBtn();
         if (NOTICE_MODAL.waitLeft <= 0 && NOTICE_MODAL.timer) {
           clearInterval(NOTICE_MODAL.timer);
           NOTICE_MODAL.timer = null;
         }
       }, 1000);
+    }
+
+    var lastActAt = 0;
+    var handleAgree = function () {
+      var now = Date.now();
+      if (now - lastActAt < 300) return;
+      if (NOTICE_MODAL.forced) {
+        if (NOTICE_MODAL.waitLeft > 0 && NOTICE_MODAL.unlockAt && now >= NOTICE_MODAL.unlockAt) {
+          NOTICE_MODAL.waitLeft = 0;
+          syncBtn();
+        }
+        if (NOTICE_MODAL.waitLeft > 0) return;
+        lastActAt = now;
+        markNoticeAcked();
+        closeNoticeModal(true);
+        try { banner('已确认《卢克之光》开源免费与合规免责声明（可在「设置」随时复看）', 'ok', true); } catch (eBn) {}
+      } else {
+        lastActAt = now;
+        closeNoticeModal(true);
+      }
+    };
+
+    var pDownX = 0, pDownY = 0, pDownOk = false;
+    var agreeEl = node.querySelector && node.querySelector('[data-ar6-nm="agree"]');
+    if (agreeEl && agreeEl.addEventListener) {
+      agreeEl.addEventListener('pointerdown', function (ev) {
+        pDownOk = true;
+        pDownX = (ev && typeof ev.clientX === 'number') ? ev.clientX : 0;
+        pDownY = (ev && typeof ev.clientY === 'number') ? ev.clientY : 0;
+      }, false);
+      agreeEl.addEventListener('pointerup', function (ev) {
+        if (!pDownOk) return;
+        pDownOk = false;
+        var dx = Math.abs(((ev && typeof ev.clientX === 'number') ? ev.clientX : pDownX) - pDownX);
+        var dy = Math.abs(((ev && typeof ev.clientY === 'number') ? ev.clientY : pDownY) - pDownY);
+        if (dx > 16 || dy > 16) return;
+        handleAgree();
+      }, false);
+      agreeEl.addEventListener('pointercancel', function () { pDownOk = false; }, false);
     }
 
     node.addEventListener('click', function (ev) {
@@ -1183,16 +1264,7 @@ function openNoticeModal(forced, opts) {
         cur = cur.parentNode;
       }
       if (!btn) return;
-      if (btn.getAttribute('data-ar6-nm') === 'agree') {
-        if (NOTICE_MODAL.forced && NOTICE_MODAL.waitLeft > 0) return;
-        if (NOTICE_MODAL.forced) {
-          markNoticeAcked();
-          closeNoticeModal(true);
-          try { banner('已确认《卢克之光》开源免费与合规免责声明（可在「设置」随时复看）', 'ok', true); } catch (eBn) {}
-        } else {
-          closeNoticeModal(true);
-        }
-      }
+      if (btn.getAttribute('data-ar6-nm') === 'agree') handleAgree();
     });
     return true;
   } catch (e) { return false; }

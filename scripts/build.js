@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.95/dist';
-const CHANGELOG_LATEST = 'V5.95 · 卢克家族四生合体全量适配（携手《光域·镜忆》+《光域·镜界》+《光域·镜影》）：顶栏四开手机窄屏自动 2×2 网格防截断、按成员数动态显示「⚡ 四生合体」徽标、补齐漫威/帝皇/西幻/诡秘/赛博 5 套新皮肤四生顶栏配色、雷达专属识别光域·镜忆旁路 Symbol 与主聊白名单双保险、`ar6:turn-settled` 增补 `finalChars`/`chatIndex`、导出 `getSkinPalette`/`LIVE`/`isLive`/`isJailAskPending`。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.96/dist';
+const CHANGELOG_LATEST = 'V5.96 · 手机端声明弹窗防超宽/防超高/触控秒关修复 + 四生合体热更重挂载与过期兄弟自愈：修复手机竖屏下安全声明弹窗因 100vw+padding 超宽与 100vh 按钮掉屏导致关不掉的问题（改用 inset:0 + border-box + visualViewport 动态锁高 + pointerup/click 双触控 + 时间戳防卡死解锁）；syncGlobalSiblings() 自动清理过期队列兄弟并保护直连项；render() 补齐 AR6_SIB_MOUNTED.spec !== sibSpec 热更重挂载校验。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.95·ST酒馆适配.json',
+    fileName: '卢克之光 V5.96·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.95·ST酒馆适配',
-    info: '卢克之光 V5.95「光之守护」· 手机 ST 酒馆适配（四生合体单悬浮球 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通）',
+    name: '卢克之光 V5.96·ST酒馆适配',
+    info: '卢克之光 V5.96「光之守护」· 手机 ST 酒馆适配（四生合体单悬浮球与热更自愈 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.95·TT酒馆适配.json',
+    fileName: '卢克之光 V5.96·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.95·TT酒馆适配',
-    info: '卢克之光 V5.95「光之守护」· TT 酒馆适配（四生合体单悬浮球 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / TT 双入口）',
+    name: '卢克之光 V5.96·TT酒馆适配',
+    info: '卢克之光 V5.96「光之守护」· TT 酒馆适配（四生合体单悬浮球与热更自愈 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.95·桌面版.json',
+    fileName: '卢克之光 V5.96·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.95·桌面版',
-    info: '卢克之光 V5.95「光之守护」· 电脑桌面版（四生合体单悬浮球 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 桌面宽屏拖拽）',
+    name: '卢克之光 V5.96·桌面版',
+    info: '卢克之光 V5.96「光之守护」· 电脑桌面版（四生合体单悬浮球与热更自愈 / 10皮肤×18态3D雕像桌宠 / 开源防骗免责首弹 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

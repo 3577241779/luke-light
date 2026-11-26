@@ -272,7 +272,7 @@ for (const fileName of TARGETS) {
   const r1 = loadTarget(fileName, store);
   const { win, api, ft } = r1;
 
-  check(api && api.VERSION === '5.95', `${fileName}: VERSION === 5.95`, api && api.VERSION);
+  check(api && api.VERSION === '5.96', `${fileName}: VERSION === 5.96`, api && api.VERSION);
   check(typeof api.isNoticeAcked === 'function' && typeof api.openNoticeModal === 'function' && typeof api.closeNoticeModal === 'function', `${fileName}: 声明弹窗 API 完整导出`);
   check(api.isNoticeAcked() === false, `${fileName}: 首次加载/云端更新后 isNoticeAcked 为 false`);
   check(!win.document.getElementById('ar6-notice-modal'), `${fileName}: boot 同步阶段不阻塞 DOM`);
@@ -283,11 +283,14 @@ for (const fileName of TARGETS) {
   check(!!modal, `${fileName}: 900ms 后自动强制弹出 #ar6-notice-modal`);
   check(modal && modal.getAttribute('data-ar6-forced') === '1', `${fileName}: 首次弹窗标记 data-ar6-forced="1"`);
 
-  // 检查零外链、单主按钮、8 层法律厚甲文案
+  // 检查零外链、单主按钮、手机防超宽/防超高布局、8 层法律厚甲文案
   const html = modal ? modal.innerHTML : '';
+  const modalStyle = modal ? String(modal.getAttribute('style') || '') : '';
   const txt = modal ? modal.textContent : '';
   const btns = modal ? modal.querySelectorAll('button') : [];
   check(btns.length === 1, `${fileName}: 弹窗内严格只有唯一一个主按钮`, `got=${btns.length}`);
+  check(modalStyle.includes('inset:0') && modalStyle.includes('width:100%') && modalStyle.includes('box-sizing:border-box') && !modalStyle.includes('100vw'), `${fileName}: 遮罩使用 inset:0 + width:100% + border-box 零超宽`, modalStyle);
+  check(html.includes('max-height:816px') && html.includes('white-space:normal'), `${fileName}: 手机动态锁高(innerHeight-28)且主按钮允许换行不撑宽`);
   check(!/https?:\/\/|github\.com|jsdelivr/i.test(html), `${fileName}: 弹窗内零外部链接、零仓库地址`);
   check(txt.includes('类脑社区（类脑 ΟΔΥΣΣΕΙΑ）') && txt.includes('上当受骗'), `${fileName}: 含类脑社区免费开源与付费即受骗红框警示`);
   check(txt.includes('非商业、非营利') && txt.includes('中华人民共和国著作权法') && txt.includes('计算机软件保护条例'), `${fileName}: 含非商业许可与著作权法依据`);
@@ -307,11 +310,12 @@ for (const fileName of TARGETS) {
   check(!!win.document.getElementById('ar6-notice-modal'), `${fileName}: 强制模式按 Esc 不可跳过`);
   check(api.closeNoticeModal(false) === false && !!win.document.getElementById('ar6-notice-modal'), `${fileName}: 强制模式非 forceClose 不可关闭`);
 
-  // 推进 3 秒倒计时 → 解锁 → 点击唯一主按钮同意
+  // 推进 3 秒倒计时 → 解锁 → 手机 pointerdown+pointerup 触控即可关闭同意
   ft.tickIntervals(1000, 3);
   check(agreeBtn.getAttribute('data-locked') === '0' && agreeBtn.textContent.includes('我已满 18 周岁'), `${fileName}: 3 秒后主按钮自动解锁`, agreeBtn.textContent);
-  agreeBtn.click();
-  check(!win.document.getElementById('ar6-notice-modal'), `${fileName}: 点击同意后声明弹窗关闭`);
+  agreeBtn.dispatchEvent({ type: 'pointerdown', clientX: 100, clientY: 700, bubbles: true });
+  agreeBtn.dispatchEvent({ type: 'pointerup', clientX: 102, clientY: 701, bubbles: true });
+  check(!win.document.getElementById('ar6-notice-modal'), `${fileName}: 手机触控 pointerup 同意后声明弹窗立即关闭`);
   check(api.isNoticeAcked() === true, `${fileName}: 同意后 isNoticeAcked() === true`);
   check(store['ar6.notice.ack'] === api.NOTICE_VER, `${fileName}: localStorage 持久化写入 ar6.notice.ack`);
 

@@ -16,8 +16,9 @@ var PRISM_SYNC_GUARD = false;
 var PRISM_EVT_BOUND = false;
 var PRISM_EVT_REFS = [];
 
-/* ---- V5.76 三生合体：同生态兄弟面板槽位注册中心 (lightlens 等) ---- */
+/* ---- V5.76→V5.96 四生合体：同生态兄弟面板槽位注册中心 (lightlens / lightmemo 等) ---- */
 var AR6_SIBLINGS = {};
+var AR6_SIB_SRC = {};      /* id -> 'direct' | 'queue' */
 var AR6_SIB_ORDER = [];
 var AR6_SIB_MOUNTED = null; /* { id: string, el: HTMLElement, spec: object } */
 
@@ -58,10 +59,13 @@ function unmountActiveSibling() {
 function registerSibling(spec) {
   if (!siblingValid(spec)) return function () {};
   var id = String(spec.id);
-  var isNew = !AR6_SIBLINGS[id];
+  var prevSpec = AR6_SIBLINGS[id];
+  var isNew = !prevSpec;
+  var isHotReload = !isNew && prevSpec !== spec && prevSpec.mount !== spec.mount;
   AR6_SIBLINGS[id] = spec;
-  if (isNew) {
-    AR6_SIB_ORDER.push(id);
+  AR6_SIB_SRC[id] = 'direct';
+  if (isNew) AR6_SIB_ORDER.push(id);
+  if (isNew || isHotReload) {
     try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS) {}
     try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eR) {}
   }
@@ -69,6 +73,7 @@ function registerSibling(spec) {
     if (AR6_SIBLINGS[id] !== spec) return;
     if (AR6_SIB_MOUNTED && AR6_SIB_MOUNTED.id === id) unmountActiveSibling();
     delete AR6_SIBLINGS[id];
+    delete AR6_SIB_SRC[id];
     var nextOrd = [];
     for (var i = 0; i < AR6_SIB_ORDER.length; i++) {
       if (AR6_SIB_ORDER[i] !== id) nextOrd.push(AR6_SIB_ORDER[i]);
@@ -82,6 +87,8 @@ function registerSibling(spec) {
 
 function syncGlobalSiblings() {
   var ws = prismWins();
+  var seenInQueue = {};
+  var changed = false;
   for (var i = 0; i < ws.length; i++) {
     try {
       var arr = ws[i] && ws[i].__LK_SIBLINGS__;
@@ -89,16 +96,38 @@ function syncGlobalSiblings() {
       for (var j = 0; j < arr.length; j++) {
         if (siblingValid(arr[j])) {
           var id = String(arr[j].id);
+          seenInQueue[id] = true;
           if (!AR6_SIBLINGS[id]) {
             AR6_SIBLINGS[id] = arr[j];
+            AR6_SIB_SRC[id] = 'queue';
             AR6_SIB_ORDER.push(id);
-          } else {
+            changed = true;
+          } else if (AR6_SIB_SRC[id] === 'queue' && AR6_SIBLINGS[id] !== arr[j]) {
             AR6_SIBLINGS[id] = arr[j];
+            changed = true;
           }
         }
       }
     } catch (eG) {}
   }
+  /* 清理来源为共享队列 __LK_SIBLINGS__ 但已退场移除的过期兄弟（保留 direct 直连活跃项） */
+  if (AR6_SIB_ORDER.length > 0) {
+    var nextOrd = [];
+    for (var k = 0; k < AR6_SIB_ORDER.length; k++) {
+      var sid = AR6_SIB_ORDER[k];
+      if (AR6_SIB_SRC[sid] === 'queue' && !seenInQueue[sid]) {
+        if (AR6_SIB_MOUNTED && AR6_SIB_MOUNTED.id === sid) unmountActiveSibling();
+        delete AR6_SIBLINGS[sid];
+        delete AR6_SIB_SRC[sid];
+        if (PRISM_VIEW === 'sibling:' + sid) PRISM_VIEW = 'luke';
+        changed = true;
+      } else {
+        nextOrd.push(sid);
+      }
+    }
+    AR6_SIB_ORDER = nextOrd;
+  }
+  return changed;
 }
 
 function openSiblingPanel(id) {
@@ -1578,8 +1607,8 @@ function prismBindStHooks() {
     };
     var sibChgFn = function () {
       var prevOrd = AR6_SIB_ORDER.join(',');
-      syncGlobalSiblings();
-      if (AR6_SIB_ORDER.join(',') === prevOrd) return;
+      var changed = syncGlobalSiblings();
+      if (!changed && AR6_SIB_ORDER.join(',') === prevOrd) return;
       try { if (typeof UI_SIG === 'object' && UI_SIG) UI_SIG = {}; } catch (eS0) {}
       try { if (typeof minimized === 'undefined' || !minimized) { if (typeof render === 'function') render(); } } catch (eS1) {}
     };
