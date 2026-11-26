@@ -94,7 +94,7 @@ async function runForTarget(fileName) {
   };
   const win = makeSandbox(baseFetch);
   const api = loadBundle(fullPath, win);
-  check(api && api.VERSION === '5.98', '版本号为 5.98');
+  check(api && api.VERSION === '5.99', '版本号为 5.99');
 
   const cfg = api.getCfg();
   check(cfg.contentOnly === 'on', '默认开启「纯净正轨 · 放行外部插件」');
@@ -314,7 +314,7 @@ async function runForTarget(fileName) {
   });
   const wbmApi = loadBundle(fullPath, wbmWin);
   await wbmWin.fetch('http://127.0.0.1:8000/api/ping', { method: 'GET' });
-  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.98', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
+  check(wbmGuardCalls === 1 && wbmApi.VERSION === '5.99', '世界书管理器 fetch 访问器守卫和平共存，零死循环');
 
   // 7) 面板落位 A 校验：防卫设置出现「星域协同 · 插件与预设兼容」专卡（双独立开关）+ 形态破甲底栏含「预设适配」状态 + 采样窗星轨路由条
   const jailHtml = api.uiJailHTML();
@@ -345,7 +345,7 @@ async function runForTarget(fileName) {
     }), { status: 200 });
   });
   const fakePlat = /(?:ST|-st\.json)/i.test(fileName) ? 'st' : (/(?:TT|-tt\.json)/i.test(fileName) ? 'tt' : 'desktop');
-  const fakeScript = { id: 'lk-1', name: '卢克之光 V5.98 (' + fakePlat + ')', content: "var VERSION = '5.98';\nvar PLATFORM = '" + fakePlat + "';" };
+  const fakeScript = { id: 'lk-1', name: '卢克之光 V5.99 (' + fakePlat + ')', content: "var VERSION = '5.99';\nvar PLATFORM = '" + fakePlat + "';" };
   updWin.TavernHelper = {
     getScriptTrees() { return [fakeScript]; },
     updateScriptTreesWith(fn) { fn([fakeScript]); return true; },

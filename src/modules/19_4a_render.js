@@ -79,7 +79,8 @@ function actBtn(act, iconName, text, extraCls) {
 function uiTierMeta() {
   var on = !!(cfg && cfg.enabled);
   var j = String((cfg && cfg.jail) || 'off');
-  var dawnGlow = !!(on && cfg && cfg.allTool === true && (j === 'abyss' || j === 'off'));
+  var dawnLive = !!(on && cfg && cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var dawnGlow = !!(dawnLive && (j === 'abyss' || j === 'off'));
   var base;
   var tKey = 'idle';
   if (!on) { tKey = 'off'; base = { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' }; }
@@ -305,6 +306,11 @@ function uiJailHTML() {
     : '';
 
   var allOn = !!(cfg && cfg.allTool === true);
+  var allGrabPaused = allOn && !!(cfg && cfg.grab > 0);
+  var allLive = allOn && !!(cfg && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var allStTxt = allLive
+    ? sk('allToolStOn', '✦ 破暗闪耀')
+    : (allGrabPaused ? '飞燕暂避' : (allOn ? '通道待机' : sk('allToolStOff', '暗影蛰伏')));
   var ultHTML = '<div class="ar6-ult-wrap">' +
     '<div class="ar6-ult-head"><span>' + esc(sk('ultHead', '✦ 终极圣域 · 超越界限 ✦')) + '</span></div>' +
     '<div class="ar6-ult-grid">' +
@@ -326,14 +332,14 @@ function uiJailHTML() {
       '</button>' +
     '</div>' +
     '<div class="ar6-ult-dawn-row">' +
-      '<button type="button" class="ar6-ultb ar6-temple-btn dawn' + (allOn ? ' on' : '') + '" data-ar6="alltool:toggle" aria-pressed="' + (allOn ? 'true' : 'false') + '">' +
+      '<button type="button" class="ar6-ultb ar6-temple-btn dawn' + (allLive ? ' on' : '') + '" data-ar6="alltool:toggle" aria-pressed="' + (allOn ? 'true' : 'false') + '">' +
         sv.dawnBg +
         '<span class="ar6-temple-ico">' + sv.dawnIco + '</span>' +
         '<span class="ar6-temple-txt">' +
           '<span class="ar6-temple-name">' + esc(sk('allToolLabel', '◤ 破暗化光 · 闪耀三轨 ◢')) + '</span>' +
           '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 正文 / 状态 / 选项三路圣柜分流，函数外零杂字')) + '</span>' +
         '</span>' +
-        '<em class="ar6-dawn-st">' + esc(allOn ? sk('allToolStOn', '✦ 破暗闪耀') : sk('allToolStOff', '暗影蛰伏')) + '</em>' +
+        '<em class="ar6-dawn-st">' + esc(allStTxt) + '</em>' +
       '</button>' +
     '</div>' + jstBlock +
     '<div class="ar6-sem-wrap">' +
@@ -394,7 +400,7 @@ function uiTruncHTML() {
     swCell('🔔 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), sk('truncConfirm', '追击请示 · 续写前确认'), cfg.jailConfirm !== false) +
     swCell('📑 单节折叠:' + (cfg.singleSec === true ? '开' : '关'), sk('truncSingle', '记忆凝缩 · 旧轮单节折叠'), cfg.singleSec === true) +
     swCell('🧰 工具通道:' + (cfg.toolChan === 'on' ? '开' : '关'), sk('truncTool', '武装货舱 · 独立圣柜信道交付'), cfg.toolChan === 'on', 'gold span-2') +
-    swCell('tool-loop', sk('truncToolLoop', '🔗 双轮工具链（Gemini 兼容增强）'), cfg.toolChan === 'on' && cfg.toolLoop === true, '', cfg.toolChan !== 'on' ? (cfg.toolLoop === true ? '待机·已选' : '随工具通道待机') : (cfg.toolLoop === true ? '已开启' : '待机'), cfg.toolChan !== 'on' ? 'data-off="1"' : '') +
+    swCell('tool-loop', sk('truncToolLoop', '🔗 双轮工具链（Gemini 兼容增强）'), cfg.toolChan === 'on' && cfg.toolLoop === true && cfg.allTool !== true, '', cfg.allTool === true ? '三轨互斥·让位' : (cfg.toolChan !== 'on' ? (cfg.toolLoop === true ? '待机·已选' : '随工具通道待机') : (cfg.toolLoop === true ? '已开启' : '待机')), (cfg.toolChan !== 'on' || cfg.allTool === true) ? 'data-off="1"' : '') +
     swCell('tool-cover', sk('truncToolCover', '🧥 外衣剥壳（流式零延迟去头）'), cfg.toolChan === 'on' && cfg.toolCover === true, '', cfg.toolChan !== 'on' ? (cfg.toolCover === true ? '待机·已选' : '随工具通道待机') : (cfg.toolCover === true ? '已开启' : '待机'), cfg.toolChan !== 'on' ? 'data-off="1"' : '') +
     '</div>';
 
@@ -916,7 +922,7 @@ function patchRole() {
     ar6SetAttrIfDiff(r, 'data-skin', curSkin);
     var nextTier = (typeof lkVisualTier === 'function') ? lkVisualTier() : ((!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off')));
     ar6SetAttrIfDiff(r, 'data-tier', nextTier);
-    if (cfg && cfg.enabled && cfg.allTool === true) ar6SetAttrIfDiff(r, 'data-alltool', '1');
+    if (cfg && cfg.enabled && cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') ar6SetAttrIfDiff(r, 'data-alltool', '1');
     else ar6RmAttrIfHas(r, 'data-alltool');
     if (cfg && !cfg.enabled) ar6SetAttrIfDiff(r, 'data-off-master', '1');
     else ar6RmAttrIfHas(r, 'data-off-master');

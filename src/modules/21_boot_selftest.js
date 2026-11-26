@@ -2079,7 +2079,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.98') throw new Error('VERSION 应为 5.98，实际 ' + VERSION);
+      if (VERSION !== '5.99') throw new Error('VERSION 应为 5.99，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -3289,6 +3289,9 @@ var AR6_API = {
   toolChanEligible: toolChanEligible,
   toolChanPatch: toolChanPatch,
   toolPull: toolPull,
+  lkCouldBeOwnToolPrefix: (typeof lkCouldBeOwnToolPrefix === 'function') ? lkCouldBeOwnToolPrefix : null,
+  lkDropOrphanTools: (typeof lkDropOrphanTools === 'function') ? lkDropOrphanTools : null,
+  lkTypesetTxt: (typeof lkTypesetTxt === 'function') ? lkTypesetTxt : null,
   lkCreateArgExtractor: (typeof lkCreateArgExtractor === 'function') ? lkCreateArgExtractor : null,
   lkCreateCoverStripper: (typeof lkCreateCoverStripper === 'function') ? lkCreateCoverStripper : null,
   lkStripCoverOnce: (typeof lkStripCoverOnce === 'function') ? lkStripCoverOnce : null,

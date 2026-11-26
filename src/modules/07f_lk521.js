@@ -47,7 +47,7 @@ function presetCompatForce() {
 /* 通用区分「纯正文交付载具工具」与「结构化多字段业务引擎工具」（基于字段结构与通用语义动词，不绑定任何特定预设名） */
 var LK_ENGINE_TOOL_RE = /(?:workflow|engine|state|table|database|phone|hud|status|scene|event|inventory|quest|memory|search|fetch|image|draw|ping_check)/i;
 var LK_THINK_TOOL_RE = /^(?:think|thinking|plan|planning|cot|reason|reasoning|draft|scratchpad)(?:$|[_-])/i;
-var LK_CARRIER_TOOL_RE = /^(?:lk_write|submit_story_output|game_content|emit_complete_response(?:_[a-zA-Z0-9_]+)?|write_to_file(?:_[a-zA-Z0-9_]+)?|[a-zA-Z0-9_-]+_(?:content|reply|story|response|output|narrative))$/i;
+var LK_CARRIER_TOOL_RE = /^(?:lk_write|save_chapter|write_chapter|save_chapter_file|save_prose|save_status|save_options|submit_story_output|game_content|emit_complete_response(?:_[a-zA-Z0-9_]+)?|write_to_file(?:_[a-zA-Z0-9_]+)?|[a-zA-Z0-9_-]+_(?:content|reply|story|response|output|narrative))$/i;
 var LK_CARRIER_FIELD_RE = /^(?:text|content|story|reply|output|response|body|narrative|prose|main_text|game_content)$/i;
 function lkClassifyTools(root) {
   var out = { hasTools: false, allCarrier: false, hasEngine: false, hasExternal: false, names: [] };
@@ -62,6 +62,11 @@ function lkClassifyTools(root) {
     var fn = (it.function && typeof it.function === 'object') ? it.function : it;
     var nm = String(fn.name || '').trim();
     if (nm) out.names.push(nm);
+    /* V5.99：优先识别自家工具（含 save_status），防止被 LK_ENGINE_TOOL_RE 的 status 误判成外部业务引擎 */
+    if (nm && typeof lkIsOurCallName === 'function' && lkIsOurCallName(nm)) {
+      carrierCount++;
+      continue;
+    }
     var props = fn.parameters && fn.parameters.properties;
     var propKeys = (props && typeof props === 'object') ? Object.keys(props) : [];
     var propCount = propKeys.length;

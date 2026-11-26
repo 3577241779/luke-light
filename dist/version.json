@@ -1,10 +1,10 @@
 {
-  "version": "5.98",
-  "releasedAt": "2026-11-26T10:30:26.363Z",
-  "changelog": "V5.98 · 新增全工具破甲「破暗化光 · 闪耀三轨」（正文/状态/选项三路函数投递 + 自动补回执防 400 + save_chapter 升级），按键上调至诺亚与深渊正下方并配备第 5 套「由暗转明 → 变回闪耀迪迦」圣殿仪式弹窗、两段式黑迪迦裂解化光演出、3D 桌宠与顶栏闪耀联动及全 10 套皮肤深度适配。",
+  "version": "5.99",
+  "releasedAt": "2026-11-26T12:22:52.008Z",
+  "changelog": "V5.99 · 破暗化光·闪耀三轨（allTool）全链路冲突根治：修复与双轮工具链(toolLoop)互斥抢占、反向关闭货舱/能量续航/切必杀光线/开飞燕编队假亮灯同步、流式工具名分片(save_p+rose)误判外部工具、三路解包与断流抢救自动 \\n\\n 段落分隔、破甲行文口径打架与幂等查重及内部工具白名单同步，并兼容《光域·镜界》<lk_cot> 思维链与扩展标签。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-desktop.json"
   }
 }

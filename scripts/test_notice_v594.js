@@ -279,7 +279,7 @@ for (const fileName of TARGETS) {
   const r1 = loadTarget(fileName, store);
   const { win, api, ft } = r1;
 
-  check(api && api.VERSION === '5.98', `${fileName}: VERSION === 5.98`, api && api.VERSION);
+  check(api && api.VERSION === '5.99', `${fileName}: VERSION === 5.99`, api && api.VERSION);
   check(typeof api.isNoticeAcked === 'function' && typeof api.openNoticeModal === 'function' && typeof api.closeNoticeModal === 'function', `${fileName}: 声明弹窗 API 完整导出`);
   check(api.isNoticeAcked() === false, `${fileName}: 首次加载/云端更新后 isNoticeAcked 为 false`);
   check(!win.document.getElementById('ar6-notice-modal'), `${fileName}: boot 同步阶段不阻塞 DOM`);

@@ -1327,24 +1327,43 @@ function onPanelClick(e) {
   }
   if (act === 'tool-off') {
     var wasToolOn = (cfg.toolChan === 'on');
+    var hadAllOff = (cfg.allTool === true);
     cfg.toolChan = 'off';
+    if (hadAllOff) cfg.allTool = false;
     TOOL_CONFIRM = false;
-    saveCfg(); render();
-    banner(wasToolOn ? '🧰 武装货舱：已关闭，退回常规能量续航信道' : '🧰 已取消开启武装货舱（保持常规信道）', 'gray');
+    saveCfg(); UI_SIG = {}; render();
+    if (hadAllOff) {
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpT1) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvT1) {}
+    }
+    banner(wasToolOn ? ('🧰 武装货舱：已关闭，退回常规能量续航信道' + (hadAllOff ? '（破暗化光已同步收束）' : '')) : '🧰 已取消开启武装货舱（保持常规信道）', 'gray');
     return;
   }
   if (act.indexOf('gm:toolchan:') === 0) {
     if (act.charAt(act.length - 1) === '1') { TOOL_CONFIRM = true; render(); return; }
-    cfg.toolChan = 'off'; TOOL_CONFIRM = false; saveCfg(); render();
-    banner('🧰 武装货舱：已关闭', 'gray');
+    var hadAllGm = (cfg.allTool === true);
+    cfg.toolChan = 'off';
+    if (hadAllGm) cfg.allTool = false;
+    TOOL_CONFIRM = false; saveCfg(); UI_SIG = {}; render();
+    if (hadAllGm) {
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpT2) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvT2) {}
+    }
+    banner('🧰 武装货舱：已关闭' + (hadAllGm ? '（破暗化光已同步收束）' : ''), 'gray');
     return;
   }
   if (act.indexOf('🧰 工具通道:') === 0) {
     if (cfg.toolChan === 'on') {
+      var hadAllBtn = (cfg.allTool === true);
       cfg.toolChan = 'off';
+      if (hadAllBtn) cfg.allTool = false;
       TOOL_CONFIRM = false;
-      saveCfg(); render();
-      banner('🧰 武装货舱：已关闭', 'gray');
+      saveCfg(); UI_SIG = {}; render();
+      if (hadAllBtn) {
+        try { if (typeof syncPill === 'function') syncPill(); } catch (eSpT3) {}
+        try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvT3) {}
+      }
+      banner('🧰 武装货舱：已关闭' + (hadAllBtn ? '（破暗化光已同步收束）' : ''), 'gray');
       return;
     }
     TOOL_CONFIRM = !TOOL_CONFIRM;
@@ -1360,9 +1379,15 @@ function onPanelClick(e) {
   }
   if (act === 'tool-loop') {
     cfg.toolLoop = (cfg.toolLoop !== true);
+    var yieldedAll = false;
+    if (cfg.toolLoop && cfg.allTool === true) { cfg.allTool = false; yieldedAll = true; }
     saveCfg(); UI_SIG = {}; render();
+    if (yieldedAll) {
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpTl) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvTl) {}
+    }
     banner(cfg.toolLoop
-      ? '🔗 双轮工具链：已开启（合成读入轮 + tool_choice=auto，搭配武装货舱适配 Gemini 兼容反代）'
+      ? ('🔗 双轮工具链：已开启（合成读入轮 + tool_choice=auto，适配 Gemini 兼容反代' + (yieldedAll ? '；破暗化光三轨已让位' : '') + '）')
       : '🔗 双轮工具链：已关闭（恢复单轮工具调用模式）', cfg.toolLoop ? 'ok' : 'gray');
     return;
   }
@@ -1383,10 +1408,13 @@ function onPanelClick(e) {
     try { menuApply('grab', gi); } catch (eG) { criticalWarn('抢资源', eG); }
     try { saveCfg(); } catch (eGS) {}
     try { BN_STATE.at = 0; } catch (eBn2) {}
+    try { if (typeof syncPill === 'function') syncPill(); } catch (eSpGb) {}
+    try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvGb) {}
     var gtag = grabTag(cfg.grab);
-    if (cfg.grab > 0) banner('抢资源：' + gtag + (cfg.grab > 1 ? '（同一份请求并发，先到的胜出）' : '（关稀释、关工具通道、思考压 LOW）'), 'ok', true);
-    else banner('抢资源：关', 'ok', true);
-    render(); return;
+    var grabAllTip = (cfg.allTool === true) ? (cfg.grab > 0 ? ' · 破暗化光三轨暂避' : ' · 破暗化光三轨已恢复') : '';
+    if (cfg.grab > 0) banner('抢资源：' + gtag + (cfg.grab > 1 ? '（同一份请求并发，先到的胜出）' : '（关稀释、关工具通道、思考压 LOW）') + grabAllTip, 'ok', true);
+    else banner('抢资源：关' + grabAllTip, 'ok', true);
+    UI_SIG = {}; render(); return;
   }
   if (act.indexOf('gm:') === 0) {
     var gparts = act.slice(3).split(':');
@@ -1415,13 +1443,20 @@ function onPanelClick(e) {
       if (wantTr !== 'off' && curTr === wantTr) wantTr = 'off';
       cfg.trunc = wantTr;
       var syncClosedTool = false;
+      var syncClosedAll = false;
       if (wantTr === 'off') {
         TOOL_CONFIRM = false;
         if (cfg.toolChan === 'on') { cfg.toolChan = 'off'; syncClosedTool = true; }
+        if (cfg.allTool === true) { cfg.allTool = false; syncClosedAll = true; }
       }
-      saveCfg(); render();
+      saveCfg(); UI_SIG = {}; render();
+      if (syncClosedAll) {
+        try { if (typeof syncPill === 'function') syncPill(); } catch (eSpTr) {}
+        try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvTr) {}
+      }
       if (wantTr === 'off') {
-        banner('✂️ 能量续航：已关闭' + (syncClosedTool ? '（已同步关闭武装货舱）' : '（不注入收尾契约、不自动续写）'), 'gray');
+        var trCloseSuffix = syncClosedAll ? '（已同步关闭武装货舱与破暗化光）' : (syncClosedTool ? '（已同步关闭武装货舱）' : '（不注入收尾契约、不自动续写）');
+        banner('✂️ 能量续航：已关闭' + trCloseSuffix, 'gray');
       } else if (wantTr === 'light') {
         banner('✂️ 能量续航：续航叮嘱（附加收尾封印与净界律令，不自动追击）', 'ok');
       } else {
@@ -1476,6 +1511,8 @@ function onPanelClick(e) {
       var allNote = '';
       if (String(cfg.toolChan || 'off') !== 'on') { cfg.toolChan = 'on'; allNote += '已代开武装货舱'; }
       if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      if (cfg.toolLoop === true) { cfg.toolLoop = false; allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间三轨暂避'; }
       saveCfg(); ensureHooks(); UI_SIG = {}; render();
       try { if (typeof syncPill === 'function') syncPill(); } catch (eSpA) {}
       try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvA) {}

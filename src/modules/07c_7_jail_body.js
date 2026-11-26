@@ -423,13 +423,14 @@ function jailFire() { return resumeFire('jail'); }
 /* ---- 五档去技术化圣殿仪式确认弹窗与事件委托（含 V5.98 破暗化光·闪耀三轨） ---- */
 var JAIL_ASK = { at: 0, code: '', key: '' };
 
-/* 视觉形态解析：全工具破甲(allTool)开启且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
+/* 视觉形态解析：全工具破甲(allTool)实际生效且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
 function lkVisualTier() {
   try {
     if (!cfg || !cfg.enabled) return 'off';
     var j = String(cfg.jail || 'off');
     if (j === 'gatanothor' || j === 'noa') return 'noa';
-    if (cfg.allTool === true && (j === 'abyss' || j === 'off')) return 'supreme';
+    var dawnLive = !!(cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+    if (dawnLive && (j === 'abyss' || j === 'off')) return 'supreme';
     return j;
   } catch (e) { return 'off'; }
 }
@@ -967,6 +968,8 @@ function lkDawnAsk() {
       var allNote = '';
       if (String(cfg.toolChan || 'off') !== 'on') { cfg.toolChan = 'on'; allNote += '已代开武装货舱'; }
       if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      if (cfg.toolLoop === true) { cfg.toolLoop = false; allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间三轨暂避'; }
       saveCfg(); ensureHooks();
       try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUs) {}
       render();

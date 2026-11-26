@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.98';
+var VERSION = '5.99';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -492,6 +492,7 @@ function readCfg() {
   d.base = ar6Pick(d.base, ['on', 'off'], 'on');
   d.shape = ar6Pick(d.shape, ['on', 'off'], 'on');
   d.toolChan = ar6Pick(d.toolChan, ['off', 'on'], 'off');
+  d.allTool = d.allTool === true;
   d.toolLoop = d.toolLoop === true;
   d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');

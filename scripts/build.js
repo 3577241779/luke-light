@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist';
-const CHANGELOG_LATEST = 'V5.98 · 新增全工具破甲「破暗化光 · 闪耀三轨」（正文/状态/选项三路函数投递 + 自动补回执防 400 + save_chapter 升级），按键上调至诺亚与深渊正下方并配备第 5 套「由暗转明 → 变回闪耀迪迦」圣殿仪式弹窗、两段式黑迪迦裂解化光演出、3D 桌宠与顶栏闪耀联动及全 10 套皮肤深度适配。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist';
+const CHANGELOG_LATEST = 'V5.99 · 破暗化光·闪耀三轨（allTool）全链路冲突根治：修复与双轮工具链(toolLoop)互斥抢占、反向关闭货舱/能量续航/切必杀光线/开飞燕编队假亮灯同步、流式工具名分片(save_p+rose)误判外部工具、三路解包与断流抢救自动 \\n\\n 段落分隔、破甲行文口径打架与幂等查重及内部工具白名单同步，并兼容《光域·镜界》<lk_cot> 思维链与扩展标签。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.98·ST酒馆适配.json',
+    fileName: '卢克之光 V5.99·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.98·ST酒馆适配',
-    info: '卢克之光 V5.98「光之守护」· 手机 ST 酒馆适配（破暗化光·闪耀三轨全工具破甲 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹）',
+    name: '卢克之光 V5.99·ST酒馆适配',
+    info: '卢克之光 V5.99「光之守护」· 手机 ST 酒馆适配（破暗化光·闪耀三轨冲突全修复与镜界思维链兼容 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.98·TT酒馆适配.json',
+    fileName: '卢克之光 V5.99·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.98·TT酒馆适配',
-    info: '卢克之光 V5.98「光之守护」· TT 酒馆适配（破暗化光·闪耀三轨全工具破甲 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / TT 双入口）',
+    name: '卢克之光 V5.99·TT酒馆适配',
+    info: '卢克之光 V5.99「光之守护」· TT 酒馆适配（破暗化光·闪耀三轨冲突全修复与镜界思维链兼容 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.98·桌面版.json',
+    fileName: '卢克之光 V5.99·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.98·桌面版',
-    info: '卢克之光 V5.98「光之守护」· 电脑桌面版（破暗化光·闪耀三轨全工具破甲 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
+    name: '卢克之光 V5.99·桌面版',
+    info: '卢克之光 V5.99「光之守护」· 电脑桌面版（破暗化光·闪耀三轨冲突全修复与镜界思维链兼容 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },
