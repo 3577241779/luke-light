@@ -704,6 +704,8 @@ function bindOutsideDismiss() {
       if (t && t.closest && t.closest('#ar6-logwin')) return;
       if (t && t.closest && t.closest('#ar6-pvdbg')) return;
       if (t && t.closest && t.closest('#ar6-help')) return;
+      if (t && t.closest && t.closest('#ar6-notice-modal')) return;
+      if (typeof NOTICE_MODAL !== 'undefined' && NOTICE_MODAL && NOTICE_MODAL.open && NOTICE_MODAL.forced) return;
       if (t && t.closest && t.closest('[data-lk-sibling-modal="1"]')) return;
       /* 点击 #ar6-card 内部绝不误关主面板；点遮罩层本身关闭 #ar6-card */
       if (t && t.closest && t.closest('#ar6-card')) {
@@ -735,7 +737,7 @@ function bindOutsideDismiss() {
       if (ev && ev.detail === 0 && !ev.pointerType) return;
       if (LAST_SYNTH_SHIELD_AT > 0 && DOC_PD_SEQ === LAST_SYNTH_SHIELD_PD && (Date.now() - LAST_SYNTH_SHIELD_AT < 650)) {
         var ct = ev && ev.target;
-        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill,#ar6-spark')) {
+        if (ct && ct.closest && ct.closest('#ar6-root,#ar6-card,#ar6-pvdbg,#ar6-logwin,#ar6-help,#ar6-bn2,#ar6-pill,#ar6-spark,#ar6-notice-modal')) {
           LAST_SYNTH_SHIELD_AT = 0;
           try { ev.preventDefault(); } catch (eP0) {}
           try { ev.stopPropagation(); } catch (eP1) {}
@@ -752,6 +754,12 @@ function bindOutsideDismiss() {
       var k = ev && (ev.key || ev.keyCode);
       var isEsc = (k === 'Escape' || k === 'Esc' || k === 27);
       if (!isEsc) return;
+      /* 首次强制声明弹窗期间禁用 Esc 跳过；手动复看模式按 Esc 关闭声明 */
+      if (DOC.getElementById('ar6-notice-modal')) {
+        if (typeof NOTICE_MODAL !== 'undefined' && NOTICE_MODAL && NOTICE_MODAL.forced) return;
+        try { if (typeof closeNoticeModal === 'function') closeNoticeModal(true); } catch (eNmEsc) {}
+        return;
+      }
       /* Esc 优先关 #ar6-card（诊断报告/仪式弹窗），不误关主面板 */
       if ((CARD && CARD.open) || DOC.getElementById('ar6-card')) { closeCard(); return; }
       if (DOC.getElementById('ar6-help')) { closeHelp(); return; }

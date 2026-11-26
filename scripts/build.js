@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.92/dist';
-const CHANGELOG_LATEST = 'V5.92 · 美化大更新（10 套主题皮肤 × 18 态写实 3D 桌宠全量上线）：新增漫威「方舟协议」（写实钢铁蜘蛛侠 + 无限手套灭霸）、历史帝皇「天命玉玺」（玄黑祖龙天子 + 黑龙铁血霸皇）、西方玄幻「圣殿秘典」（星穹大魔导 + 凛冬巫妖王）、诡秘哥特「绯月秘仪」（占卜绅士 + 绯红血月古神）、赛博朋克「黑墙协议」（霓虹女骇客 + 黑墙流窜 AI）五套专属皮肤、黑话重译、高燃弹窗与全屏觉醒特效，顶栏升级 10 皮网格切皮抽屉。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist';
+const CHANGELOG_LATEST = 'V5.94 · 行文口径与素材隔离增强 + 开源免费防骗与法律免责首弹声明：补齐④内部审查留内不落纸、⑤思考通道专注剧情承接两条约束，单一委托块新增【素材说明】；新增云端更新首次强制弹出的类脑社区免费开源防骗与合规免责声明弹窗（10 皮肤自适应 / 单主按钮 3 秒防手滑 / 面板设置常驻复看入口）。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.92·ST酒馆适配.json',
+    fileName: '卢克之光 V5.94·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V5.92·ST酒馆适配',
-    info: '卢克之光 V5.92「光之守护」· 手机 ST 酒馆适配（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 三生合体）',
+    name: '卢克之光 V5.94·ST酒馆适配',
+    info: '卢克之光 V5.94「光之守护」· 手机 ST 酒馆适配（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 三生合体）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V5.92·TT酒馆适配.json',
+    fileName: '卢克之光 V5.94·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V5.92·TT酒馆适配',
-    info: '卢克之光 V5.92「光之守护」· TT 酒馆适配（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / TT 双入口）',
+    name: '卢克之光 V5.94·TT酒馆适配',
+    info: '卢克之光 V5.94「光之守护」· TT 酒馆适配（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V5.92·桌面版.json',
+    fileName: '卢克之光 V5.94·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V5.92·桌面版',
-    info: '卢克之光 V5.92「光之守护」· 电脑桌面版（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 桌面宽屏拖拽）',
+    name: '卢克之光 V5.94·桌面版',
+    info: '卢克之光 V5.94「光之守护」· 电脑桌面版（10皮肤×18态3D雕像桌宠 / 漫威·帝皇·西幻·诡秘·赛博 / 真协议思考强度切换 / 细胞转换光束 / 光鉴四维硬指纹与一码通 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

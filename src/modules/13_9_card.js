@@ -893,3 +893,323 @@ function openDiagModal(initialCode, tab) {
     return true;
   } catch (e) { return false; }
 }
+
+/* ---------------- V5.94 开源免费、防骗警示与法律免责声明弹窗 ---------------- */
+var NOTICE_KEY = 'ar6.notice.ack';
+var NOTICE_VER = '5.94-v1';
+var NOTICE_MODAL = { open: false, forced: false, waitLeft: 0, timer: null, bootTimer: null };
+
+function isNoticeAcked() {
+  try {
+    if (String(ar6LsGet(NOTICE_KEY) || '') === NOTICE_VER) return true;
+  } catch (eN0) {}
+  try {
+    if (cfg && String(cfg.noticeAck || '') === NOTICE_VER) return true;
+  } catch (eN1) {}
+  return false;
+}
+
+function markNoticeAcked() {
+  try { ar6LsSet(NOTICE_KEY, NOTICE_VER); } catch (eN2) {}
+  try {
+    if (cfg && typeof cfg === 'object') {
+      cfg.noticeAck = NOTICE_VER;
+      if (typeof saveCfg === 'function') saveCfg();
+    }
+  } catch (eN3) {}
+  return true;
+}
+
+function noticeStopBoot() {
+  try {
+    if (NOTICE_MODAL.bootTimer) {
+      clearTimeout(NOTICE_MODAL.bootTimer);
+      NOTICE_MODAL.bootTimer = null;
+    }
+  } catch (eNB) {}
+}
+
+function noticeTheme() {
+  var sk = 'ultra';
+  try { if (typeof skinId === 'function') sk = String(skinId() || 'ultra'); } catch (eSk) {}
+  if (sk === 'pink') {
+    return {
+      bg: 'linear-gradient(180deg,#fff9fc 0%,#fff1f7 100%)',
+      bd: 'rgba(219,39,119,.46)',
+      sh: '0 22px 58px rgba(131,24,67,.28)',
+      headBg: 'linear-gradient(95deg,rgba(244,114,182,.2),rgba(255,241,247,.96))',
+      headBd: 'rgba(219,39,119,.24)',
+      badgeBg: 'rgba(225,29,72,.12)',
+      badgeBd: 'rgba(225,29,72,.38)',
+      badgeInk: '#be123c',
+      title: '#831843',
+      secBg: 'rgba(255,255,255,.86)',
+      secBd: 'rgba(219,39,119,.22)',
+      secTitle: '#9d174d',
+      ink: '#3b1628',
+      dim: '#6b324c',
+      alertBg: '#fff1f2',
+      alertBd: '#e11d48',
+      alertTitle: '#9f1239',
+      alertInk: '#4c0519',
+      footBg: 'rgba(255,241,247,.96)',
+      btnBg: 'linear-gradient(135deg,#db2777,#be185d)',
+      btnBd: '#f472b6',
+      btnInk: '#ffffff',
+      btnOffBg: '#f3d7e4',
+      btnOffBd: 'rgba(157,23,77,.28)',
+      btnOffInk: '#831843'
+    };
+  }
+  var map = {
+    plain: { bg: 'linear-gradient(180deg,#181c24 0%,#101319 100%)', bd: 'rgba(148,163,184,.42)', headBg: 'rgba(30,36,48,.96)', title: '#f1f5f9', secTitle: '#cbd5e1', btnBg: 'linear-gradient(135deg,#334155,#1e293b)', btnBd: '#94a3b8' },
+    xianxia: { bg: 'linear-gradient(180deg,#0b1d1c 0%,#061111 100%)', bd: 'rgba(45,212,191,.48)', headBg: 'linear-gradient(95deg,rgba(20,184,166,.2),rgba(6,17,17,.96))', title: '#99f6e4', secTitle: '#5eead4', btnBg: 'linear-gradient(135deg,#0f766e,#115e59)', btnBd: '#2dd4bf' },
+    xuanhuan: { bg: 'linear-gradient(180deg,#1d120c 0%,#100906 100%)', bd: 'rgba(251,146,60,.52)', headBg: 'linear-gradient(95deg,rgba(234,88,12,.22),rgba(16,9,6,.96))', title: '#fed7aa', secTitle: '#fdba74', btnBg: 'linear-gradient(135deg,#c2410c,#9a3412)', btnBd: '#fb923c' },
+    marvel: { bg: 'linear-gradient(180deg,#12182b 0%,#090d18 100%)', bd: 'rgba(239,68,68,.52)', headBg: 'linear-gradient(95deg,rgba(220,38,38,.22),rgba(15,23,42,.96))', title: '#fecaca', secTitle: '#7dd3fc', btnBg: 'linear-gradient(135deg,#dc2626,#991b1b)', btnBd: '#fca5a5' },
+    imperial: { bg: 'linear-gradient(180deg,#1b150c 0%,#0e0b06 100%)', bd: 'rgba(234,179,8,.56)', headBg: 'linear-gradient(95deg,rgba(202,138,4,.24),rgba(14,11,6,.96))', title: '#fef08a', secTitle: '#fcd34d', btnBg: 'linear-gradient(135deg,#b45309,#78350f)', btnBd: '#fcd34d' },
+    westfantasy: { bg: 'linear-gradient(180deg,#13162b 0%,#090b18 100%)', bd: 'rgba(129,140,248,.52)', headBg: 'linear-gradient(95deg,rgba(99,102,241,.22),rgba(9,11,24,.96))', title: '#e0e7ff', secTitle: '#a5b4fc', btnBg: 'linear-gradient(135deg,#4f46e5,#3730a3)', btnBd: '#a5b4fc' },
+    eldritch: { bg: 'linear-gradient(180deg,#1a0d16 0%,#0d060b 100%)', bd: 'rgba(225,29,72,.52)', headBg: 'linear-gradient(95deg,rgba(159,18,57,.26),rgba(13,6,11,.96))', title: '#fecdd3', secTitle: '#fda4af', btnBg: 'linear-gradient(135deg,#9f1239,#6b0f2a)', btnBd: '#fb7185' },
+    cyberpunk: { bg: 'linear-gradient(180deg,#120d1f 0%,#080510 100%)', bd: 'rgba(244,63,94,.52)', headBg: 'linear-gradient(95deg,rgba(236,72,153,.22),rgba(8,5,16,.96))', title: '#fde047', secTitle: '#67e8f9', btnBg: 'linear-gradient(135deg,#be123c,#7e22ce)', btnBd: '#38bdf8' }
+  };
+  var c = map[sk] || {
+    bg: 'linear-gradient(180deg,#0f182b 0%,#080d18 100%)',
+    bd: 'rgba(56,189,248,.5)',
+    headBg: 'linear-gradient(95deg,rgba(14,165,233,.22),rgba(15,24,43,.96))',
+    title: '#7dd3fc',
+    secTitle: '#7dd3fc',
+    btnBg: 'linear-gradient(135deg,#0284c7,#0369a1)',
+    btnBd: '#38bdf8'
+  };
+  return {
+    bg: c.bg,
+    bd: c.bd,
+    sh: '0 24px 66px rgba(2,6,23,.9)',
+    headBg: c.headBg,
+    headBd: 'rgba(148,163,184,.26)',
+    badgeBg: 'rgba(244,63,94,.18)',
+    badgeBd: 'rgba(251,113,133,.5)',
+    badgeInk: '#fecdd3',
+    title: c.title,
+    secBg: 'rgba(22,32,50,.72)',
+    secBd: 'rgba(148,163,184,.22)',
+    secTitle: c.secTitle,
+    ink: '#e2e8f0',
+    dim: '#94a3b8',
+    alertBg: 'rgba(159,18,57,.26)',
+    alertBd: 'rgba(251,113,133,.72)',
+    alertTitle: '#fecdd3',
+    alertInk: '#fff1f2',
+    footBg: 'rgba(8,13,24,.94)',
+    btnBg: c.btnBg,
+    btnBd: c.btnBd,
+    btnInk: '#f8fafc',
+    btnOffBg: '#1e293b',
+    btnOffBd: 'rgba(148,163,184,.34)',
+    btnOffInk: '#94a3b8'
+  };
+}
+
+function noticeBtnLabel(forced, waitLeft) {
+  if (!forced) return '已阅 · 关闭声明';
+  if (waitLeft > 0) return '请阅读声明（' + waitLeft + 's）';
+  return '我已满 18 周岁，知晓本插件免费开源并同意全部声明';
+}
+
+function noticeModalHTML(forced, waitLeft) {
+  var th = noticeTheme();
+  var locked = !!(forced && waitLeft > 0);
+  var secStyle = 'margin:0 0 9px;padding:9px 11px;border-radius:10px;background:' + th.secBg + ';border:1px solid ' + th.secBd + ';font-size:12.2px;line-height:1.68;color:' + th.ink;
+  var hTitleStyle = 'font-size:12.6px;font-weight:700;color:' + th.secTitle + ';margin:0 0 4px';
+  var btnStyle = 'width:100%;min-height:44px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:700;line-height:1.35;transition:all .16s ease;' +
+    (locked
+      ? ('cursor:not-allowed;opacity:.78;background:' + th.btnOffBg + ';border:1px solid ' + th.btnOffBd + ';color:' + th.btnOffInk)
+      : ('cursor:pointer;opacity:1;background:' + th.btnBg + ';border:1px solid ' + th.btnBd + ';color:' + th.btnInk + ';box-shadow:0 6px 20px rgba(2,6,23,.32)'));
+
+  var h = '<div id="ar6-notice-modal" role="dialog" aria-modal="true" aria-label="卢克之光版权防骗与法律免责声明" data-ar6-forced="' + (forced ? '1' : '0') + '" style="' + cardOverlayCss() + 'z-index:2147483606;background:rgba(4,8,18,.88);font-family:system-ui,-apple-system,Segoe UI,\'PingFang SC\',\'Microsoft YaHei\',sans-serif">';
+  h += '<div style="width:486px;max-width:calc(100vw - 18px);max-height:' + cardBoxMaxH(88) + ';display:flex;flex-direction:column;overflow:hidden;background:' + th.bg + ';color:' + th.ink + ';border:1.5px solid ' + th.bd + ';border-radius:16px;box-shadow:' + th.sh + '">';
+
+  /* 固定顶栏（无外链、无关闭叉号） */
+  h += '<div style="flex:0 0 auto;padding:12px 15px 10px;background:' + th.headBg + ';border-bottom:1px solid ' + th.headBd + '">' +
+    '<div style="display:inline-block;padding:2px 8px;margin-bottom:5px;border-radius:999px;font-size:10.8px;font-weight:700;letter-spacing:.3px;background:' + th.badgeBg + ';border:1px solid ' + th.badgeBd + ';color:' + th.badgeInk + '">免费开源 · 严禁倒卖 · 使用前必读</div>' +
+    '<div style="font-size:15.5px;font-weight:800;line-height:1.35;color:' + th.title + '">《卢克之光》开源声明、防骗警示与法律免责协议</div>' +
+    '<div style="font-size:11.2px;color:' + th.dim + ';margin-top:3px">版本 V' + esc(VERSION) + ' · 类脑社区（类脑 ΟΔΥΣΣΕΙΑ）免费开源发布</div>' +
+    '</div>';
+
+  /* 可滚动正文区 */
+  h += '<div style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px">';
+
+  /* 核心红框：反倒卖防诈骗警示 */
+  h += '<div style="margin:0 0 10px;padding:10px 12px;border-radius:11px;background:' + th.alertBg + ';border:1.5px solid ' + th.alertBd + ';font-size:12.5px;line-height:1.68;color:' + th.alertInk + '">' +
+    '<div style="font-size:13.2px;font-weight:800;color:' + th.alertTitle + ';margin-bottom:4px">⚠️ 严正防骗警示：如果您是付费购买的，您已经上当受骗！</div>' +
+    '本插件为作者在<b>类脑社区（类脑 ΟΔΥΣΣΕΙΑ）</b>独立开发并<b>永久免费、无偿分享</b>的开源前端脚本。作者从未授权任何个人、商家、店铺或社群在淘宝、闲鱼、拼多多、小红书、微信/QQ 群、网盘或任何第三方平台进行收费售卖、打包整合收费、付费代装、会员制分发或引流牟利。<b>若您为此支付了任何费用，请立即申请退款并举报倒卖者。</b>原作者与社区不介入、亦不承担任何第三方交易纠纷、财产损失及售后责任。' +
+    '</div>';
+
+  /* 一、开源属性与非商业使用许可 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">一、开源属性与非商业使用许可（著作权声明）</div>' +
+    '1. 本插件仅限个人在<b>非商业、非营利</b>前提下，用于技术学习、前端界面研究、脚本调试与合法合规的个人交流测试。<br>' +
+    '2. 依据《中华人民共和国著作权法》及《计算机软件保护条例》，作者对本插件依法享有完整著作权与署名权。未经作者书面明确授权，<b>严禁任何个人或组织将本插件整体、部分代码或衍生打包产物用于任何直接或间接的商业盈利活动</b>（包括但不限于有偿倒卖、整合包收费、去除或篡改版权声明、冒名分发及借壳收费），违者作者保留依法追责及向平台投诉下架的权利。' +
+    '</div>';
+
+  /* 二、纯本地前端工具中立与零数据收集声明 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">二、纯本地前端工具中立与零数据收集声明</div>' +
+    '本插件仅为运行于用户<b>本地浏览器环境</b>的前端交互与请求格式辅助脚本，<b>并非生成式人工智能服务提供者</b>：本插件不内置任何 AI 模型、不提供任何算力或 API 代理服务、不架设后端服务器，亦不收集、不存储、不上传用户的 API 密钥、接口地址或任何聊天记录。所有生成内容均由用户自行接入的第三方接口直接返回，与作者及社区无任何关联。' +
+    '</div>';
+
+  /* 三、严格使用边界与合规红线 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">三、严格使用边界与合规红线</div>' +
+    '1. <b>法律法规遵守</b>：使用者须严格遵守<b>中华人民共和国现行法律法规</b>（包括但不限于《网络安全法》《数据安全法》《个人信息保护法》《生成式人工智能服务管理暂行办法》等）以及<b>使用者所在国家或地区的全部适用法律、监管规定、公序良俗与行业规范</b>。<br>' +
+    '2. <b>严禁违法违规用途</b>：严禁将本插件用于制作、复制、传播或辅助任何违法违规活动，包括但不限于：危害国家安全、暴力恐怖、极端主义、淫秽色情、赌博诈骗、洗钱、网络攻击、编造传播虚假信息、侵害未成年人合法权益，或侵犯他人隐私权、肖像权、名誉权、商业秘密及知识产权的行为。<br>' +
+    '3. <b>成年人准入限制</b>：本插件仅面向<b>已满 18 周岁、具备完全民事行为能力</b>的成年人提供学习与合法合规的个人虚构创作辅助；<b>未满 18 周岁者严禁使用</b>，请立即关闭页面并彻底删除本脚本。<br>' +
+    '4. <b>虚构边界与非专业建议</b>：鉴于人工智能技术固有的不确定性与“幻觉”特征，第三方模型生成的全部内容均属虚构参考，<b>绝不代表作者或社区立场，不构成任何医疗、法律、金融、心理或现实行为建议</b>，请勿轻信或用于现实决策。' +
+    '</div>';
+
+  /* 四、第三方接口与平台合规责任 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">四、第三方接口与平台合规责任</div>' +
+    '使用者自行配置并调用任何第三方大模型、中转 API 或第三方宿主软件时，<b>须自行审阅并严格遵守相应服务商的《服务条款》（ToS）与合规政策</b>。因接入第三方服务产生的费用消耗、额度异常、账号封禁、数据泄露、服务中断或平台违约风险，均由使用者自行承担全部后果。' +
+    '</div>';
+
+  /* 五、按现状提供与最大范围责任豁免 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">五、“按现状”提供与最大范围责任豁免</div>' +
+    '本插件严格按<b>“现状（AS-IS）”与“现有（AS-AVAILABLE）”</b>免费提供，不附带任何明示或默示担保（包括但不限于适销性、稳定性、兼容性、无缺陷及特定用途适用性担保）。<b>在适用法律允许的最大范围内</b>，作者及发布社区不对因下载、安装、使用、无法使用、误用、二次修改或传播本插件所引发的任何直接、间接、偶然、特殊、衍生或惩罚性损失（包括数据遗失、设备异常、经济损失及一切民事、行政或刑事法律责任）承担任何赔偿或连带责任；<b>一切行为后果与法律责任均由实际使用者及违规行为人独立承担</b>。' +
+    '</div>';
+
+  /* 六、界面主题与第三方知识产权避风港 */
+  h += '<div style="' + secStyle + '">' +
+    '<div style="' + hTitleStyle + '">六、界面主题与第三方知识产权避风港（通知—删除）</div>' +
+    '本插件内置的部分主题皮肤与视觉装饰仅作个人非商业性质的界面美化交流与同人致敬，不涉及任何商业盈利；所涉原作角色、设定及商标之知识产权均归其原权利人所有。若任何权利人认为相关视觉元素存在侵权，请告知作者，核实后将第一时间无条件移除。' +
+    '</div>';
+
+  /* 七、生效、强制退出与条款独立性 */
+  h += '<div style="' + secStyle + ';margin-bottom:2px">' +
+    '<div style="' + hTitleStyle + '">七、生效、强制退出与条款独立性</div>' +
+    '点击下方按钮或继续使用本插件，即视为您已完整阅读、充分理解并无条件接受本声明全部条款；<b>如您未满 18 周岁或不同意其中任何一条，请立即停止使用、关闭页面并从酒馆中彻底删除本插件</b>。若本声明部分条款依适用法律被认定无效或不可执行，不影响其余条款之完整效力。' +
+    '</div>';
+
+  h += '</div>';
+
+  /* 固定底栏：唯一主按钮 */
+  h += '<div style="flex:0 0 auto;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));background:' + th.footBg + ';border-top:1px solid ' + th.headBd + '">' +
+    '<button type="button" data-ar6-nm="agree" data-locked="' + (locked ? '1' : '0') + '"' + (locked ? ' disabled="disabled"' : '') + ' style="' + btnStyle + '">' + esc(noticeBtnLabel(forced, waitLeft)) + '</button>' +
+    '</div>';
+
+  h += '</div></div>';
+  return h;
+}
+
+function closeNoticeModal(forceClose) {
+  try {
+    if (NOTICE_MODAL.forced && !forceClose) return false;
+    if (NOTICE_MODAL.timer) {
+      clearInterval(NOTICE_MODAL.timer);
+      NOTICE_MODAL.timer = null;
+    }
+    var old = DOC && DOC.getElementById('ar6-notice-modal');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    NOTICE_MODAL.open = false;
+    NOTICE_MODAL.forced = false;
+    NOTICE_MODAL.waitLeft = 0;
+    return true;
+  } catch (e) { return false; }
+}
+
+function openNoticeModal(forced, opts) {
+  try {
+    if (DISPOSED || !DOC || !DOC.body) return false;
+    closeNoticeModal(true);
+    var isForced = !!forced;
+    var waitSec = isForced ? 3 : 0;
+    if (opts && typeof opts.waitSec === 'number' && isFinite(opts.waitSec)) {
+      waitSec = Math.max(0, Math.floor(opts.waitSec));
+    }
+    NOTICE_MODAL.forced = isForced;
+    NOTICE_MODAL.waitLeft = waitSec;
+    var wrap = DOC.createElement('div');
+    wrap.innerHTML = noticeModalHTML(isForced, waitSec);
+    var node = wrap.firstChild;
+    if (!node) return false;
+    DOC.body.appendChild(node);
+    NOTICE_MODAL.open = true;
+
+    var th = noticeTheme();
+    var syncBtn = function () {
+      try {
+        var b = node.querySelector && node.querySelector('[data-ar6-nm="agree"]');
+        if (!b) return;
+        var lck = !!(NOTICE_MODAL.forced && NOTICE_MODAL.waitLeft > 0);
+        b.textContent = noticeBtnLabel(NOTICE_MODAL.forced, NOTICE_MODAL.waitLeft);
+        b.setAttribute('data-locked', lck ? '1' : '0');
+        b.disabled = lck;
+        if (!lck) {
+          b.removeAttribute('disabled');
+          b.style.cursor = 'pointer';
+          b.style.opacity = '1';
+          b.style.background = th.btnBg;
+          b.style.border = '1px solid ' + th.btnBd;
+          b.style.color = th.btnInk;
+          b.style.boxShadow = '0 6px 20px rgba(2,6,23,.32)';
+        }
+      } catch (eSb) {}
+    };
+
+    if (isForced && waitSec > 0) {
+      NOTICE_MODAL.timer = setInterval(function () {
+        if (DISPOSED || !NOTICE_MODAL.open) {
+          if (NOTICE_MODAL.timer) { clearInterval(NOTICE_MODAL.timer); NOTICE_MODAL.timer = null; }
+          return;
+        }
+        NOTICE_MODAL.waitLeft = Math.max(0, NOTICE_MODAL.waitLeft - 1);
+        syncBtn();
+        if (NOTICE_MODAL.waitLeft <= 0 && NOTICE_MODAL.timer) {
+          clearInterval(NOTICE_MODAL.timer);
+          NOTICE_MODAL.timer = null;
+        }
+      }, 1000);
+    }
+
+    node.addEventListener('click', function (ev) {
+      var t = ev && ev.target;
+      if (t === node) {
+        if (!NOTICE_MODAL.forced) closeNoticeModal(true);
+        return;
+      }
+      var btn = null, cur = t;
+      while (cur && cur !== node) {
+        if (cur.getAttribute && cur.getAttribute('data-ar6-nm')) { btn = cur; break; }
+        cur = cur.parentNode;
+      }
+      if (!btn) return;
+      if (btn.getAttribute('data-ar6-nm') === 'agree') {
+        if (NOTICE_MODAL.forced && NOTICE_MODAL.waitLeft > 0) return;
+        if (NOTICE_MODAL.forced) {
+          markNoticeAcked();
+          closeNoticeModal(true);
+          try { banner('已确认《卢克之光》开源免费与合规免责声明（可在「设置」随时复看）', 'ok', true); } catch (eBn) {}
+        } else {
+          closeNoticeModal(true);
+        }
+      }
+    });
+    return true;
+  } catch (e) { return false; }
+}
+
+function noticeBootCheck() {
+  try {
+    noticeStopBoot();
+    if (DISPOSED || isNoticeAcked()) return false;
+    NOTICE_MODAL.bootTimer = setTimeout(function () {
+      NOTICE_MODAL.bootTimer = null;
+      try {
+        if (DISPOSED || isNoticeAcked()) return;
+        if (DOC && DOC.getElementById('ar6-notice-modal')) return;
+        openNoticeModal(true);
+      } catch (eNbc) {}
+    }, 900);
+    return true;
+  } catch (e) { return false; }
+}

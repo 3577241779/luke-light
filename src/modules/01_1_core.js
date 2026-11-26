@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.92';
+var VERSION = '5.94';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -203,7 +203,8 @@ var CFG_DEFAULT = {
   /* S4b 独立日志窗口：开关与位置（null=默认右下）；只影响这个窗口，不碰主面板 */
   logWin: false,
   logX: null,
-  logY: null
+  logY: null,
+  noticeAck: ''
 };
 
 var cfg = null;

@@ -414,7 +414,7 @@ function helpHTML(tab) {
   h += '<div class="ar6h-hbar"><div class="ar6h-hthumb"></div></div>';
   h += '<div class="ar6h-find"><input class="ar6h-in" id="ar6h-find" placeholder="在本页检索功能或关键词……" autocomplete="off" spellcheck="false"></div></div>';
   h += '<div class="ar6h-body" id="ar6h-body">' + helpPageHTML(k) + '</div>';
-  h += '<div class="ar6h-foot"><div class="ar6h-ver">卢克之光 V' + esc(VERSION) + ' · 光之守护功能图鉴 · 离线可用</div>' +
+  h += '<div class="ar6h-foot"><div class="ar6h-ver">卢克之光 V' + esc(VERSION) + ' · 类脑社区免费开源 · 付费即受骗 · 严禁商业倒卖</div>' +
     '<div class="ar6h-btns">' +
     '<button type="button" class="ar6h-b1" data-ar6-card="copy">复制本页</button>' +
     (mob ? '<button type="button" class="ar6h-b3" data-ar6-card="big">' + (big ? '还原窗口' : '展开全幅') + '</button>' : '') +

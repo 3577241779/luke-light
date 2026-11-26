@@ -1072,6 +1072,10 @@ function onPanelClick(e) {
     saveCfg(); render(); return;
   }
   if (act === 'help') { openHelp('entry'); return; }
+  if (act === 'notice-open') {
+    try { if (typeof openNoticeModal === 'function') openNoticeModal(false); } catch (eNmO) {}
+    return;
+  }
   if (act === 'diagcopy') {
     var okc = false;
     try { okc = detCopy(); } catch (eDC) { okc = false; }

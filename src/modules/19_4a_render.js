@@ -633,6 +633,7 @@ function uiMoreHTML() {
     h += '<div class="ar6-tgrid">' +
       '<button type="button" class="ar6-b' + (cfg.safe ? ' confirm-red' : '') + '" data-ar6="' + (cfg.safe ? '🩺 安全:开' : '🩺 安全:关') + '"><span class="ar6-b-lbl">' + esc(sk('safeBtn', '石像休眠 · 暂停全部挂钩')) + '</span><em class="ar6-b-st">' + (cfg.safe ? '已休眠' : '正常') + '</em></button>' +
       actBtn('help', 'book', sk('helpBtn', '打开功能图鉴'), 'gold on') +
+      actBtn('notice-open', 'shield', '版权、防骗与法律免责声明', 'span-2') +
       '</div>';
   }
 

@@ -2079,7 +2079,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.92') throw new Error('VERSION 应为 5.92，实际 ' + VERSION);
+      if (VERSION !== '5.94') throw new Error('VERSION 应为 5.94，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2724,6 +2724,7 @@ function boot() {
     try { if (typeof prismEmitLifecycle === 'function') prismEmitLifecycle(); } catch (ePrL) {}
   });
   step('星轨', function () { try { if (typeof updBoot === 'function') updBoot(); } catch (eUpd) {} });
+  step('声明', function () { try { if (typeof noticeBootCheck === 'function') noticeBootCheck(); } catch (eNmB) {} });
   step('兜底', function () {
     if (bootTimer) clearInterval(bootTimer);
     var tries = 0, lastOk = -1;
@@ -2761,6 +2762,7 @@ function dispose() {
   step('停观察器', function () { stopWatchers(); });
   try { if (bootTimer) { clearInterval(bootTimer); bootTimer = null; } } catch (e) {}
   try { if (typeof updStopBoot === 'function') updStopBoot(); } catch (eUpdD) {}
+  try { if (typeof noticeStopBoot === 'function') noticeStopBoot(); } catch (eNmS) {}
   try { if (bannerTimer) { clearTimeout(bannerTimer); bannerTimer = null; } } catch (e) {}
   step('还原 fetch', unhookFetch);
   step('还原 XHR', unhookXhr);
@@ -2770,6 +2772,7 @@ function dispose() {
     try { if (typeof clearAwakenFx === 'function') clearAwakenFx(); } catch (eFx) {}
     try { closeCard(); } catch (eC) {}
     try { if (typeof closeDiagModal === 'function') closeDiagModal(); } catch (eDm) {}
+    try { if (typeof closeNoticeModal === 'function') closeNoticeModal(true); } catch (eNmD) {}
     try { closeHelp(); } catch (eCH) {}
     var tcfx = DOC && DOC.getElementById('ar6-tcfx');
     if (tcfx && tcfx.parentNode) tcfx.parentNode.removeChild(tcfx);
@@ -3438,6 +3441,11 @@ var AR6_API = {
   diagCopyCode: (typeof diagCopyCode === 'function') ? diagCopyCode : null,
   openDiagModal: (typeof openDiagModal === 'function') ? openDiagModal : null,
   closeDiagModal: (typeof closeDiagModal === 'function') ? closeDiagModal : null,
+  /* ---- V5.94 开源免费、防骗警示与法律免责声明弹窗导出 ---- */
+  NOTICE_VER: (typeof NOTICE_VER !== 'undefined') ? NOTICE_VER : '',
+  isNoticeAcked: (typeof isNoticeAcked === 'function') ? isNoticeAcked : null,
+  openNoticeModal: (typeof openNoticeModal === 'function') ? openNoticeModal : null,
+  closeNoticeModal: (typeof closeNoticeModal === 'function') ? closeNoticeModal : null,
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}

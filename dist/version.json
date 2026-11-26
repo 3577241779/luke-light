@@ -1,10 +1,10 @@
 {
-  "version": "5.92",
-  "releasedAt": "2026-11-25T13:02:36.633Z",
-  "changelog": "V5.92 · 美化大更新（10 套主题皮肤 × 18 态写实 3D 桌宠全量上线）：新增漫威「方舟协议」（写实钢铁蜘蛛侠 + 无限手套灭霸）、历史帝皇「天命玉玺」（玄黑祖龙天子 + 黑龙铁血霸皇）、西方玄幻「圣殿秘典」（星穹大魔导 + 凛冬巫妖王）、诡秘哥特「绯月秘仪」（占卜绅士 + 绯红血月古神）、赛博朋克「黑墙协议」（霓虹女骇客 + 黑墙流窜 AI）五套专属皮肤、黑话重译、高燃弹窗与全屏觉醒特效，顶栏升级 10 皮网格切皮抽屉。",
+  "version": "5.94",
+  "releasedAt": "2026-11-26T01:41:44.738Z",
+  "changelog": "V5.94 · 行文口径与素材隔离增强 + 开源免费防骗与法律免责首弹声明：补齐④内部审查留内不落纸、⑤思考通道专注剧情承接两条约束，单一委托块新增【素材说明】；新增云端更新首次强制弹出的类脑社区免费开源防骗与合规免责声明弹窗（10 皮肤自适应 / 单主按钮 3 秒防手滑 / 面板设置常驻复看入口）。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.92/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.92/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.92/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-desktop.json"
   }
 }
