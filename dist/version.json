@@ -1,10 +1,10 @@
 {
-  "version": "5.97",
-  "releasedAt": "2026-11-26T08:04:32.188Z",
-  "changelog": "V5.97 · 根治酒馆主题下声明弹窗被压扁进 40px 顶栏的问题：遮罩废除 inset:0 + height:100%，改用与主面板一致的显式视口高（100vw / visualViewport.height / --TH-viewport-height）+ flex-start + 盒体 margin:auto 0 + 去掉外层 role=\"dialog\"，即使宿主 body 含 transform 或主题覆盖也 100% 满屏居中且按钮完整可点。",
+  "version": "5.98",
+  "releasedAt": "2026-11-26T10:30:26.363Z",
+  "changelog": "V5.98 · 新增全工具破甲「破暗化光 · 闪耀三轨」（正文/状态/选项三路函数投递 + 自动补回执防 400 + save_chapter 升级），按键上调至诺亚与深渊正下方并配备第 5 套「由暗转明 → 变回闪耀迪迦」圣殿仪式弹窗、两段式黑迪迦裂解化光演出、3D 桌宠与顶栏闪耀联动及全 10 套皮肤深度适配。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.98/dist/luke-light-desktop.json"
   }
 }

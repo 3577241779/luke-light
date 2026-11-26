@@ -79,10 +79,12 @@ function actBtn(act, iconName, text, extraCls) {
 function uiTierMeta() {
   var on = !!(cfg && cfg.enabled);
   var j = String((cfg && cfg.jail) || 'off');
+  var dawnGlow = !!(on && cfg && cfg.allTool === true && (j === 'abyss' || j === 'off'));
   var base;
   var tKey = 'idle';
   if (!on) { tKey = 'off'; base = { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' }; }
   else if (j === 'gatanothor' || j === 'noa') { tKey = 'noa'; base = { tier: 'noa', gem: '圣翼共鸣', sub: '诺亚太古圣翼 · 宇宙第一道光圣域归位中', badgeTxt: '✦ 诺亚 · 圣域归位', badgeCls: 'noa' }; }
+  else if (dawnGlow) { tKey = 'dawn'; base = { tier: 'supreme', gem: '破暗闪耀', sub: '由暗转明 · 闪耀迪迦黄金三轨（正文/状态/选项）分流护航中', badgeTxt: '✦ 破暗化光 · 闪耀三轨', badgeCls: 'gold' }; }
   else if (j === 'abyss') { tKey = 'abyss'; base = { tier: 'abyss', gem: '深渊接管', sub: '凝视深渊 · 终焉暗域全量下沉接管中', badgeTxt: '❖ 凝视深渊 · 沉渊接管', badgeCls: 'abyss' }; }
   else if (j === 'supreme') { tKey = 'supreme'; base = { tier: 'supreme', gem: '闪耀觉醒', sub: '闪耀迪迦 · 黄金希望圣辉与终极护盾就绪', badgeTxt: '闪耀型 · 黄金护盾', badgeCls: 'gold' }; }
   else if (j === 'strong') { tKey = 'strong'; base = { tier: 'strong', gem: '刚力解放', sub: '迪迦强力型 · 赤红刚力破甲光流护航中', badgeTxt: '强力型 · 赤红刚力', badgeCls: 'red' }; }
@@ -91,11 +93,13 @@ function uiTierMeta() {
   else { tKey = 'idle'; base = { tier: 'off', gem: '守护开启', sub: '只锁定异常信号，绝不阻断正常对话', badgeTxt: '石像待机 · 零注入', badgeCls: '' }; }
   try {
     var sp = (typeof skinSpec === 'function') ? skinSpec() : null;
-    if (sp && sp.id !== 'ultra' && sp.tiers && sp.tiers[tKey]) {
-      var ov = sp.tiers[tKey];
-      if (ov.gem) base.gem = ov.gem;
-      if (ov.sub) base.sub = ov.sub;
-      if (ov.badgeTxt) base.badgeTxt = ov.badgeTxt;
+    if (sp && sp.id !== 'ultra' && sp.tiers) {
+      var ov = sp.tiers[tKey] || (tKey === 'dawn' ? sp.tiers.supreme : null);
+      if (ov) {
+        if (ov.gem) base.gem = ov.gem;
+        if (ov.sub) base.sub = ov.sub;
+        if (ov.badgeTxt) base.badgeTxt = ov.badgeTxt;
+      }
     }
   } catch (eSkT) {}
   return base;
@@ -234,7 +238,9 @@ function uiTempleSVGs() {
     noaBg: '<svg class="ar6-temple-wingbg" viewBox="0 0 100 72" width="92" height="68" fill="none" aria-hidden="true"><path d="M96 4L38 42L68 38L20 66L78 46L58 52L96 4Z" fill="url(#ar6NwBg)"/><defs><linearGradient id="ar6NwBg" x1="20" y1="66" x2="96" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#38BDF8" stop-opacity="0.2"/><stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.85"/><stop offset="1" stop-color="#FDE68A" stop-opacity="0.75"/></linearGradient></defs></svg>',
     noaIco: '<svg viewBox="0 0 36 36" width="22" height="22" fill="none" aria-hidden="true"><path d="M18 21L4 7.5L9.5 19.5L3.5 16L14.5 26.5L18 32L21.5 26.5L32.5 16L26.5 19.5L32 7.5L18 21Z" fill="url(#ar6NoaBtnG)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/><path d="M18 15.5L10.5 8L15 18.5L18 23L21 18.5L25.5 8L18 15.5Z" fill="#E0F2FE" opacity="0.92"/><path d="M18 16.5L16.2 21.5L18 26.5L19.8 21.5L18 16.5Z" fill="#F43F5E"/><defs><linearGradient id="ar6NoaBtnG" x1="4" y1="7" x2="32" y2="30" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="0.45" stop-color="#7DD3FC"/><stop offset="0.8" stop-color="#FDE68A"/><stop offset="1" stop-color="#C4B5FD"/></linearGradient></defs></svg>',
     abyssBg: '<svg class="ar6-temple-wingbg" viewBox="0 0 100 72" width="92" height="68" fill="none" aria-hidden="true"><path d="M94 6L68 26L77 31L46 52L56 55L24 70" stroke="#FF2E55" stroke-width="2" stroke-linecap="round"/><path d="M80 4L62 20L42 25L28 42" stroke="#9F1239" stroke-width="1.4" stroke-linecap="round"/></svg>',
-    abyssIco: '<svg viewBox="0 0 36 36" width="22" height="22" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="11.5" fill="#050205" stroke="#FF2E55" stroke-width="1.8"/><path d="M18 2.5L20.2 11.5L18 15L15.8 11.5L18 2.5ZM18 33.5L20.2 24.5L18 21L15.8 24.5L18 33.5ZM2.5 18L11.5 15.8L15 18L11.5 20.2L2.5 18ZM33.5 18L24.5 15.8L21 18L24.5 20.2L33.5 18Z" fill="#E11D48"/><ellipse cx="18" cy="18" rx="2.5" ry="6.8" fill="#FFE4E6"/></svg>'
+    abyssIco: '<svg viewBox="0 0 36 36" width="22" height="22" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="11.5" fill="#050205" stroke="#FF2E55" stroke-width="1.8"/><path d="M18 2.5L20.2 11.5L18 15L15.8 11.5L18 2.5ZM18 33.5L20.2 24.5L18 21L15.8 24.5L18 33.5ZM2.5 18L11.5 15.8L15 18L11.5 20.2L2.5 18ZM33.5 18L24.5 15.8L21 18L24.5 20.2L33.5 18Z" fill="#E11D48"/><ellipse cx="18" cy="18" rx="2.5" ry="6.8" fill="#FFE4E6"/></svg>',
+    dawnBg: '<svg class="ar6-temple-wingbg" viewBox="0 0 140 72" width="136" height="68" fill="none" aria-hidden="true"><defs><linearGradient id="ar6DawnBgG" x1="20" y1="64" x2="132" y2="6" gradientUnits="userSpaceOnUse"><stop stop-color="#E11D48" stop-opacity="0.45"/><stop offset="0.48" stop-color="#F59E0B" stop-opacity="0.72"/><stop offset="1" stop-color="#FEF9C3" stop-opacity="0.92"/></linearGradient></defs><path d="M10 64L34 46L26 38L52 20" stroke="#FB7185" stroke-width="1.5" stroke-linecap="round" opacity="0.65"/><polygon points="56,72 78,4 90,4 72,72" fill="url(#ar6DawnBgG)" opacity="0.52"/><polygon points="82,72 104,2 118,2 100,72" fill="url(#ar6DawnBgG)" opacity="0.82"/><polygon points="108,72 128,8 138,8 122,72" fill="url(#ar6DawnBgG)" opacity="0.58"/><path d="M108 16L111 23L118 26L111 29L108 36L105 29L98 26L105 23Z" fill="#FFFBEB"/></svg>',
+    dawnIco: '<svg viewBox="0 0 36 36" width="22" height="22" fill="none" aria-hidden="true"><circle cx="18" cy="18" r="12.5" fill="rgba(11,4,9,0.72)" stroke="#FDE68A" stroke-width="1.6"/><path d="M7.5 23.5L13 18.5L11 15L15.5 11.5" stroke="#FB7185" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 4L20.8 14L31 17L20.8 20L18 31L15.2 20L6 17L15.2 14L18 4Z" fill="rgba(254,240,138,0.52)" stroke="#FFFFFF" stroke-width="1.4" stroke-linejoin="round"/><circle cx="18" cy="17" r="2.6" fill="#FFFFFF"/></svg>'
   };
 }
 
@@ -298,6 +304,7 @@ function uiJailHTML() {
         esc((jst ? jst + ' · ' : '') + statLine) + '</div>')
     : '';
 
+  var allOn = !!(cfg && cfg.allTool === true);
   var ultHTML = '<div class="ar6-ult-wrap">' +
     '<div class="ar6-ult-head"><span>' + esc(sk('ultHead', '✦ 终极圣域 · 超越界限 ✦')) + '</span></div>' +
     '<div class="ar6-ult-grid">' +
@@ -316,6 +323,17 @@ function uiJailHTML() {
           '<span class="ar6-temple-name">' + esc(sk('ultBName', '◤ 凝视深渊 · 终焉暗域 ◢')) + '</span>' +
           '<span class="ar6-temple-sub">' + esc(sk('ultBSub', '弃光入暗 · 沉渊接管')) + '</span>' +
         '</span>' +
+      '</button>' +
+    '</div>' +
+    '<div class="ar6-ult-dawn-row">' +
+      '<button type="button" class="ar6-ultb ar6-temple-btn dawn' + (allOn ? ' on' : '') + '" data-ar6="alltool:toggle" aria-pressed="' + (allOn ? 'true' : 'false') + '">' +
+        sv.dawnBg +
+        '<span class="ar6-temple-ico">' + sv.dawnIco + '</span>' +
+        '<span class="ar6-temple-txt">' +
+          '<span class="ar6-temple-name">' + esc(sk('allToolLabel', '◤ 破暗化光 · 闪耀三轨 ◢')) + '</span>' +
+          '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 正文 / 状态 / 选项三路圣柜分流，函数外零杂字')) + '</span>' +
+        '</span>' +
+        '<em class="ar6-dawn-st">' + esc(allOn ? sk('allToolStOn', '✦ 破暗闪耀') : sk('allToolStOff', '暗影蛰伏')) + '</em>' +
       '</button>' +
     '</div>' + jstBlock +
     '<div class="ar6-sem-wrap">' +
@@ -896,8 +914,10 @@ function patchRole() {
     ar6SetAttrIfDiff(r, 'data-rm', cfg.rm ? '1' : '0');
     var curSkin = (typeof skinId === 'function') ? skinId() : 'ultra';
     ar6SetAttrIfDiff(r, 'data-skin', curSkin);
-    var nextTier = (!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off'));
+    var nextTier = (typeof lkVisualTier === 'function') ? lkVisualTier() : ((!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off')));
     ar6SetAttrIfDiff(r, 'data-tier', nextTier);
+    if (cfg && cfg.enabled && cfg.allTool === true) ar6SetAttrIfDiff(r, 'data-alltool', '1');
+    else ar6RmAttrIfHas(r, 'data-alltool');
     if (cfg && !cfg.enabled) ar6SetAttrIfDiff(r, 'data-off-master', '1');
     else ar6RmAttrIfHas(r, 'data-off-master');
     try {

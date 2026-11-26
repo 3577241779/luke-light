@@ -168,7 +168,7 @@ var AR6_PET_FORMS = {
 function petCurrentForm() {
   try {
     if (cfg && !cfg.enabled) return 'multi';
-    var j = String((cfg && cfg.jail) || 'off');
+    var j = (typeof lkVisualTier === 'function') ? lkVisualTier() : String((cfg && cfg.jail) || 'off');
     if (j === 'gatanothor' || j === 'noa') return 'noa';
     if (j === 'abyss') return 'abyss';
     if (j === 'supreme') return 'supreme';

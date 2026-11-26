@@ -57,6 +57,11 @@ var CSS_TEXT = [
   '@keyframes ar6NoaPrism{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:200% 50%}}',
   '@keyframes ar6AbyssBreath{0%,100%{border-color:rgba(225,29,72,.58);box-shadow:0 0 16px rgba(225,29,72,.28),inset 0 0 18px rgba(136,19,55,.34);}50%{border-color:rgba(251,113,133,.92);box-shadow:0 0 26px rgba(244,63,94,.56),inset 0 0 26px rgba(190,18,60,.52);}}',
   '@keyframes ar6NoaHalo{0%,100%{box-shadow:0 0 18px rgba(186,230,253,.42),0 0 34px rgba(253,230,138,.18),inset 0 1px 0 rgba(255,255,255,.85);}50%{box-shadow:0 0 26px rgba(186,230,253,.72),0 0 46px rgba(196,181,253,.34),inset 0 1px 0 #FFFFFF;}}',
+  '@keyframes ar6DawnHalo{0%,100%{border-color:#FCD34D;box-shadow:0 0 16px rgba(245,158,11,.42),0 0 28px rgba(225,29,72,.18),inset 0 1px 0 rgba(254,249,195,.65);}50%{border-color:#FEF08A;box-shadow:0 0 26px rgba(252,211,77,.72),0 0 42px rgba(254,240,138,.36),inset 0 1px 0 #FFFFFF;}}',
+  '@keyframes ar6DawnDarkFade{0%{opacity:0;transform:scale(1.04)}16%{opacity:1;transform:scale(1)}36%{opacity:.92;filter:brightness(1.15)}52%{opacity:0;transform:scale(1.12);filter:brightness(2.2)}100%{opacity:0}}',
+  '@keyframes ar6DawnCleave{0%{opacity:0;transform:scaleY(.08) scaleX(.35)}26%{opacity:0}38%{opacity:1;transform:scaleY(1.06) scaleX(1.12)}64%{opacity:.95;transform:scaleY(1) scaleX(1.35)}100%{opacity:0;transform:scaleY(1.08) scaleX(1.85)}}',
+  '@keyframes ar6DawnGlitterIn{0%{opacity:0;transform:scale(.82)}34%{opacity:0;transform:scale(.86)}52%{opacity:1;transform:scale(1.03)}84%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}',
+  '@keyframes ar6DawnBannerIn{0%{opacity:0;transform:translate(-50%,16px) scale(.9)}44%{opacity:0;transform:translate(-50%,16px) scale(.92)}60%{opacity:1;transform:translate(-50%,0) scale(1)}88%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-10px) scale(1.03)}}',
   '@keyframes ar6WingSweep{0%{transform:translateX(-130%) skewX(-24deg)}100%{transform:translateX(230%) skewX(-24deg)}}',
   '@keyframes ar6CrestPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.04)}}',
   '@keyframes ar6FxBurst{0%{opacity:.28;transform:scale(.975)}14%{opacity:1;transform:scale(1)}76%{opacity:.95;transform:scale(1.008)}100%{opacity:0;transform:scale(1.028)}}',
@@ -232,6 +237,21 @@ var CSS_TEXT = [
   '#ar6-root .ar6-temple-btn.abyss.on .ar6-temple-ico{border-color:#FFE4E6;box-shadow:0 0 16px rgba(255,46,85,.85);}',
   '#ar6-root .ar6-temple-btn.abyss.on .ar6-temple-name{color:#FFFFFF;text-shadow:0 0 12px rgba(255,46,85,.95);}',
   '#ar6-root .ar6-temple-btn.abyss.on .ar6-temple-sub,#ar6-root .ar6-temple-btn.abyss.on i{color:#FECDD3;font-weight:700;opacity:1;}',
+  /* V5.98 破暗化光 · 闪耀三轨第三圣域全宽大键（由暗红黑曜过渡至闪耀迪迦耀金圣辉） */
+  '#ar6-root .ar6-ult-dawn-row{margin-top:8px;}',
+  '#ar6-root .ar6-temple-btn.dawn{min-height:58px;padding:9px 12px;background:radial-gradient(circle at 86% 24%,rgba(252,211,77,.2) 0%,transparent 52%),radial-gradient(circle at 12% 82%,rgba(190,18,60,.26) 0%,transparent 48%),linear-gradient(112deg,#0B0409 0%,#1E0B16 32%,#2B1A0D 66%,#1F1609 100%);border:1.5px solid rgba(245,158,11,.54);box-shadow:0 4px 16px rgba(2,6,23,.52),inset 0 1px 0 rgba(254,240,138,.22);color:#FEF3C7;}',
+  '#ar6-root .ar6-temple-btn.dawn::after{content:"";position:absolute;top:0;bottom:0;width:44%;background:linear-gradient(90deg,transparent,rgba(251,113,133,.16),rgba(254,240,138,.28),rgba(255,255,255,.22),transparent);transform:translateX(-130%) skewX(-24deg);animation:ar6WingSweep 6.2s ease-in-out infinite;pointer-events:none;z-index:1;}',
+  '#ar6-root .ar6-temple-btn.dawn .ar6-temple-ico{background:linear-gradient(135deg,#1A050D 0%,#7F1D1D 38%,#D97706 72%,#FEF08A 100%);border:1.5px solid rgba(253,230,138,.72);box-shadow:0 0 12px rgba(245,158,11,.42),inset 0 0 6px rgba(255,255,255,.24);}',
+  '#ar6-root .ar6-temple-btn.dawn .ar6-temple-name{color:#FEF3C7;text-shadow:0 1px 8px rgba(251,191,36,.38);}',
+  '#ar6-root .ar6-temple-btn.dawn .ar6-temple-sub{color:#E2C99A;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.38;}',
+  '#ar6-root .ar6-temple-btn.dawn .ar6-temple-wingbg{width:136px;height:68px;opacity:.42;right:-4px;}',
+  '#ar6-root .ar6-dawn-st{position:relative;z-index:2;flex:0 0 auto;font-style:normal;font-size:10.6px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(15,8,14,.78);border:1px solid rgba(245,158,11,.42);color:#FDE68A;white-space:nowrap;letter-spacing:.2px;}',
+  '#ar6-root .ar6-temple-btn.dawn.on,#ar6-root .ar6-ultb.ar6-temple-btn.dawn.on{background:radial-gradient(circle at 82% 20%,rgba(255,255,255,.32) 0%,transparent 44%),linear-gradient(110deg,#230B16 0%,#78350F 26%,#D97706 60%,#F59E0B 84%,#FDE68A 100%);border:1.5px solid #FEF08A;color:#FFFBEB;animation:ar6DawnHalo 3.2s ease-in-out infinite;}',
+  '#ar6-root .ar6-temple-btn.dawn.on .ar6-temple-ico{background:radial-gradient(circle,#FFFFFF 0%,#FEF08A 46%,#D97706 100%);border-color:#FFFFFF;box-shadow:0 0 16px rgba(254,240,138,.92),0 0 26px rgba(245,158,11,.55);}',
+  '#ar6-root .ar6-temple-btn.dawn.on .ar6-temple-name{color:#FFFFFF;text-shadow:0 1px 8px rgba(120,53,15,.85),0 0 14px rgba(254,240,138,.75);}',
+  '#ar6-root .ar6-temple-btn.dawn.on .ar6-temple-sub{color:#FFFBEB;font-weight:600;text-shadow:0 1px 4px rgba(120,53,15,.72);}',
+  '#ar6-root .ar6-temple-btn.dawn.on .ar6-temple-wingbg{opacity:.68;}',
+  '#ar6-root .ar6-temple-btn.dawn.on .ar6-dawn-st{background:rgba(255,251,235,.94);border-color:#FFFFFF;color:#78350F;box-shadow:0 0 12px rgba(254,240,138,.78);}',
   /* 分段光能槽与迪迦五形态专属高亮色 */
   '#ar6-root .ar6-ubar{display:flex;flex-wrap:wrap;gap:5px;}',
   '#ar6-root .ar6-ubtn{flex:1 1 auto;min-width:52px;min-height:32px;padding:5px 8px;text-align:center;justify-content:center;font:600 12px/1.2 inherit;border-radius:7px;border:1px solid rgba(148,163,184,.34);background:#162032;color:#94A3B8;cursor:pointer;transition:all .12s ease;}',
@@ -349,9 +369,32 @@ var CSS_TEXT = [
   '.ar6-ritual[data-ritual="abyss"] .ar6-rt-note{color:#FDA4AF;background:rgba(15,3,8,.78);border-color:rgba(225,29,72,.35);}',
   '.ar6-ritual[data-ritual="abyss"] .ar6-rt-ok,.ar6-ritual[data-ritual="abyss"] [data-ar6-card$="ok"]{background:linear-gradient(135deg,#9F1239 0%,#4C0519 100%);border:1px solid #FF2E55;color:#FFE4E6;text-shadow:0 0 8px rgba(255,46,85,.7);box-shadow:0 0 24px rgba(225,29,72,.58);}',
   '.ar6-ritual[data-ritual="abyss"] .ar6-rt-no,.ar6-ritual[data-ritual="abyss"] [data-ar6-card$="no"]{background:#0D060A;border-color:rgba(148,163,184,.3);color:#94A3B8;}',
+  /* 圣殿弹窗 5：dawn 破暗化光 · 由黑曜血红蜕变回璀璨闪耀迪迦 */
+  '.ar6-ritual[data-ritual="dawn"]{background:radial-gradient(ellipse 86% 48% at 50% -6%,rgba(254,240,138,.4) 0%,rgba(245,158,11,.18) 44%,transparent 74%),radial-gradient(ellipse 80% 42% at 50% 105%,rgba(159,18,57,.3) 0%,transparent 65%),linear-gradient(180deg,#241808 0%,#140D0B 56%,#090307 100%);border:1.5px solid #FCD34D;box-shadow:0 0 0 1px rgba(254,240,138,.36),0 0 56px rgba(245,158,11,.42),0 0 34px rgba(190,18,60,.26),0 26px 76px rgba(0,0,0,.94);}',
+  '.ar6-ritual[data-ritual="dawn"]::before{height:4px;background:linear-gradient(90deg,#090307 0%,#9F1239 20%,#F59E0B 48%,#FEF08A 72%,#FFFFFF 88%,#F59E0B 100%);background-size:200% 100%;animation:ar6SpeciumFlow 3.6s linear infinite;}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-crest{background:radial-gradient(circle at 65% 32%,#FFFBEB 0%,#F59E0B 46%,#4C0519 88%,#090307 100%);border:2px solid #FEF08A;box-shadow:0 0 28px rgba(252,211,77,.76),0 0 18px rgba(225,29,72,.35);color:#FFFBEB;}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-tag{background:linear-gradient(90deg,rgba(136,19,55,.52),rgba(180,83,9,.52));border:1px solid rgba(253,230,138,.72);color:#FEF9C3;}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-title{color:#FEF08A;background:linear-gradient(90deg,#FDA4AF 0%,#FEF08A 38%,#FFFFFF 68%,#FCD34D 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 14px rgba(251,191,36,.52));}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-prologue{color:#FDE68A;}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-quote{background:linear-gradient(135deg,rgba(45,10,24,.72) 0%,rgba(120,53,15,.34) 55%,rgba(217,119,6,.22) 100%);border:1px solid rgba(252,211,77,.58);box-shadow:inset 0 0 24px rgba(252,211,77,.14);color:#FFFBEB;text-shadow:0 0 12px rgba(252,211,77,.35);}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-note{color:#FDE68A;background:rgba(16,10,8,.76);border-color:rgba(245,158,11,.42);}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-ok,.ar6-ritual[data-ritual="dawn"] [data-ar6-card$="ok"]{background:linear-gradient(135deg,#9F1239 0%,#D97706 44%,#F59E0B 78%,#FEF08A 100%);border:1.5px solid #FEF9C3;color:#FFFBEB;text-shadow:0 1px 4px rgba(76,5,25,.82);box-shadow:0 0 28px rgba(251,191,36,.62),0 0 18px rgba(225,29,72,.32);}',
+  '.ar6-ritual[data-ritual="dawn"] .ar6-rt-no,.ar6-ritual[data-ritual="dawn"] [data-ar6-card$="no"]{background:#12080D;border-color:rgba(245,158,11,.34);color:#D6C4A6;}',
   '@media (max-width:480px){.ar6-ritual{padding:20px 16px 18px;}.ar6-rt-title{font-size:18.5px;}.ar6-rt-quote{font-size:13.2px;padding:13px;}.ar6-rt-acts{grid-template-columns:1fr;gap:8px;}}',
   /* ---- 全屏屏幕光流觉醒动效层 (#ar6-fx) ---- */
   '#ar6-fx{position:fixed;inset:0;pointer-events:none;z-index:2147483150;overflow:hidden;animation:ar6FxBurst 1.45s cubic-bezier(.16,.84,.28,1) forwards;}',
+  '#ar6-fx[data-fx="dawn"]{animation:none;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-dark{position:absolute;inset:0;background:radial-gradient(ellipse 68% 62% at 50% 50%,rgba(20,4,10,.32) 0%,rgba(6,1,4,.92) 100%);box-shadow:inset 0 0 120px rgba(159,18,57,.78);animation:ar6DawnDarkFade 1.85s ease-out forwards;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-cleave{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:28px;animation:ar6DawnCleave 1.85s cubic-bezier(.16,1,.3,1) forwards;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-beam{width:min(14vw,76px);height:110vh;background:linear-gradient(90deg,transparent 0%,rgba(245,158,11,.62) 28%,#FFFFFF 50%,rgba(254,240,138,.68) 72%,transparent 100%);filter:blur(5px);}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-beam.main{width:min(22vw,126px);}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-glitter{position:absolute;inset:0;box-shadow:inset 0 0 120px rgba(251,191,36,.62),inset 0 0 44px rgba(255,251,235,.55);background:radial-gradient(ellipse 84% 58% at 50% 10%,rgba(255,251,235,.44) 0%,rgba(245,158,11,.18) 48%,transparent 82%);animation:ar6DawnGlitterIn 1.85s cubic-bezier(.16,.84,.28,1) forwards;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-sprite{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);height:min(48vh,340px);width:auto;object-fit:contain;pointer-events:none;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-sprite.ar6-dawn-raw{mix-blend-mode:screen;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-dark .ar6-dawn-sprite{filter:drop-shadow(0 0 28px rgba(255,46,85,.88)) contrast(1.18) brightness(.9);}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-glitter .ar6-dawn-sprite{filter:drop-shadow(0 0 36px rgba(254,240,138,.96)) drop-shadow(0 0 70px rgba(245,158,11,.72)) brightness(1.08);}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-banner{position:absolute;left:50%;bottom:13%;transform:translate(-50%,0);padding:11px 24px;border-radius:999px;background:linear-gradient(135deg,rgba(24,14,8,.9),rgba(120,53,15,.88));border:1.5px solid #FEF08A;box-shadow:0 0 34px rgba(251,191,36,.72),inset 0 1px 0 rgba(255,255,255,.55);color:#FFFBEB;text-align:center;font:800 clamp(14px,3.8vw,20px)/1.3 system-ui,-apple-system,"Microsoft YaHei",sans-serif;white-space:nowrap;text-shadow:0 0 16px rgba(254,240,138,.85);animation:ar6DawnBannerIn 1.85s cubic-bezier(.22,1,.36,1) forwards;}',
+  '#ar6-fx[data-fx="dawn"] .ar6-dawn-banner span{display:block;font-size:10.5px;font-weight:700;letter-spacing:2.2px;color:#FDE68A;margin-bottom:2px;}',
   '#ar6-fx .ar6-fx-edge{position:absolute;inset:0;}',
   '#ar6-fx .ar6-fx-svg{position:absolute;inset:0;width:100%;height:100%;display:block;animation:ar6FxFloat 2.4s ease-in-out infinite;}',
   '#ar6-fx[data-fx="strong"] .ar6-fx-edge{box-shadow:inset 0 0 95px rgba(225,29,72,.58),inset 0 0 34px rgba(251,191,36,.42);background:radial-gradient(ellipse 85% 65% at 50% 50%,transparent 48%,rgba(159,18,57,.3) 100%);}',
@@ -1005,7 +1048,7 @@ function triggerAwakenFx(tier) {
   try {
     var k = String(tier == null ? '' : tier).toLowerCase();
     if (k === 'gatanothor') k = 'noa';
-    if (k !== 'strong' && k !== 'supreme' && k !== 'noa' && k !== 'abyss') return false;
+    if (k !== 'strong' && k !== 'supreme' && k !== 'noa' && k !== 'abyss' && k !== 'dawn') return false;
     if (DISPOSED || !DOC || !DOC.body) return false;
     if (cfg && (cfg.rm === true || cfg.fx === 'off')) return false;
     try {
@@ -1019,7 +1062,58 @@ function triggerAwakenFx(tier) {
     }
 
     var html = '';
-    if (k === 'noa') {
+    var fxDur = 1450;
+    if (k === 'dawn') {
+      /* V5.98 破暗化光两段式演出：第一幕黑曜深渊与黑暗迪迦裂解 → 中幕三道黄金圣光劈夜 → 终幕闪耀迪迦黄金圣辉归来 */
+      fxDur = 1880;
+      var darkSrc = '', glitSrc = '', darkKeyed = false, glitKeyed = false;
+      try {
+        if (typeof AR6_PET_ASSETS !== 'undefined' && AR6_PET_ASSETS) {
+          var aAb = AR6_PET_ASSETS.abyss;
+          var aGl = AR6_PET_ASSETS.glitter;
+          var cAb = (typeof AR6_PET_ALPHA_CACHE !== 'undefined' && AR6_PET_ALPHA_CACHE.abyss) || '';
+          var cGl = (typeof AR6_PET_ALPHA_CACHE !== 'undefined' && AR6_PET_ALPHA_CACHE.glitter) || '';
+          darkKeyed = (cAb.indexOf('data:image/png') === 0);
+          glitKeyed = (cGl.indexOf('data:image/png') === 0);
+          darkSrc = cAb || (aAb && aAb.raw) || '';
+          glitSrc = cGl || (aGl && aGl.raw) || '';
+        }
+      } catch (eDImg) {}
+      var dMotes = [
+        [150, 740, 7], [310, 800, 8], [190, 340, 6], [1290, 720, 7.5], [1120, 790, 8],
+        [1240, 350, 6], [470, 820, 6], [970, 810, 6.5], [720, 180, 7]
+      ];
+      var dMoteHtml = '';
+      for (var dmi = 0; dmi < dMotes.length; dmi++) {
+        var dm = dMotes[dmi];
+        dMoteHtml += '<circle cx="' + dm[0] + '" cy="' + dm[1] + '" r="' + (dm[2] * 2.8) + '" fill="rgba(252,211,77,0.24)"/>' +
+          '<circle cx="' + dm[0] + '" cy="' + dm[1] + '" r="' + dm[2] + '" fill="#FEF08A"/>' +
+          '<circle cx="' + dm[0] + '" cy="' + dm[1] + '" r="' + (dm[2] * 0.45) + '" fill="#FFFFFF"/>';
+      }
+      html = '<div class="ar6-dawn-dark">' +
+        '<svg class="ar6-fx-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+          '<g class="ar6-fx-rift" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M-10 20 L155 102 L130 150 L282 224 L256 266 L380 326" stroke="#FF2E55" stroke-width="3.2"/>' +
+            '<path d="M1450 20 L1285 102 L1310 150 L1158 224 L1184 266 L1060 326" stroke="#FF2E55" stroke-width="3.2"/>' +
+            '<path d="M-10 880 L165 786 L140 738 L292 664" stroke="#9F1239" stroke-width="3.2"/>' +
+            '<path d="M1450 880 L1275 786 L1300 738 L1148 664" stroke="#9F1239" stroke-width="3.2"/>' +
+          '</g></svg>' +
+        (darkSrc ? '<img class="ar6-dawn-sprite' + (darkKeyed ? '' : ' ar6-dawn-raw') + '" data-dawn-sp="abyss" src="' + darkSrc + '" alt="">' : '') +
+      '</div>' +
+      '<div class="ar6-dawn-cleave"><span class="ar6-dawn-beam"></span><span class="ar6-dawn-beam main"></span><span class="ar6-dawn-beam"></span></div>' +
+      '<div class="ar6-dawn-glitter">' +
+        '<svg class="ar6-fx-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
+          '<defs><radialGradient id="ar6FxDawnCorona" cx="50%" cy="42%" r="58%"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.72"/><stop offset="0.34" stop-color="#FDE047" stop-opacity="0.36"/><stop offset="0.7" stop-color="#D97706" stop-opacity="0.12"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient></defs>' +
+          '<rect width="1440" height="900" fill="url(#ar6FxDawnCorona)"/>' +
+          '<circle cx="720" cy="430" r="320" fill="none" stroke="rgba(254,249,195,0.58)" stroke-width="2"/>' +
+          '<circle cx="720" cy="430" r="460" fill="none" stroke="rgba(252,211,77,0.34)" stroke-width="1.6" stroke-dasharray="12 9"/>' +
+          '<g class="ar6-fx-mote-a">' + dMoteHtml + '</g>' +
+        '</svg>' +
+        (glitSrc ? '<img class="ar6-dawn-sprite' + (glitKeyed ? '' : ' ar6-dawn-raw') + '" data-dawn-sp="glitter" src="' + glitSrc + '" alt="">' : '') +
+      '</div>' +
+      '<div class="ar6-dawn-banner"><span>FINAL ODYSSEY · 破暗化光</span>闪耀迪迦归来 · 三路神光分流就绪</div>';
+      try { if (typeof ar6SfxPlay === 'function') ar6SfxPlay('glitter', false); } catch (eSfxD) {}
+    } else if (k === 'noa') {
       /* 诺亚：左右对称舒展的 V 型太古铂银圣翼 SVG + 七彩棱镜斜贯光束 + 银白星尘光环 */
       var starPts = [
         [120, 120, 1.15], [260, 210, 0.85], [1320, 130, 1.2], [1180, 225, 0.9], [165, 650, 1.05],
@@ -1191,7 +1285,23 @@ function triggerAwakenFx(tier) {
     el.setAttribute('aria-hidden', 'true');
     el.innerHTML = html;
     DOC.body.appendChild(el);
-    FX_TIMER = setTimeout(clearAwakenFx, 1450);
+    if (k === 'dawn' && typeof ar6MatteSprite === 'function') {
+      try {
+        ['abyss', 'glitter'].forEach(function (spKey) {
+          ar6MatteSprite(spKey, function (pngUrl) {
+            try {
+              if (!el || !el.parentNode || !pngUrl || pngUrl.indexOf('data:image/png') !== 0) return;
+              var spImg = el.querySelector && el.querySelector('[data-dawn-sp="' + spKey + '"]');
+              if (spImg) {
+                spImg.src = pngUrl;
+                if (spImg.classList) spImg.classList.remove('ar6-dawn-raw');
+              }
+            } catch (eSw) {}
+          });
+        });
+      } catch (eMat2) {}
+    }
+    FX_TIMER = setTimeout(clearAwakenFx, fxDur);
     return true;
   } catch (e) { return false; }
 }

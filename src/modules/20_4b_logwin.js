@@ -1468,6 +1468,28 @@ function onPanelClick(e) {
     banner(cfg.semantic === 'on' ? semOnTxt : semOffTxt, cfg.semantic === 'on' ? 'ok' : 'gray');
     return;
   }
+  if (act.indexOf('alltool:') === 0) {
+    var turningOn = !(cfg && cfg.allTool === true);
+    if (turningOn) {
+      if (typeof lkDawnAsk === 'function') { lkDawnAsk(); return; }
+      cfg.allTool = true;
+      var allNote = '';
+      if (String(cfg.toolChan || 'off') !== 'on') { cfg.toolChan = 'on'; allNote += '已代开武装货舱'; }
+      if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      saveCfg(); ensureHooks(); UI_SIG = {}; render();
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpA) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvA) {}
+      banner('✦ 破暗化光已开启：正文 / 状态栏 / 选项三路圣柜投递' + (allNote ? '（' + allNote + '）' : ''), 'ok', true);
+      return;
+    }
+    cfg.allTool = false;
+    saveCfg(); ensureHooks(); UI_SIG = {}; render();
+    try { if (typeof syncPill === 'function') syncPill(); } catch (eSpB) {}
+    try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvB) {}
+    var offMsg = (typeof sk === 'function') ? sk('allToolBannerOff', '破暗化光已收束：回到单工具 save_chapter 通道') : '破暗化光已收束：回到单工具 save_chapter 通道';
+    banner(offMsg, 'gray');
+    return;
+  }
   if (act.indexOf('tier:') === 0) {
     var want = act.slice(5);
     if (want === 'noa') want = 'gatanothor';

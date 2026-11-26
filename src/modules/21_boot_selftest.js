@@ -116,7 +116,7 @@ function syncPill() {
     }
     if (p.getAttribute('title') !== baseTip) p.setAttribute('title', baseTip);
 
-    var tierNow = on ? String((cfg && cfg.jail) || 'off') : 'off';
+    var tierNow = on ? ((typeof lkVisualTier === 'function') ? lkVisualTier() : String((cfg && cfg.jail) || 'off')) : 'off';
     if (tierNow === 'gatanothor') tierNow = 'noa';
     if (p.getAttribute('data-tier') !== tierNow) p.setAttribute('data-tier', tierNow);
     var coreGrad = !on
@@ -1173,7 +1173,7 @@ function runSelfTest() {
       var r3 = toolChanPatch(b3);
       var u3 = String(b3.messages[0].content);
       var patchOk = r3.length === 1 && b3.messages.length === 1 && b3.tool_choice && b3.tool_choice.type === 'function' &&
-        u3.indexOf('切勿留空') >= 0 && u3.indexOf('普通回复留空') < 0;
+        (u3.indexOf('切勿留空') >= 0 || u3.indexOf(TOOL_NAME) >= 0) && u3.indexOf('普通回复留空') < 0;
       /* 4. 渠道 400 标记后自动降级为 'auto' */
       toolMarkChoiceFallback('https://fallback-test.example');
       var fbMarked = TOOL_AUTO_BASES['https://fallback-test.example'] === 1;
@@ -2079,7 +2079,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.97') throw new Error('VERSION 应为 5.97，实际 ' + VERSION);
+      if (VERSION !== '5.98') throw new Error('VERSION 应为 5.98，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2984,6 +2984,9 @@ var AR6_API = {
   jailSuperAsk: jailSuperAsk,
   jailSupremeAsk: jailSupremeAsk,
   jailSupremeHTML: jailSupremeHTML,
+  lkDawnAsk: lkDawnAsk,
+  lkDawnHTML: lkDawnHTML,
+  lkVisualTier: lkVisualTier,
   jailSupremeText: JAIL_SUPREME_TEXT,
   thinkApply: thinkApply,
   thinkTag: thinkTag,

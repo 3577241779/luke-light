@@ -420,8 +420,19 @@ function resumeFire(owner) {
 
 function jailFire() { return resumeFire('jail'); }
 
-/* ---- 四档去技术化圣殿仪式确认弹窗与事件委托 ---- */
+/* ---- 五档去技术化圣殿仪式确认弹窗与事件委托（含 V5.98 破暗化光·闪耀三轨） ---- */
 var JAIL_ASK = { at: 0, code: '', key: '' };
+
+/* 视觉形态解析：全工具破甲(allTool)开启且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
+function lkVisualTier() {
+  try {
+    if (!cfg || !cfg.enabled) return 'off';
+    var j = String(cfg.jail || 'off');
+    if (j === 'gatanothor' || j === 'noa') return 'noa';
+    if (cfg.allTool === true && (j === 'abyss' || j === 'off')) return 'supreme';
+    return j;
+  } catch (e) { return 'off'; }
+}
 
 function lkCardActOf(ev, rootNode) {
   var el = ev && ev.target;
@@ -463,6 +474,24 @@ function lkRitualAmbientSVG(key) {
         '<path d="M1450 882 L1275 786 L1298 738 L1148 662 L1172 620 L1055 572"/>' +
       '</g></svg>';
   }
+  if (key === 'dawn') {
+    return '<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;pointer-events:none">' +
+      '<defs>' +
+        '<linearGradient id="rtDawnBeam" x1="720" y1="900" x2="720" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9F1239" stop-opacity="0.18"/><stop offset="0.35" stop-color="#F59E0B" stop-opacity="0.42"/><stop offset="0.72" stop-color="#FEF08A" stop-opacity="0.52"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.22"/></linearGradient>' +
+        '<radialGradient id="rtDawnSun" cx="50%" cy="18%" r="54%"><stop offset="0" stop-color="#FFFBEB" stop-opacity="0.48"/><stop offset="0.45" stop-color="#F59E0B" stop-opacity="0.18"/><stop offset="1" stop-color="#050205" stop-opacity="0"/></radialGradient>' +
+      '</defs>' +
+      '<rect width="1440" height="900" fill="url(#rtDawnSun)"/>' +
+      '<g fill="none" stroke="#9F1239" stroke-width="2.4" stroke-linecap="round" opacity="0.52">' +
+        '<path d="M-10 860 L155 770 L132 722 L278 648"/><path d="M-10 520 L130 488 L178 525 L260 492"/>' +
+        '<path d="M1450 860 L1285 770 L1308 722 L1162 648"/><path d="M1450 520 L1310 488 L1262 525 L1180 492"/>' +
+      '</g>' +
+      '<polygon points="555,900 612,0 648,0 622,900" fill="url(#rtDawnBeam)" opacity="0.62"/>' +
+      '<polygon points="682,900 704,0 736,0 758,900" fill="url(#rtDawnBeam)" opacity="0.88"/>' +
+      '<polygon points="818,900 792,0 828,0 885,900" fill="url(#rtDawnBeam)" opacity="0.62"/>' +
+      '<circle cx="720" cy="450" r="420" fill="none" stroke="rgba(252,211,77,0.34)" stroke-width="1.6" stroke-dasharray="14 10"/>' +
+      '<g fill="#FEF08A" opacity="0.86"><circle cx="290" cy="240" r="5"/><circle cx="1150" cy="220" r="5.5"/><circle cx="380" cy="690" r="4.5"/><circle cx="1060" cy="680" r="5"/><circle cx="720" cy="120" r="6" fill="#FFFFFF"/></g>' +
+      '</svg>';
+  }
   if (key === 'supreme') {
     return '<svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;pointer-events:none">' +
       '<g opacity="0.38" fill="rgba(254,240,138,0.26)">' +
@@ -499,6 +528,15 @@ function lkRitualCrestSVG(key) {
       '<circle cx="18" cy="18" r="11.5" fill="#050205" stroke="#FF2E55" stroke-width="1.8"/>' +
       '<path d="M18 2.5L20.2 11.5L18 15L15.8 11.5L18 2.5ZM18 33.5L20.2 24.5L18 21L15.8 24.5L18 33.5ZM2.5 18L11.5 15.8L15 18L11.5 20.2L2.5 18ZM33.5 18L24.5 15.8L21 18L24.5 20.2L33.5 18Z" fill="#E11D48"/>' +
       '<ellipse cx="18" cy="18" rx="2.5" ry="6.8" fill="#FFE4E6"/>' +
+      '</svg>';
+  }
+  if (key === 'dawn') {
+    return '<svg viewBox="0 0 36 36" fill="none">' +
+      '<defs><linearGradient id="ar6DawnCrG" x1="4" y1="30" x2="32" y2="6" gradientUnits="userSpaceOnUse"><stop stop-color="#090307"/><stop offset="0.36" stop-color="#9F1239"/><stop offset="0.62" stop-color="#F59E0B"/><stop offset="1" stop-color="#FEF9C3"/></linearGradient></defs>' +
+      '<circle cx="18" cy="18" r="13.5" fill="url(#ar6DawnCrG)" fill-opacity="0.34" stroke="#FDE68A" stroke-width="1.6"/>' +
+      '<path d="M7 24L12.5 19.5L10.5 16L16 12" stroke="#FB7185" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>' +
+      '<path d="M18 3.5L21 13.5L31.5 16.5L21 19.5L18 31.5L15 19.5L5.5 16.5L15 13.5L18 3.5Z" fill="rgba(254,240,138,0.44)" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<circle cx="18" cy="16.5" r="3" fill="#FFFFFF"/>' +
       '</svg>';
   }
   if (key === 'supreme') {
@@ -887,6 +925,64 @@ function lkUltAsk(which) {
     if (act === 'ultno' || (ev && ev.target === node)) {
       closeCard();
       banner((rt && rt.bannerNo) || (tier === 'abyss' ? '已自深渊边缘退回，未缔结终焉血契' : '已退回凡世之光，维持当前守护姿态'), 'gray');
+    }
+  });
+  return true;
+}
+
+function lkDawnHTML() {
+  var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'dawn') : null;
+  if (rt) {
+    return lkRitualCardHTML('dawn', rt.tag, rt.title, rt.prologue, rt.quote, rt.note, 'dawnok', rt.okTxt, 'dawnno', rt.noTxt);
+  }
+  return lkRitualCardHTML(
+    'dawn',
+    '〘 FINAL ODYSSEY · 破暗化光 〙',
+    '由暗转明 · 终化闪耀迪迦',
+    '“三千万年前，他也曾立于无尽黑暗的深渊。当最后一道信念穿透永夜，黑曜铠甲寸寸崩落，三道神光自暗影深处破茧而出——”',
+    '「就算曾经诞生于黑暗，我也能亲手将它化作光明！<br>舍弃深渊的枷锁，以三路圣光重塑身躯——再一次，变回闪耀迪迦吧！」',
+    '◈ 破晓圣谕：正文 / 状态栏 / 选项分三路工具通道纯净投递（自动代开武装货舱、工具破甲让位，顶栏与 3D 桌宠同步化回闪耀迪迦）· 既往记录分毫无损',
+    'dawnok', '【破暗化光 · 变回闪耀迪迦】',
+    'dawnno', '暂留暗影之中'
+  );
+}
+
+function lkDawnAsk() {
+  var node = null;
+  try {
+    if (typeof ensureStyle === 'function') ensureStyle(DOC);
+    if (typeof ar6MatteSprite === 'function') {
+      try { ar6MatteSprite('abyss'); ar6MatteSprite('glitter'); } catch (eMatPre) {}
+    }
+    node = mountHTML(lkDawnHTML());
+    if (typeof CARD === 'object' && CARD) { CARD.open = !!node; CARD.rid = -1; CARD.tab = 'dawn'; }
+  } catch (eM) { try { banner('确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
+  if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
+  node.addEventListener('click', function (ev) {
+    var act = lkCardActOf(ev, node);
+    var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'dawn') : null;
+    if (act === 'dawnok') {
+      closeCard();
+      cfg.allTool = true;
+      var allNote = '';
+      if (String(cfg.toolChan || 'off') !== 'on') { cfg.toolChan = 'on'; allNote += '已代开武装货舱'; }
+      if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      saveCfg(); ensureHooks();
+      try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUs) {}
+      render();
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSp) {}
+      try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx('dawn'); } catch (eFx) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAv) {}
+      try { if (typeof avatarSay === 'function') avatarSay('form', (rt && rt.petLine) || '黑暗终将散去 · 闪耀迪迦破暗归来！'); } catch (eSay) {}
+      var okMsg = (rt && rt.bannerOk)
+        ? (rt.bannerOk + (allNote ? '（' + allNote + '）' : ''))
+        : ('✦ 破暗化光！闪耀迪迦已归来：正文 / 状态栏 / 选项三路圣柜投递开启' + (allNote ? '（' + allNote + '）' : ''));
+      banner(okMsg, 'ok', true);
+      return;
+    }
+    if (act === 'dawnno' || (ev && ev.target === node)) {
+      closeCard();
+      banner((rt && rt.bannerNo) || '暂留暗影之中，未开启三路全工具投递', 'gray');
     }
   });
   return true;

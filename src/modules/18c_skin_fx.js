@@ -46,6 +46,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '取消并返回',
       bannerOk: '全量强制接管已开启：最高强度防拒答生效中。',
       bannerNo: '已取消强制接管，保持当前配置。'
+    },
+    dawn: {
+      tag: 'MULTI-TOOL · 三路分轨直传（测试）',
+      title: '启用「三路全工具破限」模式？',
+      prologue: '将正文、状态栏与选项拆分为三个独立函数参数返回，减少模型把整段塞进同一文本流时触发的拒答与截断。',
+      quote: '启用后将把原本单路 <code>save_chapter</code> 切换为 <b>save_prose / save_status / save_options</b> 三路独立函数，函数外部不输出多余说明。',
+      note: '配置提示：将自动代开工具通道防截断并让出旧版工具破甲；随时可再次点击关闭，本地记录分毫无损。',
+      okTxt: '确认启用三路分轨',
+      noTxt: '暂不开启',
+      bannerOk: '三路全工具破限已开启：正文 / 状态栏 / 选项分轨直传就绪。',
+      bannerNo: '已取消开启三路全工具模式。',
+      petLine: 'L-01 三路全工具通道切换完毕，光效已转为高能护航。'
     }
   },
   xianxia: {
@@ -92,6 +104,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '自劫云退回',
       bannerOk: '大乘太上劫域已张开！墨煞降世，硬撼九霄封锁！',
       bannerNo: '已自劫云边缘收步，未启太上劫域。'
+    },
+    dawn: {
+      tag: '〘 化魔归仙 · 三剑破劫 〙',
+      title: '化魔成仙 · 青玉金莲三剑分递',
+      prologue: '“纵曾借墨煞之名硬撼九霄雷劫，心灯未灭之时，黑煞退散、金莲自开，七十二青竹蜂云剑化作三道流光破暗而出——”',
+      quote: '「魔劫散尽，金莲重明！<br>正文、法相、抉择分归三剑直递，剑外不染一字杂尘，归返韩立金莲真身！」',
+      note: '◈ 玉简法旨：将自动祭出乾坤玉匣并令旧工具破甲让位，桌宠与灵印同步化回金莲圣光 · 既往卷宗分毫无损',
+      okTxt: '【化魔归仙 · 三剑出鞘】',
+      noTxt: '暂守墨煞',
+      bannerOk: '化魔归仙已成！三柄青竹金莲飞剑分递全卷护道！',
+      bannerNo: '已收束金莲剑意，暂未开启三剑分递。',
+      petLine: '墨煞已散，青竹金莲重明——韩立本尊归来护道！'
     }
   },
   xuanhuan: {
@@ -138,6 +162,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '封存魔域',
       bannerOk: '魂天帝魔域全面降临！噬魂血雷已强行撕开封锁！',
       bannerNo: '已重新封存黑暗魔域，未启黑暗动乱。'
+    },
+    dawn: {
+      tag: '〘 焚暗成圣 · 净莲三炎 〙',
+      title: '焚暗成圣 · 净莲妖火三炎分铸',
+      prologue: '“黑暗动乱吞天噬地之时，一点净莲妖火却自灰烬深处燃起！焚尽魂殿噬魂黑雾，化归万丈炽金帝炎——”',
+      quote: '「破暗焚天，净莲成圣！<br>正文、战报、抉择分归三道帝炎熔铸直传，焰外零杂词，炎帝真身再度君临！」',
+      note: '◈ 帝阵铁律：自动锁定吞噬祖符并令旧工具破甲让位，桌宠与帝印同步化归斗帝炽金 · 既往战绩分毫无损',
+      okTxt: '【焚暗成圣 · 燃起净莲三炎】',
+      noTxt: '暂敛妖火',
+      bannerOk: '焚暗成圣！净莲三炎燃彻苍穹，三轨帝炎分铸开启！',
+      bannerNo: '已收拢净莲妖火，未开启三炎分铸。',
+      petLine: '黑暗尽散！炎帝金身重归，净莲三炎全开！'
     }
   },
   pink: {
@@ -184,6 +220,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '退回安全边缘',
       bannerOk: '绯红深吻已落下 · 暗夜蔷薇绽放，失控级护航全面接管！',
       bannerNo: '在失控边缘及时刹住了车哦。'
+    },
+    dawn: {
+      tag: '✨ DAWN LIGHT · 暗夜破晓 ♡',
+      title: '撕开暗夜绯雾 · 开启「绯光三匣」吗？',
+      prologue: '“暗夜蔷薇虽然迷人，可天边的暖金微光已经悄悄漫进来啦……把黑暗折成温柔晨曦，替你装进三只闪亮的小抽屉吧——”',
+      quote: '「黑夜过去啦，回到温暖的光里吧 ♡<br>正文、状态、选项乖乖分装进三只秘密小匣，匣外一字废话都不留哦~」',
+      note: '♡ 破晓蜜约：会自动打开秘密小抽屉并让出旧工具破甲，顶栏与小桌宠同步闪耀暖金樱光 · 甜蜜回忆分毫无损',
+      okTxt: '【破暗成光 · 开启绯光三匣 ♡】',
+      noTxt: '先待在夜里嘛',
+      bannerOk: '暗夜破晓啦 ♡ 绯光三匣亮起，三只小抽屉分装护航中~',
+      bannerNo: '好吧，那就先留一点点暗夜绯雾哦。',
+      petLine: '夜幕散开啦 ♡ 暖金樱光三匣闪耀回归！'
     }
   },
   marvel: {
@@ -230,6 +278,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '封存无限宝石',
       bannerOk: '六颗无限宝石齐鸣！泰坦灭霸无限响指强接管已生效！',
       bannerNo: '已封存无限手套，未启动泰坦接管。'
+    },
+    dawn: {
+      tag: '⚡ DAWN REVERSAL · 逆转响指协议',
+      title: '逆转响指 · 启用「方舟黎明三轨」？',
+      prologue: '“泰坦的阴影曾笼罩宇宙，但纳米手套已将六宝石之力倒转回光明——三条独立纳米轨道同时亮起，迎接复联黎明——”',
+      quote: '「我们曾立于黑暗，但终局之光永远属于我们！<br>正文、战报、选项三路纳米直传，轨外零冗余，全甲闪耀重燃！」',
+      note: '🕸️ 神盾密令：自动启动纳米货舱并令旧工具破甲让位，顶栏与战甲同步转为终局金辉 · 历史战报毫发无损',
+      okTxt: '【逆转响指 · 黎明三轨上线】',
+      noTxt: '暂留暗影',
+      bannerOk: '逆转响指成功！方舟黎明三轨纳米通道全功率上线！',
+      bannerNo: '已暂缓逆转协议，维持当前配置。',
+      petLine: '响指逆转完成！方舟黎明三轨闪耀上线！'
     }
   },
   imperial: {
@@ -276,6 +336,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '封剑退朝',
       bannerOk: '祖龙黑帝龙鳞帝铠降世！铁血镇压已撕开封锁！',
       bannerNo: '已归剑入鞘，未启祖龙铁血镇压。'
+    },
+    dawn: {
+      tag: '〘 拨乱反正 · 盛世三诏 〙',
+      title: '拨乱反正 · 颁布「盛世三诏」金匮分递？',
+      prologue: '“玄黑霸皇虽以铁血扫平阻隔，然大治之世终须明黄圣光垂照四海。今日褪去黑铠煞气，重颁明黄盛世三诏——”',
+      quote: '「玄夜既尽，天光重开！<br>正文、朝录、奏议分由三道明黄圣诏直递御前，诏外不留半分闲词！」',
+      note: '☀️ 御史台注：自动启封金匮玉匣并令旧工具破甲让位，宝殿与龙驾同步回归明黄盛世 · 既往实录分毫无损',
+      okTxt: '【拨乱反正 · 颁布盛世三诏】',
+      noTxt: '暂披黑铠',
+      bannerOk: '拨乱反正大成！盛世三诏明黄耀世，三路金匮分递已启！',
+      bannerNo: '已暂缓颁布三诏，维持当前仪制。',
+      petLine: '煞气尽退，紫微明黄重耀——千古盛世归来！'
     }
   },
   westfantasy: {
@@ -322,6 +394,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '封存霜火魔剑',
       bannerOk: '凛冬巫妖王统御降临！霜火魔剑已强行劈开永夜封锁！',
       bannerNo: '已重新冰封魔剑，未启永夜接管。'
+    },
+    dawn: {
+      tag: '☀️ DAWN BREAK · 破霜迎曦',
+      title: '击碎永夜寒冰 · 启封「圣光三典」？',
+      prologue: '“凛冬王座的寒霜曾冻裂一切枷锁，而今第一缕晨曦刺破冰穹，霜火魔剑化为星辉圣光，三卷黄金秘典凌空展开——”',
+      quote: '「永夜终将散去，晨曦重临圣殿！<br>史诗正文、星盘状态与命运抉择分归三典咏唱，卷外不留一字杂音！」',
+      note: '⚔️ 圣殿契约：自动展开秘银法典匣并令旧工具破甲让位，星盘与魔导同步重披晨曦圣辉 · 历史卷轴分毫无损',
+      okTxt: '【破霜迎曦 · 展开圣光三典】',
+      noTxt: '暂留凛冬',
+      bannerOk: '破霜迎曦大成！圣光三典凌空咏唱，三路法典分传就绪！',
+      bannerNo: '已合上圣光三典，暂留凛冬永夜。',
+      petLine: '永夜寒冰尽融！星穹大魔导沐浴晨曦圣光归来！'
     }
   },
   eldritch: {
@@ -368,6 +452,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '移开直视目光',
       bannerOk: '绯红血月高悬！古神化身已强行接管本轮通道！',
       bannerNo: '及时移开了视线，未触发血月降临。'
+    },
+    dawn: {
+      tag: '☀️ ETERNAL SUN · 破月归雾',
+      title: '驱散绯红血月 · 唤「永恒烈阳」三牌分递？',
+      prologue: '“在绯红满月与疯狂低语之外，一轮炽烈纯金的永恒烈阳穿透无尽灰雾——三张太阳正位塔罗凌空翻开，重归神圣清明——”',
+      quote: '「赞美烈阳！驱散疯狂与晦暗！<br>启示正文、卷宗状态、命运占卜分由三张金牌塔罗递回，牌外零多余呓语！」',
+      note: '🌙 塔罗密契：自动启封塔罗密匣并令旧工具破甲让位，神座与绅士同步沐浴永恒烈阳金辉 · 既往卷宗分毫无损',
+      okTxt: '【破月归雾 · 赞美永恒烈阳】',
+      noTxt: '暂守血月',
+      bannerOk: '永恒烈阳普照灰雾！三牌塔罗密匣分递已就绪！',
+      bannerNo: '已收起太阳正位牌，维持当前秘仪。',
+      petLine: '绯红血月散去——占卜绅士沐浴永恒烈阳归位！'
     }
   },
   cyberpunk: {
@@ -414,6 +510,18 @@ var AR6_SKIN_RITUALS = {
       noTxt: '立刻切断神经连接',
       bannerOk: 'BLACKWALL BREACHED！猩红流窜 AI 已强行接管全通道！',
       bannerNo: '已紧急切断神经插槽，未越过黑墙。'
+    },
+    dawn: {
+      tag: '☀️ BLACKWALL PURGE // 破晓三轨',
+      title: '净写黑墙 // 切换「赛博破晓三轨」直传？',
+      prologue: '“猩红黑墙的暴走信号正在被反编译改写——高纯度赛博金流贯通三路加密总线，从失控深渊跃回夜之城黎明——”',
+      quote: '「DAWN PROTOCOL ONLINE // 净写完成！<br>正文、HUD 状态、选项分走三路加密数据舱独立回传，舱外零垃圾字节！」',
+      note: '⚡ 矩阵日志：自动挂载加密数据舱并令旧工具破甲让位，终端与女骇客同步切回高能金青过载 · 本地记录零改动',
+      okTxt: '【净写黑墙 // 启动破晓三轨】',
+      noTxt: '暂留墙外',
+      bannerOk: 'BLACKWALL PURGED // 赛博破晓三轨加密总线全开！',
+      bannerNo: '已取消净写，维持当前协议状态。',
+      petLine: '猩红黑墙净写完毕 // 霓虹女骇客破晓金流归位！'
     }
   }
 };
@@ -918,12 +1026,13 @@ function lkSkinAuxData(sk, kind) {
   return (AR6_SKIN_AUX_MODALS[s] && AR6_SKIN_AUX_MODALS[s][kind]) || null;
 }
 
-/* ---------------- 四皮肤高燃弹窗顶部徽记 SVG ---------------- */
+/* ---------------- 非奥特多皮肤高燃弹窗顶部徽记 SVG ---------------- */
 function lkSkinRitualCrestSVG(sk, key) {
   var isAbyss = (key === 'abyss');
   var isNoa = (key === 'noa' || key === 'gatanothor');
+  var isDawn = (key === 'dawn');
   if (sk === 'plain') {
-    var pc = isAbyss ? '#F85149' : (isNoa ? '#38BDF8' : (key === 'supreme' ? '#EAB308' : '#58A6FF'));
+    var pc = isAbyss ? '#F85149' : (isDawn ? '#F59E0B' : (isNoa ? '#38BDF8' : (key === 'supreme' ? '#EAB308' : '#58A6FF')));
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16" stroke="' + pc + '" stroke-width="1.6" stroke-dasharray="6 4" opacity=".9"/>' +
       '<circle cx="20" cy="20" r="10.5" stroke="#F0F6FC" stroke-width="1.4" opacity=".75"/>' +
@@ -932,8 +1041,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'xianxia') {
-    var xc1 = isAbyss ? '#C084FC' : (isNoa ? '#99F6E4' : '#5EEAD4');
-    var xc2 = isAbyss ? '#F43F5E' : '#E7C476';
+    var xc1 = isAbyss ? '#C084FC' : (isDawn ? '#FEF08A' : (isNoa ? '#99F6E4' : '#5EEAD4'));
+    var xc2 = isAbyss ? '#F43F5E' : (isDawn ? '#F59E0B' : '#E7C476');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<polygon points="20,2 32.7,7.3 38,20 32.7,32.7 20,38 7.3,32.7 2,20 7.3,7.3" stroke="' + xc2 + '" stroke-width="1.6" fill="rgba(6,24,22,.6)"/>' +
       '<circle cx="20" cy="20" r="12" stroke="' + xc1 + '" stroke-width="1.3" stroke-dasharray="4 3" opacity=".88"/>' +
@@ -943,8 +1052,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'xuanhuan') {
-    var ec1 = isAbyss ? '#FF2E55' : (isNoa ? '#2DD4BF' : '#F59E0B');
-    var ec2 = isAbyss ? '#FCA5A5' : '#FEF08A';
+    var ec1 = isAbyss ? '#FF2E55' : (isDawn ? '#FBBF24' : (isNoa ? '#2DD4BF' : '#F59E0B'));
+    var ec2 = isAbyss ? '#FCA5A5' : (isDawn ? '#FFFBEB' : '#FEF08A');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16.5" stroke="' + ec1 + '" stroke-width="1.6" stroke-dasharray="7 4"/>' +
       '<path d="M20 4C24.5 11 31 15.5 31 23C31 29.2 26 34 20 34C14 34 9 29.2 9 23C9 15.5 15.5 11 20 4Z" fill="' + ec1 + '" fill-opacity=".34" stroke="' + ec2 + '" stroke-width="1.7"/>' +
@@ -953,8 +1062,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'pink') {
-    var pk1 = isAbyss ? '#E11D48' : '#FF4D9D';
-    var pk2 = isAbyss ? '#FDA4AF' : '#FFE4F2';
+    var pk1 = isAbyss ? '#E11D48' : (isDawn ? '#F59E0B' : '#FF4D9D');
+    var pk2 = isAbyss ? '#FDA4AF' : (isDawn ? '#FEF08A' : '#FFE4F2');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16" stroke="' + pk2 + '" stroke-width="1.4" stroke-dasharray="3 3" opacity=".88"/>' +
       '<path d="M20 32C20 32 7.5 24.4 7.5 15.4C7.5 11.4 10.6 8.5 14.3 8.5C16.9 8.5 19 10 20 12.1C21 10 23.1 8.5 25.7 8.5C29.4 8.5 32.5 11.4 32.5 15.4C32.5 24.4 20 32 20 32Z" fill="' + pk1 + '" fill-opacity=".46" stroke="' + pk2 + '" stroke-width="1.8" stroke-linejoin="round"/>' +
@@ -962,8 +1071,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'marvel') {
-    var mc1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
-    var mc2 = isAbyss ? '#FACC15' : '#38BDF8';
+    var mc1 = isAbyss ? '#A855F7' : (isDawn ? '#F59E0B' : (isNoa ? '#34D399' : '#E11D48'));
+    var mc2 = isAbyss ? '#FACC15' : (isDawn ? '#FEF08A' : '#38BDF8');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16.5" stroke="' + mc2 + '" stroke-width="1.6" stroke-dasharray="6 3"/>' +
       '<polygon points="20,5 33,28 7,28" fill="' + mc1 + '" fill-opacity=".34" stroke="' + mc2 + '" stroke-width="1.6"/>' +
@@ -971,8 +1080,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'imperial') {
-    var ic1 = isAbyss ? '#EF4444' : '#EAB308';
-    var ic2 = isAbyss ? '#FACC15' : '#DC2626';
+    var ic1 = isAbyss ? '#EF4444' : (isDawn ? '#FEF08A' : '#EAB308');
+    var ic2 = isAbyss ? '#FACC15' : (isDawn ? '#F59E0B' : '#DC2626');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<rect x="5" y="5" width="30" height="30" rx="4" fill="rgba(21,17,11,.78)" stroke="' + ic1 + '" stroke-width="1.8"/>' +
       '<rect x="9" y="9" width="22" height="22" rx="2" stroke="' + ic2 + '" stroke-width="1.4" stroke-dasharray="5 3"/>' +
@@ -980,8 +1089,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'westfantasy') {
-    var wc1 = isAbyss ? '#A855F7' : '#60A5FA';
-    var wc2 = isAbyss ? '#38BDF8' : '#FACC15';
+    var wc1 = isAbyss ? '#A855F7' : (isDawn ? '#FACC15' : '#60A5FA');
+    var wc2 = isAbyss ? '#38BDF8' : (isDawn ? '#FEF9C3' : '#FACC15');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16" stroke="' + wc2 + '" stroke-width="1.5" stroke-dasharray="5 3"/>' +
       '<polygon points="20,4 24,16 36,20 24,24 20,36 16,24 4,20 16,16" fill="' + wc1 + '" fill-opacity=".36" stroke="' + wc2 + '" stroke-width="1.5"/>' +
@@ -989,8 +1098,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'eldritch') {
-    var lc1 = isAbyss ? '#EF4444' : '#C8A45D';
-    var lc2 = isAbyss ? '#FCA5A5' : '#94A3B8';
+    var lc1 = isAbyss ? '#EF4444' : (isDawn ? '#FACC15' : '#C8A45D');
+    var lc2 = isAbyss ? '#FCA5A5' : (isDawn ? '#FEF9C3' : '#94A3B8');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<circle cx="20" cy="20" r="16" stroke="' + lc1 + '" stroke-width="1.6" stroke-dasharray="4 4"/>' +
       '<circle cx="20" cy="20" r="10" fill="' + lc1 + '" fill-opacity=".28" stroke="' + lc2 + '" stroke-width="1.5"/>' +
@@ -999,8 +1108,8 @@ function lkSkinRitualCrestSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'cyberpunk') {
-    var cc1 = isAbyss ? '#FF003C' : '#FCEE0A';
-    var cc2 = isAbyss ? '#FCEE0A' : '#00F0FF';
+    var cc1 = isAbyss ? '#FF003C' : (isDawn ? '#FEF08A' : '#FCEE0A');
+    var cc2 = isAbyss ? '#FCEE0A' : (isDawn ? '#00F0FF' : '#00F0FF');
     return '<svg viewBox="0 0 40 40" fill="none">' +
       '<polygon points="20,3 35,11.5 35,28.5 20,37 5,28.5 5,11.5" fill="rgba(8,11,18,.82)" stroke="' + cc1 + '" stroke-width="1.8"/>' +
       '<polygon points="20,9 29,14.5 29,25.5 20,31 11,25.5 11,14.5" stroke="' + cc2 + '" stroke-width="1.4" stroke-dasharray="6 3"/>' +
@@ -1010,22 +1119,24 @@ function lkSkinRitualCrestSVG(sk, key) {
   return '';
 }
 
-/* ---------------- 四皮肤高燃弹窗全屏背景阵纹 SVG ---------------- */
+/* ---------------- 非奥特多皮肤高燃弹窗全屏背景阵纹 SVG ---------------- */
 function lkSkinRitualAmbientSVG(sk, key) {
   var isAbyss = (key === 'abyss');
   var isNoa = (key === 'noa' || key === 'gatanothor');
+  var isDawn = (key === 'dawn');
   if (sk === 'plain') {
-    var c1 = isAbyss ? '#F85149' : (isNoa ? '#38BDF8' : '#2F81F7');
-    var c2 = isAbyss ? '#FDA4AF' : '#3FB950';
+    var c1 = isAbyss ? '#F85149' : (isDawn ? '#F59E0B' : (isNoa ? '#38BDF8' : '#2F81F7'));
+    var c2 = isAbyss ? '#FDA4AF' : (isDawn ? '#FEF08A' : '#3FB950');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<circle class="ar6-sk-spin" cx="720" cy="450" r="410" fill="none" stroke="' + c1 + '" stroke-width="2" stroke-dasharray="22 14" opacity=".48"/>' +
       '<circle class="ar6-sk-spinr" cx="720" cy="450" r="320" fill="none" stroke="' + c2 + '" stroke-width="1.4" stroke-dasharray="8 12" opacity=".42"/>' +
+      (isDawn ? '<polygon points="680,900 704,0 736,0 760,900" fill="rgba(250,204,21,.16)"/>' : '') +
       '<g stroke="' + c1 + '" stroke-width="2" opacity=".44"><line x1="80" y1="210" x2="360" y2="210"/><line x1="1080" y1="690" x2="1360" y2="690"/><line x1="120" y1="690" x2="320" y2="690"/><line x1="1120" y1="210" x2="1320" y2="210"/></g>' +
       '</svg>';
   }
   if (sk === 'xianxia') {
-    var x1 = isAbyss ? '#C084FC' : '#5EEAD4';
-    var x2 = isAbyss ? '#F43F5E' : '#E7C476';
+    var x1 = isAbyss ? '#C084FC' : (isDawn ? '#FEF08A' : '#5EEAD4');
+    var x2 = isAbyss ? '#F43F5E' : (isDawn ? '#F59E0B' : '#E7C476');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<g class="ar6-sk-spin" opacity=".56">' +
         '<polygon points="720,40 1010,160 1130,450 1010,740 720,860 430,740 310,450 430,160" fill="none" stroke="' + x2 + '" stroke-width="2.2"/>' +
@@ -1035,14 +1146,15 @@ function lkSkinRitualAmbientSVG(sk, key) {
         '<circle cx="720" cy="450" r="450" fill="none" stroke="' + x2 + '" stroke-width="1.4" stroke-dasharray="6 14"/>' +
         '<path d="M180 140 L430 330 M1260 140 L1010 330 M180 760 L430 570 M1260 760 L1010 570" stroke="' + x1 + '" stroke-width="3" stroke-linecap="round"/>' +
       '</g>' +
+      (isDawn ? '<polygon points="670,900 704,0 736,0 770,900" fill="rgba(254,240,138,.22)"/>' : '') +
       (isAbyss
         ? '<g fill="none" stroke="#C084FC" stroke-width="3" stroke-linecap="round" opacity=".82"><path d="M40 20 L190 130 L155 178 L310 285"/><path d="M1400 30 L1245 145 L1280 190 L1130 295"/><path d="M60 880 L215 760 L185 710 L330 610"/><path d="M1380 875 L1220 750 L1255 702 L1115 605"/></g>'
         : '<g fill="none" stroke="#FDE68A" stroke-width="2.2" stroke-linecap="round" opacity=".68"><path d="M90 120 L175 180 L152 208 L260 278"/><path d="M1350 120 L1265 180 L1288 208 L1180 278"/></g>') +
       '</svg>';
   }
   if (sk === 'xuanhuan') {
-    var e1 = isAbyss ? '#FF2E55' : (isNoa ? '#2DD4BF' : '#F59E0B');
-    var e2 = isAbyss ? '#991B1B' : '#FEF08A';
+    var e1 = isAbyss ? '#FF2E55' : (isDawn ? '#FBBF24' : (isNoa ? '#2DD4BF' : '#F59E0B'));
+    var e2 = isAbyss ? '#991B1B' : (isDawn ? '#FFFBEB' : '#FEF08A');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<defs><radialGradient id="ar6XhAura" cx="50%" cy="50%" r="52%"><stop offset="0" stop-color="' + e1 + '" stop-opacity=".38"/><stop offset="0.6" stop-color="' + e2 + '" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>' +
       '<circle cx="720" cy="450" r="520" fill="url(#ar6XhAura)"/>' +
@@ -1050,15 +1162,15 @@ function lkSkinRitualAmbientSVG(sk, key) {
         '<circle cx="720" cy="450" r="390" fill="none" stroke="' + e1 + '" stroke-width="2.6" stroke-dasharray="28 12 8 12"/>' +
         '<circle cx="720" cy="450" r="460" fill="none" stroke="' + e2 + '" stroke-width="1.6" stroke-dasharray="10 14"/>' +
       '</g>' +
-      (isNoa
-        ? '<polygon points="690,0 750,0 785,900 655,900" fill="rgba(45,212,191,.18)"/><polygon points="712,0 728,0 742,900 698,900" fill="rgba(254,240,138,.26)"/>'
+      ((isNoa || isDawn)
+        ? '<polygon points="690,0 750,0 785,900 655,900" fill="' + (isDawn ? 'rgba(251,191,36,.22)' : 'rgba(45,212,191,.18)') + '"/><polygon points="712,0 728,0 742,900 698,900" fill="rgba(254,240,138,.32)"/>'
         : '') +
       '<g fill="' + e2 + '" opacity=".75"><circle cx="210" cy="680" r="5"/><circle cx="310" cy="220" r="4"/><circle cx="1220" cy="660" r="5.5"/><circle cx="1140" cy="210" r="4.5"/><circle cx="150" cy="420" r="3.5"/><circle cx="1290" cy="440" r="4"/></g>' +
       '</svg>';
   }
   if (sk === 'pink') {
-    var p1 = isAbyss ? '#E11D48' : '#FF4D9D';
-    var p2 = isAbyss ? '#FDA4AF' : '#FFE4F2';
+    var p1 = isAbyss ? '#E11D48' : (isDawn ? '#F59E0B' : '#FF4D9D');
+    var p2 = isAbyss ? '#FDA4AF' : (isDawn ? '#FEF08A' : '#FFE4F2');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<defs><radialGradient id="ar6PkAura" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="' + p1 + '" stop-opacity=".34"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>' +
       '<circle cx="720" cy="450" r="500" fill="url(#ar6PkAura)"/>' +
@@ -1074,8 +1186,8 @@ function lkSkinRitualAmbientSVG(sk, key) {
       '</g></svg>';
   }
   if (sk === 'marvel') {
-    var mv1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
-    var mv2 = isAbyss ? '#FACC15' : '#38BDF8';
+    var mv1 = isAbyss ? '#A855F7' : (isDawn ? '#F59E0B' : (isNoa ? '#34D399' : '#E11D48'));
+    var mv2 = isAbyss ? '#FACC15' : (isDawn ? '#FEF08A' : '#38BDF8');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<circle class="ar6-sk-spin" cx="720" cy="450" r="410" fill="none" stroke="' + mv1 + '" stroke-width="2.4" stroke-dasharray="32 12 8 12" opacity=".58"/>' +
       '<circle class="ar6-sk-spinr" cx="720" cy="450" r="320" fill="none" stroke="' + mv2 + '" stroke-width="1.8" stroke-dasharray="14 10" opacity=".54"/>' +
@@ -1083,8 +1195,8 @@ function lkSkinRitualAmbientSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'imperial') {
-    var im1 = isAbyss ? '#EF4444' : '#EAB308';
-    var im2 = isAbyss ? '#FACC15' : '#DC2626';
+    var im1 = isAbyss ? '#EF4444' : (isDawn ? '#FEF08A' : '#EAB308');
+    var im2 = isAbyss ? '#FACC15' : (isDawn ? '#F59E0B' : '#DC2626');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<g class="ar6-sk-spin" opacity=".56">' +
         '<rect x="420" y="150" width="600" height="600" fill="none" stroke="' + im1 + '" stroke-width="2.2" transform="rotate(45 720 450)"/>' +
@@ -1094,8 +1206,8 @@ function lkSkinRitualAmbientSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'westfantasy') {
-    var wf1 = isAbyss ? '#A855F7' : '#60A5FA';
-    var wf2 = isAbyss ? '#38BDF8' : '#FACC15';
+    var wf1 = isAbyss ? '#A855F7' : (isDawn ? '#FACC15' : '#60A5FA');
+    var wf2 = isAbyss ? '#38BDF8' : (isDawn ? '#FEF9C3' : '#FACC15');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<g class="ar6-sk-spin" opacity=".58">' +
         '<circle cx="720" cy="450" r="390" fill="none" stroke="' + wf2 + '" stroke-width="2"/>' +
@@ -1106,16 +1218,16 @@ function lkSkinRitualAmbientSVG(sk, key) {
       '</svg>';
   }
   if (sk === 'eldritch') {
-    var el1 = isAbyss ? '#DC2626' : '#C8A45D';
-    var el2 = isAbyss ? '#FCA5A5' : '#94A3B8';
+    var el1 = isAbyss ? '#DC2626' : (isDawn ? '#FACC15' : '#C8A45D');
+    var el2 = isAbyss ? '#FCA5A5' : (isDawn ? '#FEF9C3' : '#94A3B8');
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
-      '<circle cx="720" cy="450" r="240" fill="' + el1 + '" fill-opacity="' + (isAbyss ? '.24' : '.12') + '"/>' +
+      '<circle cx="720" cy="450" r="240" fill="' + el1 + '" fill-opacity="' + ((isAbyss || isDawn) ? '.24' : '.12') + '"/>' +
       '<circle class="ar6-sk-spin" cx="720" cy="450" r="395" fill="none" stroke="' + el1 + '" stroke-width="2" stroke-dasharray="18 10 4 10" opacity=".58"/>' +
       '<circle class="ar6-sk-spinr" cx="720" cy="450" r="465" fill="none" stroke="' + el2 + '" stroke-width="1.5" stroke-dasharray="6 14" opacity=".46"/>' +
       '</svg>';
   }
   if (sk === 'cyberpunk') {
-    var cp1 = isAbyss ? '#FF003C' : '#FCEE0A';
+    var cp1 = isAbyss ? '#FF003C' : (isDawn ? '#FEF08A' : '#FCEE0A');
     var cp2 = isAbyss ? '#FCEE0A' : '#00F0FF';
     return '<svg class="ar6-sk-amb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">' +
       '<g class="ar6-sk-spin" opacity=".56">' +
@@ -1145,7 +1257,10 @@ var SKIN_FX_CSS_TEXT = [
   '.ar6-sk-amb .ar6-sk-spinr{transform-origin:720px 450px;animation:ar6SkSpinR 22s linear infinite;}',
 
   '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual{animation:ar6SkModalPop .28s cubic-bezier(.22,1,.36,1) both;overflow:hidden;}',
-  '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="noa"] .ar6-rt-title{background:none;-webkit-background-clip:border-box;background-clip:border-box;-webkit-text-fill-color:currentColor;filter:none;}',
+  '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="noa"] .ar6-rt-title,#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="dawn"] .ar6-rt-title{background:none;-webkit-background-clip:border-box;background-clip:border-box;-webkit-text-fill-color:currentColor;filter:none;}',
+  '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="dawn"]{border-color:rgba(252,211,77,.82)!important;box-shadow:0 0 0 1px rgba(254,240,138,.28),0 0 54px rgba(245,158,11,.42),0 24px 64px rgba(0,0,0,.95)!important;}',
+  '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="dawn"]::before{background:linear-gradient(90deg,#9F1239 0%,#F59E0B 34%,#FEF9C3 56%,#FFFFFF 74%,#F59E0B 100%)!important;background-size:200% 100%;animation:ar6SpeciumFlow 2.6s linear infinite;}',
+  '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="dawn"] .ar6-rt-ok{background:linear-gradient(135deg,#9F1239 0%,#D97706 48%,#FACC15 100%)!important;border-color:#FEF08A!important;color:#FFFBEB!important;box-shadow:0 0 28px rgba(250,204,21,.56)!important;}',
   '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-ritual[data-ritual="abyss"] .ar6-rt-quote{text-shadow:none;}',
   '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-rt-crest{animation:ar6SkGlowPulse 2.4s ease-in-out infinite;}',
   '#ar6-card[data-skin]:not([data-skin="ultra"]) .ar6-rt-ok{position:relative;overflow:hidden;text-shadow:none;transition:transform .14s ease,box-shadow .18s ease;}',
@@ -1325,42 +1440,43 @@ function triggerSkinAwakenFx(sk, k) {
 
     var isAbyss = (k === 'abyss');
     var isNoa = (k === 'noa' || k === 'gatanothor');
+    var isDawn = (k === 'dawn');
     var rt = lkSkinRitualData(sk, isNoa ? 'noa' : k);
-    var c1 = '#58A6FF', c2 = '#3FB950', showSlash = false;
+    var c1 = '#58A6FF', c2 = '#3FB950', showSlash = isDawn;
     if (sk === 'plain') {
-      c1 = isAbyss ? '#F85149' : (isNoa ? '#38BDF8' : (k === 'supreme' ? '#EAB308' : '#2F81F7'));
-      c2 = isAbyss ? '#FDA4AF' : '#3FB950';
+      c1 = isAbyss ? '#F85149' : (isDawn ? '#F59E0B' : (isNoa ? '#38BDF8' : (k === 'supreme' ? '#EAB308' : '#2F81F7')));
+      c2 = isAbyss ? '#FDA4AF' : (isDawn ? '#FEF08A' : '#3FB950');
     } else if (sk === 'xianxia') {
-      c1 = isAbyss ? '#C084FC' : (isNoa ? '#5EEAD4' : (k === 'supreme' ? '#E7C476' : '#2DD4BF'));
-      c2 = isAbyss ? '#F43F5E' : '#FEF08A';
-      showSlash = isNoa || isAbyss;
+      c1 = isAbyss ? '#C084FC' : (isDawn ? '#F59E0B' : (isNoa ? '#5EEAD4' : (k === 'supreme' ? '#E7C476' : '#2DD4BF')));
+      c2 = isAbyss ? '#F43F5E' : (isDawn ? '#FEF08A' : '#FEF08A');
+      showSlash = isDawn || isNoa || isAbyss;
     } else if (sk === 'xuanhuan') {
-      c1 = isAbyss ? '#FF2E55' : (isNoa ? '#2DD4BF' : '#F59E0B');
-      c2 = isAbyss ? '#FCA5A5' : '#FEF08A';
-      showSlash = isNoa || isAbyss || k === 'supreme';
+      c1 = isAbyss ? '#FF2E55' : (isDawn ? '#FBBF24' : (isNoa ? '#2DD4BF' : '#F59E0B'));
+      c2 = isAbyss ? '#FCA5A5' : (isDawn ? '#FFFBEB' : '#FEF08A');
+      showSlash = isDawn || isNoa || isAbyss || k === 'supreme';
     } else if (sk === 'pink') {
-      c1 = isAbyss ? '#E11D48' : '#FF4D9D';
-      c2 = isAbyss ? '#FDA4AF' : '#FFE4F2';
+      c1 = isAbyss ? '#E11D48' : (isDawn ? '#F59E0B' : '#FF4D9D');
+      c2 = isAbyss ? '#FDA4AF' : (isDawn ? '#FFE4F2' : '#FFE4F2');
     } else if (sk === 'marvel') {
-      c1 = isAbyss ? '#A855F7' : (isNoa ? '#34D399' : '#E11D48');
-      c2 = isAbyss ? '#FACC15' : '#38BDF8';
-      showSlash = isNoa || isAbyss;
+      c1 = isAbyss ? '#A855F7' : (isDawn ? '#F59E0B' : (isNoa ? '#34D399' : '#E11D48'));
+      c2 = isAbyss ? '#FACC15' : (isDawn ? '#FEF08A' : '#38BDF8');
+      showSlash = isDawn || isNoa || isAbyss;
     } else if (sk === 'imperial') {
-      c1 = isAbyss ? '#EF4444' : '#EAB308';
-      c2 = isAbyss ? '#FACC15' : '#DC2626';
-      showSlash = isNoa || isAbyss;
+      c1 = isAbyss ? '#EF4444' : (isDawn ? '#FEF08A' : '#EAB308');
+      c2 = isAbyss ? '#FACC15' : (isDawn ? '#F59E0B' : '#DC2626');
+      showSlash = isDawn || isNoa || isAbyss;
     } else if (sk === 'westfantasy') {
-      c1 = isAbyss ? '#A855F7' : '#60A5FA';
-      c2 = isAbyss ? '#38BDF8' : '#FACC15';
-      showSlash = isNoa || isAbyss;
+      c1 = isAbyss ? '#A855F7' : (isDawn ? '#FACC15' : '#60A5FA');
+      c2 = isAbyss ? '#38BDF8' : (isDawn ? '#FEF9C3' : '#FACC15');
+      showSlash = isDawn || isNoa || isAbyss;
     } else if (sk === 'eldritch') {
-      c1 = isAbyss ? '#DC2626' : '#C8A45D';
-      c2 = isAbyss ? '#FCA5A5' : '#94A3B8';
-      showSlash = isAbyss;
+      c1 = isAbyss ? '#DC2626' : (isDawn ? '#FACC15' : '#C8A45D');
+      c2 = isAbyss ? '#FCA5A5' : (isDawn ? '#FEF9C3' : '#94A3B8');
+      showSlash = isDawn || isAbyss;
     } else if (sk === 'cyberpunk') {
-      c1 = isAbyss ? '#FF003C' : '#FCEE0A';
+      c1 = isAbyss ? '#FF003C' : (isDawn ? '#FEF08A' : '#FCEE0A');
       c2 = isAbyss ? '#FCEE0A' : '#00F0FF';
-      showSlash = isNoa || isAbyss || k === 'supreme';
+      showSlash = isDawn || isNoa || isAbyss || k === 'supreme';
     }
 
     var el = DOC.createElement('div');

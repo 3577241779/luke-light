@@ -189,7 +189,7 @@ async function runSuite(fileName) {
   const api = loadBundle(fullPath, win);
 
   try {
-    check(api && api.VERSION === '5.97', 'VERSION 为 5.97', `got=${api && api.VERSION}`);
+    check(api && api.VERSION === '5.98', 'VERSION 为 5.98', `got=${api && api.VERSION}`);
 
     // =========================================================================
     // 1. 路由雷达页全按键实效校验（微扰 / 钉参数 / 思考档 / 总开关）
@@ -425,10 +425,10 @@ async function runSuite(fileName) {
           check(outB.max_tokens >= 8192 || outB.max_completion_tokens >= 8192 || joined.includes('<spec>') || joined.includes('LK-'),
             `全功能拉满 [${tier} / toolChan=${tc}] 破甲正常落盘不被叙述层干扰`);
         }
-        // 工具通道与抗截断互斥：toolChan=on 时走 lk_write 而不叠 truncApply
+        // 工具通道与抗截断互斥：toolChan=on 时走 save_chapter（或兼容别名 lk_write）而不叠 truncApply
         if (tc === 'on') {
-          check(Array.isArray(outB.tools) && outB.tools.some((t) => t && t.function && t.function.name === 'lk_write'),
-            `全功能拉满 [${tier} / toolChan=on] 武装货舱 lk_write 正常挂载`);
+          check(Array.isArray(outB.tools) && outB.tools.some((t) => t && t.function && (t.function.name === 'save_chapter' || t.function.name === 'lk_write')),
+            `全功能拉满 [${tier} / toolChan=on] 武装货舱 save_chapter 正常挂载`);
         } else {
           check(joined.includes('收尾') || plan.changed.some((x) => x.includes('截断')),
             `全功能拉满 [${tier} / toolChan=off] 能量续航正常挂载`);

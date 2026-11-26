@@ -5,7 +5,7 @@
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '5.97';
+var VERSION = '5.98';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -94,6 +94,7 @@ var CFG_DEFAULT = {
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
   toolChan: 'off',       // off | on（武装货舱）
+  allTool: false,        /* V5.98 全工具破甲（破暗化光·闪耀三轨）：正文/状态/选项分三路工具投递 */
   toolLoop: false,       // 第三期：双轮工具链（合成读入工具轮 + auto，适配 Gemini 兼容反代）
   toolCover: false,      // 第三期：可选原创中性外层封装 + 流式零延迟自动剥壳
   retry503: 'on',
