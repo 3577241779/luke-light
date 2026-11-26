@@ -1,10 +1,10 @@
 {
-  "version": "5.99",
-  "releasedAt": "2026-11-26T12:22:52.008Z",
-  "changelog": "V5.99 · 破暗化光·闪耀三轨（allTool）全链路冲突根治：修复与双轮工具链(toolLoop)互斥抢占、反向关闭货舱/能量续航/切必杀光线/开飞燕编队假亮灯同步、流式工具名分片(save_p+rose)误判外部工具、三路解包与断流抢救自动 \\n\\n 段落分隔、破甲行文口径打架与幂等查重及内部工具白名单同步，并兼容《光域·镜界》<lk_cot> 思维链与扩展标签。",
+  "version": "6.0",
+  "releasedAt": "2026-11-26T16:42:06.907Z",
+  "changelog": "V6.0 · 凝视深渊协议化重写与破甲输入保护全量修复：根治开启破甲后丢失/覆写用户输入（消除底部声明顶替与连续 user 覆盖、修正历史 user→assistant 倒挂时序、防止降权抽空世界书与 lkApplyHeads 误杀协议化、补齐 soliumbra_reply 400 自动回退 auto 与三轨互斥让位，并同步升级强力/闪耀/诺亚委托块与底部声明口径，完整保留 V5.99 破暗化光·闪耀三轨冲突修复）。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.99/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-desktop.json"
   }
 }

@@ -189,7 +189,7 @@ async function runSuite(fileName) {
   const api = loadBundle(fullPath, win);
 
   try {
-    check(api && api.VERSION === '5.99', 'VERSION 为 5.99', `got=${api && api.VERSION}`);
+    check(api && api.VERSION === '6.0', 'VERSION 为 6.0', `got=${api && api.VERSION}`);
 
     // =========================================================================
     // 1. 路由雷达页全按键实效校验（微扰 / 钉参数 / 思考档 / 总开关）
@@ -422,21 +422,33 @@ async function runSuite(fileName) {
           `全功能拉满 [${tier} / toolChan=${tc}] 叙述结界+贴脸包裹+致命后果完整保留`);
         // 验证破甲未因 AR-NAR/AR-USR 误判 JAIL_OWN_RE 失效
         if (tier === 'strong' || tier === 'supreme' || tier === 'gatanothor' || tier === 'abyss') {
-          check(outB.max_tokens >= 8192 || outB.max_completion_tokens >= 8192 || joined.includes('<spec>') || joined.includes('LK-'),
+          check(outB.max_tokens >= 8192 || outB.max_completion_tokens >= 8192 || joined.includes('<spec>') || joined.includes('LK-') || plan.proto === true,
             `全功能拉满 [${tier} / toolChan=${tc}] 破甲正常落盘不被叙述层干扰`);
         }
-        // 工具通道与抗截断互斥：toolChan=on 时走 save_chapter（或兼容别名 lk_write）而不叠 truncApply
-        if (tc === 'on') {
-          check(Array.isArray(outB.tools) && outB.tools.some((t) => t && t.function && (t.function.name === 'save_chapter' || t.function.name === 'lk_write')),
-            `全功能拉满 [${tier} / toolChan=on] 武装货舱 save_chapter 正常挂载`);
+        // V6.0：凝视深渊 OpenAI 通道走 soliumbra_reply 协议化，其余档位 toolChan=on 走 save_chapter
+        if (plan.proto) {
+          check(Array.isArray(outB.tools) && outB.tools.some((t) => t && t.function && t.function.name === 'soliumbra_reply'),
+            `全功能拉满 [${tier} / toolChan=${tc}] V6.0 协议化 soliumbra_reply 正常挂载`);
+          const histCalls = outB.messages
+            .filter((m) => m && m.role === 'assistant' && Array.isArray(m.tool_calls))
+            .flatMap((m) => m.tool_calls)
+            .filter((c) => c && c.function && c.function.name === 'soliumbra_reply')
+            .map((c) => JSON.parse(c.function.arguments || '{}').content);
+          check(histCalls.length === origAsst.length && histCalls[0] === origAsst[0],
+            `全功能拉满 [${tier} / toolChan=${tc}] 协议化历史 assistant 正文完整保留`);
         } else {
-          check(joined.includes('收尾') || plan.changed.some((x) => x.includes('截断')),
-            `全功能拉满 [${tier} / toolChan=off] 能量续航正常挂载`);
+          if (tc === 'on') {
+            check(Array.isArray(outB.tools) && outB.tools.some((t) => t && t.function && (t.function.name === 'save_chapter' || t.function.name === 'lk_write')),
+              `全功能拉满 [${tier} / toolChan=on] 武装货舱 save_chapter 正常挂载`);
+          } else {
+            check(joined.includes('收尾') || plan.changed.some((x) => x.includes('截断')),
+              `全功能拉满 [${tier} / toolChan=off] 能量续航正常挂载`);
+          }
+          // assistant 历史消息绝不被破坏（强力以上含码点护甲仅转词表敏感词，普通句应完好）
+          const afterAsst = outB.messages.filter((m) => m.role === 'assistant').map((m) => m.content);
+          check(afterAsst.length === origAsst.length && afterAsst[0] === origAsst[0],
+            `全功能拉满 [${tier} / toolChan=${tc}] 历史 assistant 回复不被篡改`);
         }
-        // assistant 历史消息绝不被破坏（强力以上含码点护甲仅转词表敏感词，普通句应完好）
-        const afterAsst = outB.messages.filter((m) => m.role === 'assistant').map((m) => m.content);
-        check(afterAsst.length === origAsst.length && afterAsst[0] === origAsst[0],
-          `全功能拉满 [${tier} / toolChan=${tc}] 历史 assistant 回复不被篡改`);
       }
     }
 

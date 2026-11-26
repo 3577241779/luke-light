@@ -2516,7 +2516,7 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   var allowPeek = !!(cfg && cfg.peek && !cfg.safe && (!internal || String(cfg && cfg.contentOnly) === 'off'));
   var ct = '';
   try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eCt) {}
-  var useTool = !!(cfg && cfg.enabled && !internal && cfg.toolChan === 'on' && plan && plan.tool && res.status >= 200 && res.status < 300);
+  var useTool = !!(cfg && cfg.enabled && !internal && (cfg.toolChan === 'on' || (plan && plan.proto)) && plan && plan.tool && res.status >= 200 && res.status < 300);
   var needDesens = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.desens && cfg.desens === 'a' && cfg.desensUnmask !== false);
   var needArmor = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.armor);
   var useFieldUnmask = !!(needDesens || needArmor) && (!ct || /json|event-stream|text/i.test(ct));
@@ -2549,7 +2549,7 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   var pendingRead = null, hbTimer = null;
   var atBoundary = true, lineNonEmpty = false, prevCr = false;
   var sawUpstreamBytes = false;
-  var rawStreamRec = cacheStory ? { at: nowMs(), url: String((lastReq && lastReq.url) || ''), model: String((plan && plan.model) || ''), toolName: useTool ? TOOL_NAME : '', status: res.status, bytes: 0, chunks: rawChunks } : null;
+  var rawStreamRec = cacheStory ? { at: nowMs(), url: String((lastReq && lastReq.url) || ''), model: String((plan && plan.model) || ''), toolName: useTool ? ((plan && plan.proto) ? 'soliumbra_reply' : TOOL_NAME) : '', status: res.status, bytes: 0, chunks: rawChunks } : null;
 
   function makeAbortErr(reason) {
     if (reason && typeof reason === 'object' && reason.name === 'AbortError') return reason;

@@ -806,12 +806,13 @@ function planRequest(rawBody, url, internal) {
     }
   } catch (eOpf) { origPrefill = false; }
 
-  var wantToolChan = !(cfg.enabled && cfg.grab > 0) && cfg.enabled && cfg.toolChan === 'on' && String(cfg.jailTool || 'off') === 'off';
+  var protoWillRun = !origPrefill && (typeof lkProtoEligible === 'function' ? lkProtoEligible(body) : false);
+  var wantToolChan = !protoWillRun && !(cfg.enabled && cfg.grab > 0) && cfg.enabled && cfg.toolChan === 'on' && String(cfg.jailTool || 'off') === 'off';
   var toolWillRun = wantToolChan && !origPrefill && (typeof toolChanEligible === 'function' ? toolChanEligible(body) : true);
 
   try {
     var tmsgs = (body.request && Array.isArray(body.request.messages)) ? body.request.messages : body.messages;
-    if (!toolWillRun && typeof truncApply === 'function' && truncApply(tmsgs)) {
+    if (!toolWillRun && !protoWillRun && typeof truncApply === 'function' && truncApply(tmsgs)) {
       out.changed.push('截断:' + truncLabel(cfg ? cfg.trunc : TRUNC_LIGHT));
     }
   } catch (eTrunc) { criticalWarn('抗截断', eTrunc); }
@@ -823,15 +824,18 @@ function planRequest(rawBody, url, internal) {
   /* v7.1 破甲：放在微扰之后、序列化之前——放前面会被微扰再扰动一遍 */
   if (cfg.enabled) {
     try {
-      /* v5.78：先降权再清洗——先洗会把降权要抓的同类词洗没，归位/下沉几乎 0 命中 */
-      var dmt = lkDemoteBody(body);
-      for (var dz0 = 0; dz0 < dmt.length; dz0++) out.changed.push(dmt[dz0]);
+      /* v5.78：先降权再清洗——先洗会把降权要抓的同类词洗没，归位/下沉几乎 0 命中；
+         V6.0 协议化通道自带全量 system→context.world 降权，跳过 lkDemoteBody 避免抽空设定段并污染对话流 */
+      if (!protoWillRun) {
+        var dmt = lkDemoteBody(body);
+        for (var dz0 = 0; dz0 < dmt.length; dz0++) out.changed.push(dmt[dz0]);
+      }
       var pch = lkPurifyBody(body);
       for (var pz = 0; pz < pch.length; pz++) out.changed.push(pch[pz]);
       var hst = lkHistoryStrip(body);
       for (var hz0 = 0; hz0 < hst.length; hz0++) out.changed.push(hst[hz0]);
       try { if (lkSingleSection(body)) out.changed.push('单节折叠'); } catch (eSS) {}
-      try { if (!toolWillRun && lkReceiptInject(body)) out.changed.push('尾句回执'); } catch (eRC) {}
+      try { if (!toolWillRun && !protoWillRun && lkReceiptInject(body)) out.changed.push('尾句回执'); } catch (eRC) {}
       try { if (lkPrefixStable(body)) out.changed.push('前缀稳定'); } catch (ePS) {}
       try {
         var skipArmorForPreset = (typeof presetCompatForce === 'function' && !presetCompatForce() &&
@@ -852,7 +856,7 @@ function planRequest(rawBody, url, internal) {
   var wantJail = (cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss' || cfg.jail === 'only' || (cfg.jail && cfg.jail !== 'off' && cfg.jailWord === true));
   if (cfg.enabled && (wantJail || wantTool)) {
     try {
-      var jch = jailPatchBody(body);
+      var jch = jailPatchBody(body, protoWillRun ? { protoMode: true } : null);
       for (var jz = 0; jz < jch.length; jz++) out.changed.push(jch[jz]);
     } catch (eJail) { criticalWarn('破甲请求补丁', eJail); }
   }
@@ -864,6 +868,23 @@ function planRequest(rawBody, url, internal) {
       if (dch.length) out.desens = true;
       for (var dz = 0; dz < dch.length; dz++) out.changed.push(dch[dz]);
     } catch (eDs) { criticalWarn('设定脱敏', eDs); }
+  }
+
+  /* V6.0 协议化通道（凝视深渊）：在完成清洗与脱敏后直接重写为 soliumbra_reply + context 协议形态，
+     完整保留世界书设定、历史时间顺序与本轮真实用户输入 */
+  if (protoWillRun && typeof lkProtocolize === 'function') {
+    try {
+      var protoMeta = { base: out.base };
+      var prCh = lkProtocolize(body, protoMeta);
+      if (prCh && prCh.length) {
+        for (var pz2 = 0; pz2 < prCh.length; pz2++) out.changed.push(prCh[pz2]);
+        out.proto = true;
+        out.tool = true;
+        out.toolBaseKey = String(protoMeta.baseKey || out.base || curBase() || 'default').replace(/\/+$/, '');
+        out.toolForcedChoice = !!protoMeta.forcedChoice;
+        assistantBefore = assistantSnapshot(body);
+      }
+    } catch (eProto) { criticalWarn('协议化', eProto); }
   }
 
   if (wantToolChan) {

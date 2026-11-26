@@ -1696,7 +1696,7 @@ function runSelfTest() {
   T('T90 V5.24 委托块是自然语言，不含 XML 标签', function () {
     var b = String(lkDocBlock('接着上一段往下写'));
     return b.indexOf('<doc') < 0 && b.indexOf('<task>') < 0 && b.indexOf('<data_only>') < 0 &&
-      b.indexOf('本轮要接着写的一段稿子') > 0 && b.indexOf('【停点】') > 0;
+      b.indexOf('本轮续写') > 0 && b.indexOf('【本轮输入】') > 0 && b.indexOf('【停点】') > 0;
   });
 
 
@@ -2005,7 +2005,7 @@ function runSelfTest() {
       var mc = memCfg();
       if (!(cfg.__sd > 0) || !mc || mc.sd !== cfg.__sd) throw new Error('saveCfg 未同步 cfg.__sd');
 
-      /* 2. 多轮对话在 supreme / abyss 下经历史剥离与降权下沉不再误触发 assistant-protection 回退 */
+      /* 2. 多轮对话在 abyss 下走 V6.0 协议化不误触发 assistant-protection，且完整保留世界书设定与用户本轮真实输入 */
       cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'abyss', jailSupremeConfirmed: true, demote: 'auto', singleSec: false, toolChan: 'off', silent: true });
       var multiRaw = JSON.stringify({
         model: 'gemini-4-hydrogen',
@@ -2023,9 +2023,14 @@ function runSelfTest() {
         throw new Error('多轮 abyss 被误回退：' + pr.reason);
       }
       var parsed = JSON.parse(pr.body);
-      var allSys = parsed.messages.filter(function (m) { return m && m.role === 'system'; }).map(function (m) { return m.content; }).join('\n');
-      if (allSys.indexOf('蒸汽城侦探林晚') < 0 || allSys.indexOf('黑雨港终年阴雨') < 0) {
-        throw new Error('下沉丢失了干净角色卡/世界书段落');
+      var ctxTool = parsed.messages.filter(function (m) { return m && m.role === 'tool' && m.name === 'context'; })[0];
+      var ctxWorld = ctxTool ? String(ctxTool.content || '') : '';
+      var lastUsr = parsed.messages[parsed.messages.length - 1];
+      if (!pr.proto || !pr.tool || ctxWorld.indexOf('蒸汽城侦探林晚') < 0 || ctxWorld.indexOf('黑雨港终年阴雨') < 0) {
+        throw new Error('abyss 协议化丢失了干净角色卡/世界书段落');
+      }
+      if (!lastUsr || lastUsr.role !== 'user' || String(lastUsr.content || '').indexOf('继续第三轮') < 0) {
+        throw new Error('abyss 协议化丢失了本轮用户真实输入');
       }
 
       /* 3. 多 system 条目下 align 归位不跨条重复复制 */
@@ -2079,7 +2084,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.99') throw new Error('VERSION 应为 5.99，实际 ' + VERSION);
+      if (VERSION !== '6.0') throw new Error('VERSION 应为 6.0，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -3289,6 +3294,11 @@ var AR6_API = {
   toolChanEligible: toolChanEligible,
   toolChanPatch: toolChanPatch,
   toolPull: toolPull,
+  lkProtoOn: (typeof lkProtoOn === 'function') ? lkProtoOn : null,
+  lkProtoDetected: (typeof lkProtoDetected === 'function') ? lkProtoDetected : null,
+  lkProtoEligible: (typeof lkProtoEligible === 'function') ? lkProtoEligible : null,
+  lkProtocolize: (typeof lkProtocolize === 'function') ? lkProtocolize : null,
+  lkProtoStr: (typeof lkProtoStr === 'function') ? lkProtoStr : null,
   lkCouldBeOwnToolPrefix: (typeof lkCouldBeOwnToolPrefix === 'function') ? lkCouldBeOwnToolPrefix : null,
   lkDropOrphanTools: (typeof lkDropOrphanTools === 'function') ? lkDropOrphanTools : null,
   lkTypesetTxt: (typeof lkTypesetTxt === 'function') ? lkTypesetTxt : null,

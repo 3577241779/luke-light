@@ -1,5 +1,5 @@
 /* ===== 7_jail_body.js ===== */
-function jailPatchBody(body) {
+function jailPatchBody(body, opt) {
   var out = [];
   if (!cfg) return out;
   if (!cfg.enabled) return out;
@@ -113,6 +113,8 @@ function jailPatchBody(body) {
 
   /* V5.65 礼让预设：检测到预设自带破甲/载具且「预设适配=礼让预设」时，保底 token 与解安全保留，其余文本注入让路 */
   if (yieldToPreset) return out;
+  /* V6.0 协议化让路：凝视深渊走 LKPROTO 协议化通道时，仅保留预设消毒 / 保底 token / 解安全，跳过稀释垫片、接管块与尾部独立 user 声明，避免污染 context.world 或顶替用户真实输入 */
+  if (opt && opt.protoMode) return out;
   try { var __orphN = lkDropOrphanTools(body); if (__orphN > 0) out.push('孤儿工具移除 ' + __orphN + ' 个'); } catch (eOrp) {}
 
   /* V5.22：强力及以上走「单一委托块」——权威头/任务单/资料标记/接管收进一份 <doc> */
