@@ -1426,5 +1426,59 @@ var SKIN_CSS_TEXT = [
   '#ar6-logwin[data-skin="cyberpunk"]{border-radius:6px;background:linear-gradient(180deg,#10131C 0%,#06080D 100%);border-color:rgba(252,238,10,.62);color:#F8FAFC;}',
   '#ar6-logwin[data-skin="cyberpunk"] .ar6-lwh{background:linear-gradient(95deg,rgba(252,238,10,.16),rgba(7,9,15,.98));border-bottom-color:rgba(0,240,255,.3);}',
   '#ar6-logwin[data-skin="cyberpunk"] .ar6-lwlive,#ar6-logwin[data-skin="cyberpunk"] .ar6-lwf,#ar6-logwin[data-skin="cyberpunk"] .ar6-lwn{background:#090B12;border-color:rgba(0,240,255,.22);}',
-  '#ar6-logwin[data-skin="cyberpunk"] .ar6-lwcell,#ar6-logwin[data-skin="cyberpunk"] .ar6-lwc{background:#111622;border-color:rgba(0,240,255,.26);}'
+  '#ar6-logwin[data-skin="cyberpunk"] .ar6-lwcell,#ar6-logwin[data-skin="cyberpunk"] .ar6-lwc{background:#111622;border-color:rgba(0,240,255,.26);}',
+  /* ---- V5.95 四生合体顶栏与预设内嵌栏：补齐 5 套新皮肤全量配色 ---- */
+  '#ar6-root[data-skin="marvel"] .ar6-dualbar{background:rgba(10,8,16,.92);border-bottom-color:rgba(245,158,11,.28);}',
+  '#ar6-root[data-skin="marvel"] .ar6-dualbtn,#ar6-root[data-skin="marvel"] .ar6-pr-tab,#ar6-root[data-skin="marvel"] .ar6-pr-bdl{background:#17101C;border-color:rgba(245,158,11,.28);color:#E5B8C4;}',
+  '#ar6-root[data-skin="marvel"] .ar6-dualbtn.on,#ar6-root[data-skin="marvel"] .ar6-pr-tab.on{background:linear-gradient(135deg,#BE123C,#9F1239);border-color:#FCD34D;color:#FFF1F2;box-shadow:0 0 12px rgba(225,29,72,.38);}',
+  '#ar6-root[data-skin="marvel"] .ar6-dual-bdg{background:rgba(225,29,72,.2);border-color:rgba(251,191,36,.48);color:#FDE68A;}',
+  '#ar6-root[data-skin="marvel"] .ar6-pr-search input,#ar6-root[data-skin="marvel"] .ar6-pr-tx,#ar6-root[data-skin="marvel"] .ar6-pr-rdescs{background:#0E0A14;border-color:rgba(245,158,11,.28);}',
+  '#ar6-root[data-skin="imperial"] .ar6-dualbar{background:rgba(12,9,6,.92);border-bottom-color:rgba(234,179,8,.3);}',
+  '#ar6-root[data-skin="imperial"] .ar6-dualbtn,#ar6-root[data-skin="imperial"] .ar6-pr-tab,#ar6-root[data-skin="imperial"] .ar6-pr-bdl{background:#1A130B;border-color:rgba(234,179,8,.3);color:#D9C28E;}',
+  '#ar6-root[data-skin="imperial"] .ar6-dualbtn.on,#ar6-root[data-skin="imperial"] .ar6-pr-tab.on{background:linear-gradient(135deg,#A16207,#991B1B);border-color:#FDE047;color:#FEF9C3;box-shadow:0 0 12px rgba(234,179,8,.36);}',
+  '#ar6-root[data-skin="imperial"] .ar6-dual-bdg{background:rgba(185,28,28,.24);border-color:rgba(234,179,8,.54);color:#FEF08A;}',
+  '#ar6-root[data-skin="imperial"] .ar6-pr-search input,#ar6-root[data-skin="imperial"] .ar6-pr-tx,#ar6-root[data-skin="imperial"] .ar6-pr-rdescs{background:#100C08;border-color:rgba(234,179,8,.28);}',
+  '#ar6-root[data-skin="westfantasy"] .ar6-dualbar{background:rgba(7,13,28,.92);border-bottom-color:rgba(250,204,21,.26);}',
+  '#ar6-root[data-skin="westfantasy"] .ar6-dualbtn,#ar6-root[data-skin="westfantasy"] .ar6-pr-tab,#ar6-root[data-skin="westfantasy"] .ar6-pr-bdl{background:#0E1A36;border-color:rgba(147,197,253,.28);color:#93C5FD;}',
+  '#ar6-root[data-skin="westfantasy"] .ar6-dualbtn.on,#ar6-root[data-skin="westfantasy"] .ar6-pr-tab.on{background:linear-gradient(135deg,#2563EB,#1E3A8A);border-color:#FDE047;color:#EFF6FF;box-shadow:0 0 12px rgba(96,165,250,.4);}',
+  '#ar6-root[data-skin="westfantasy"] .ar6-dual-bdg{background:rgba(37,99,235,.22);border-color:rgba(250,204,21,.48);color:#FEF08A;}',
+  '#ar6-root[data-skin="westfantasy"] .ar6-pr-search input,#ar6-root[data-skin="westfantasy"] .ar6-pr-tx,#ar6-root[data-skin="westfantasy"] .ar6-pr-rdescs{background:#081024;border-color:rgba(147,197,253,.26);}',
+  '#ar6-root[data-skin="eldritch"] .ar6-dualbar{background:rgba(11,8,14,.92);border-bottom-color:rgba(200,164,93,.28);}',
+  '#ar6-root[data-skin="eldritch"] .ar6-dualbtn,#ar6-root[data-skin="eldritch"] .ar6-pr-tab,#ar6-root[data-skin="eldritch"] .ar6-pr-bdl{background:#1A141D;border-color:rgba(200,164,93,.28);color:#CBBBA0;}',
+  '#ar6-root[data-skin="eldritch"] .ar6-dualbtn.on,#ar6-root[data-skin="eldritch"] .ar6-pr-tab.on{background:linear-gradient(135deg,#7F1D1D,#4C1D3D);border-color:#E2C27A;color:#FFF7ED;box-shadow:0 0 12px rgba(185,28,28,.36);}',
+  '#ar6-root[data-skin="eldritch"] .ar6-dual-bdg{background:rgba(200,164,93,.16);border-color:rgba(200,164,93,.5);color:#EBD4A0;}',
+  '#ar6-root[data-skin="eldritch"] .ar6-pr-search input,#ar6-root[data-skin="eldritch"] .ar6-pr-tx,#ar6-root[data-skin="eldritch"] .ar6-pr-rdescs{background:#100C12;border-color:rgba(200,164,93,.26);}',
+  '#ar6-root[data-skin="cyberpunk"] .ar6-dualbar{background:rgba(7,9,15,.95);border-bottom-color:rgba(252,238,10,.28);}',
+  '#ar6-root[data-skin="cyberpunk"] .ar6-dualbtn,#ar6-root[data-skin="cyberpunk"] .ar6-pr-tab,#ar6-root[data-skin="cyberpunk"] .ar6-pr-bdl{border-radius:4px;background:#111622;border-color:rgba(0,240,255,.28);color:#94A3B8;}',
+  '#ar6-root[data-skin="cyberpunk"] .ar6-dualbtn.on,#ar6-root[data-skin="cyberpunk"] .ar6-pr-tab.on{background:linear-gradient(135deg,#FCEE0A,#EAB308);border-color:#FEF08A;color:#05060A;font-weight:800;box-shadow:0 0 12px rgba(252,238,10,.4);}',
+  '#ar6-root[data-skin="cyberpunk"] .ar6-dual-bdg{border-radius:4px;background:rgba(252,238,10,.16);border-color:rgba(252,238,10,.58);color:#FCEE0A;}',
+  '#ar6-root[data-skin="cyberpunk"] .ar6-pr-search input,#ar6-root[data-skin="cyberpunk"] .ar6-pr-tx,#ar6-root[data-skin="cyberpunk"] .ar6-pr-rdescs{background:#090B12;border-color:rgba(0,240,255,.26);}'
 ].join('\n');
+
+/* ---- V5.95 家族共享皮肤色板查询 API：供光域·镜忆 / 光域·镜影零改代码同步全皮肤配色 ---- */
+var AR6_SKIN_FONT_SANS = '-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+var AR6_SKIN_FONT_SERIF_CN = '"Songti SC","STSong","Noto Serif SC","PingFang SC","Microsoft YaHei",serif';
+var AR6_SKIN_FONT_ELDRITCH = '"Georgia","Songti SC","Noto Serif SC","Times New Roman",serif';
+var AR6_SKIN_PALETTES = {
+  ultra: { id: 'ultra', bg0: '#080D18', bg1: '#0F182B', card: '#162032', border: 'rgba(148,163,184,.42)', accent: '#38BDF8', accentSoft: 'rgba(56,189,248,.16)', ink: '#F0F9FF', muted: '#94A3B8', radius: '16px', font: AR6_SKIN_FONT_SANS, danger: '#F43F5E', ok: '#34D399', warn: '#FCD34D', shadow: '0 0 0 1px rgba(56,189,248,.14),0 24px 64px rgba(2,6,23,.82)' },
+  plain: { id: 'plain', bg0: '#0D1117', bg1: '#161B22', card: '#1C2128', border: 'rgba(240,246,252,.18)', accent: '#2F81F7', accentSoft: 'rgba(47,129,247,.18)', ink: '#F0F6FC', muted: '#8B949E', radius: '14px', font: AR6_SKIN_FONT_SANS, danger: '#F85149', ok: '#3FB950', warn: '#D29922', shadow: '0 22px 58px rgba(0,0,0,.72)' },
+  xianxia: { id: 'xianxia', bg0: '#040B0A', bg1: '#0A1D1B', card: 'rgba(13,38,35,.82)', border: 'rgba(231,196,118,.46)', accent: '#5EEAD4', accentSoft: 'rgba(94,234,212,.16)', ink: '#ECFDF5', muted: '#99C2B8', radius: '14px', font: AR6_SKIN_FONT_SERIF_CN, danger: '#F87171', ok: '#5EEAD4', warn: '#E7C476', shadow: '0 0 0 1px rgba(94,234,212,.14),0 24px 62px rgba(0,10,8,.88)' },
+  xuanhuan: { id: 'xuanhuan', bg0: '#070404', bg1: '#160B08', card: '#1B0D09', border: 'rgba(245,158,11,.6)', accent: '#F59E0B', accentSoft: 'rgba(245,158,11,.2)', ink: '#FEF3C7', muted: '#D6B18B', radius: '14px', font: AR6_SKIN_FONT_SANS, danger: '#FB7185', ok: '#2DD4BF', warn: '#FCD34D', shadow: '0 0 0 1px rgba(45,212,191,.18),0 0 36px rgba(245,158,11,.22),0 24px 64px rgba(0,0,0,.92)' },
+  pink: { id: 'pink', bg0: '#140611', bg1: '#2B0F22', card: 'rgba(56,18,44,.82)', border: 'rgba(255,133,192,.64)', accent: '#FF4D9D', accentSoft: 'rgba(255,77,157,.22)', ink: '#FFF0F7', muted: '#E2A9C8', radius: '20px', font: AR6_SKIN_FONT_SANS, danger: '#FB7185', ok: '#F472B6', warn: '#FFC2E2', shadow: '0 0 0 1px rgba(255,194,226,.2),0 0 38px rgba(255,92,168,.3),0 24px 64px rgba(18,2,14,.92)' },
+  marvel: { id: 'marvel', bg0: '#06060C', bg1: '#140B14', card: '#17101C', border: 'rgba(245,158,11,.58)', accent: '#E11D48', accentSoft: 'rgba(225,29,72,.22)', ink: '#FFF1F2', muted: '#CBD5E1', radius: '14px', font: AR6_SKIN_FONT_SANS, danger: '#FB7185', ok: '#38BDF8', warn: '#FBBF24', shadow: '0 0 0 1px rgba(225,29,72,.24),0 0 36px rgba(225,29,72,.22),0 24px 64px rgba(0,0,0,.92)' },
+  imperial: { id: 'imperial', bg0: '#070504', bg1: '#15110B', card: '#1C160E', border: 'rgba(234,179,8,.68)', accent: '#EAB308', accentSoft: 'rgba(234,179,8,.2)', ink: '#FEF9C3', muted: '#D6C49A', radius: '14px', font: AR6_SKIN_FONT_SERIF_CN, danger: '#DC2626', ok: '#FACC15', warn: '#FDE047', shadow: '0 0 0 1px rgba(220,38,38,.26),0 0 38px rgba(234,179,8,.22),0 24px 64px rgba(0,0,0,.94)' },
+  westfantasy: { id: 'westfantasy', bg0: '#040814', bg1: '#0E1833', card: '#122042', border: 'rgba(250,204,21,.54)', accent: '#60A5FA', accentSoft: 'rgba(96,165,250,.2)', ink: '#EFF6FF', muted: '#93C5FD', radius: '14px', font: AR6_SKIN_FONT_SANS, danger: '#F87171', ok: '#60A5FA', warn: '#FDE047', shadow: '0 0 0 1px rgba(96,165,250,.22),0 0 38px rgba(59,130,246,.24),0 24px 64px rgba(2,6,18,.94)' },
+  eldritch: { id: 'eldritch', bg0: '#070509', bg1: '#161118', card: '#1B151E', border: 'rgba(200,164,93,.6)', accent: '#C8A45D', accentSoft: 'rgba(185,28,28,.24)', ink: '#F5EFE6', muted: '#CBBBA0', radius: '12px', font: AR6_SKIN_FONT_ELDRITCH, danger: '#DC2626', ok: '#C8A45D', warn: '#E2C27A', shadow: '0 0 0 1px rgba(185,28,28,.26),0 0 38px rgba(185,28,28,.2),0 24px 64px rgba(0,0,0,.95)' },
+  cyberpunk: { id: 'cyberpunk', bg0: '#05060A', bg1: '#10131C', card: '#111622', border: 'rgba(252,238,10,.72)', accent: '#FCEE0A', accentSoft: 'rgba(0,240,255,.18)', ink: '#F8FAFC', muted: '#94A3B8', radius: '6px', font: AR6_SKIN_FONT_SANS, danger: '#FF003C', ok: '#00F0FF', warn: '#FCEE0A', shadow: '0 0 0 1px rgba(0,240,255,.26),0 0 36px rgba(252,238,10,.16),0 24px 64px rgba(0,0,0,.96)' }
+};
+
+function getSkinPalette(sid) {
+  var k = String(sid == null ? (typeof skinId === 'function' ? skinId() : 'ultra') : sid).trim().toLowerCase();
+  if (k === 'minimal') k = 'plain';
+  var src = AR6_SKIN_PALETTES[k] || AR6_SKIN_PALETTES.ultra;
+  var out = {};
+  for (var p in src) {
+    if (Object.prototype.hasOwnProperty.call(src, p)) out[p] = src[p];
+  }
+  return out;
+}

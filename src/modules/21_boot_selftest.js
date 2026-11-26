@@ -2079,7 +2079,7 @@ function runSelfTest() {
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
     try {
-      if (VERSION !== '5.94') throw new Error('VERSION 应为 5.94，实际 ' + VERSION);
+      if (VERSION !== '5.95') throw new Error('VERSION 应为 5.95，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -3392,6 +3392,7 @@ var AR6_API = {
   NARR_CHARM_LETHAL: (typeof NARR_CHARM_LETHAL !== 'undefined') ? NARR_CHARM_LETHAL : '',
   NARR_RT: (typeof NARR_RT !== 'undefined') ? NARR_RT : null,
   skinId: (typeof skinId === 'function') ? skinId : null,
+  getSkinPalette: (typeof getSkinPalette === 'function') ? getSkinPalette : null,
   AR6_SKINS: (typeof AR6_SKINS !== 'undefined') ? AR6_SKINS : null,
   AR6_SKIN_ORDER: (typeof AR6_SKIN_ORDER !== 'undefined') ? AR6_SKIN_ORDER : null,
   /* ---- V5.74 双生协同单窗导出 ---- */
@@ -3416,12 +3417,15 @@ var AR6_API = {
   AR6_SKIN_PET_ASSETS: (typeof AR6_SKIN_PET_ASSETS !== 'undefined') ? AR6_SKIN_PET_ASSETS : null,
   triggerSkinAwakenFx: (typeof triggerSkinAwakenFx === 'function') ? triggerSkinAwakenFx : null,
   triggerSkinSummon: (typeof triggerSkinSummon === 'function') ? triggerSkinSummon : null,
-  /* ---- 三生合体：同生态兄弟面板注册与调度导出 (ST-LightLens 等) ---- */
+  /* ---- 四生合体：同生态兄弟面板注册、调度与忙态探测导出 (光域·镜影 / 光域·镜忆 等) ---- */
   registerSibling: (typeof registerSibling === 'function') ? registerSibling : null,
   openSiblingPanel: (typeof openSiblingPanel === 'function') ? openSiblingPanel : null,
   listSiblings: (typeof listSiblings === 'function') ? listSiblings : null,
   unmountActiveSibling: (typeof unmountActiveSibling === 'function') ? unmountActiveSibling : null,
   syncGlobalSiblings: (typeof syncGlobalSiblings === 'function') ? syncGlobalSiblings : null,
+  LIVE: (typeof LIVE !== 'undefined') ? LIVE : null,
+  isLive: function () { try { return !!(typeof LIVE !== 'undefined' && LIVE && LIVE.on); } catch (eLv) { return false; } },
+  isJailAskPending: (typeof jailAskPending === 'function') ? jailAskPending : function () { return false; },
   /* ---- V5.77 光鉴引擎：四维上游硬指纹 / 离线一码通 / 本机私有公益站白名单 ---- */
   lkClassifyChannel: (typeof lkClassifyChannel === 'function') ? lkClassifyChannel : null,
   lkDomainHash: (typeof lkDomainHash === 'function') ? lkDomainHash : null,

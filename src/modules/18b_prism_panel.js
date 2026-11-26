@@ -928,8 +928,10 @@ function uiPrismDualBarHTML(pView) {
   var sibs = listSiblings();
   if (!prismOn && sibs.length === 0) return '';
 
+  var totalMembers = 1 + (prismOn ? 1 : 0) + sibs.length;
   var lukeOn = (view === 'luke');
-  var h = '<div class="ar6-dualbar" role="tablist" aria-label="光域生态单窗切换">' +
+  var barCls = 'ar6-dualbar' + (totalMembers >= 4 ? ' ar6-quad' : '');
+  var h = '<div class="' + barCls + '" role="tablist" aria-label="光域生态单窗切换">' +
     '<button type="button" class="ar6-dualbtn' + (lukeOn ? ' on' : '') + '" data-ar6="wsmode:luke" aria-pressed="' + (lukeOn ? 'true' : 'false') + '">🛡️ 卢克之光</button>';
 
   if (prismOn) {
@@ -946,7 +948,9 @@ function uiPrismDualBarHTML(pView) {
       esc((sb.icon ? sb.icon + ' ' : '') + (sb.label || sb.id)) + '</button>';
   }
 
-  var badgeTxt = (prismOn && sibs.length > 0) ? '⚡ 三生合体' : '⚡ 双生联动';
+  var badgeTxt = totalMembers >= 4
+    ? '⚡ 四生合体'
+    : (totalMembers === 3 ? '⚡ 三生合体' : '⚡ 双生联动');
   h += '<span class="ar6-dual-bdg">' + badgeTxt + '</span></div>';
   return h;
 }

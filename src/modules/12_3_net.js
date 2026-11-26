@@ -59,8 +59,10 @@ function normModelName(m) {
   return s;
 }
 
-/* 内部请求：数据库/填表/柏宝书/柏宝绘/后台脚本等非正文传输识别 */
+/* 内部请求：数据库/填表/柏宝书/柏宝绘/光域镜忆/后台脚本等非正文传输识别 */
 var INTERNAL_FETCH_KEY = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('acu.internal-generation-fetch') : null;
+var LK_MEMO_FETCH_KEY = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('lk.memo.internal-fetch') : null;
+var AR6_BYPASS_KEY = (typeof Symbol === 'function' && Symbol.for) ? Symbol.for('ar6.bypass') : null;
 var ST_GEN = { at: 0, type: '', dryRun: false, stoppedAt: 0 };
 var TH_GEN = { active: false, at: 0 };
 
@@ -155,13 +157,16 @@ var BAIBAI_BOOK_TASK_RE = /<nvwa_standalone_core>|【检查记录与最终结果
 var BAIBAI_IMAGE_TASK_RE = /\[BBI_REQ:|你是严谨的剧情画面规划与生图提示词编写员|你是严谨的漫画分镜师与生图提示词编写员|你是外貌\s*tag\s*转换器|你是\s*ComfyUI\s*API\s*格式工作流的动态参数定位器/;
 var ACU_DB_TASK_RE = /上方\s*CREATE\s+TABLE\s*仅用于说明表结构|严禁复制或输出\s*CREATE|以下为用户的额外填表要求|本次请求的全部要求与上下文写在名称以\s*turn_\s*开头的函数里|奶·数据库|MemoryBooks/;
 var YUZUKI_MEM_TASK_RE = /【导演账本与本轮核验信息】|【轨道B核验规则】|你是一个用于连通性测试的助手/;
-var MAIN_STORY_MEM_INJECT_RE = /【前情提要(?:\s*-|】)|【当前世界状态参考\s*-|【记忆只读数据库\s*-|【系统检索到的历史记忆片段】|<下轮导演卡>/;
+var MAIN_STORY_MEM_INJECT_RE = /【前情提要(?:\s*-|】)|【当前世界状态参考\s*-|【记忆只读数据库\s*-|【系统检索到的历史记忆片段】|<下轮导演卡>|<lk_mem_ctx>|【前情纪事】|【人物与世界回溯】/;
 var GENERIC_AUX_TASK_RE = /<tableEdit>|自动摘要|剧情总结|章节总结|记忆总结|提取.{0,6}(?:摘要|关键词|绘画|tag|prompt)|image\s*prompt|stable\s*diffusion|nai\s*prompt/i;
 
 function classifyRequestTraffic(init, bodyObj, url) {
   var story = { isPlugin: false, isStory: true, kind: 'story', label: '正文', reason: '' };
   try {
-    /* Layer 1：显式内部标记与声明式握手 */
+    /* Layer 1：显式内部标记与声明式握手（优先识别同家族光域·镜忆旁路 Symbol） */
+    if (init && ((LK_MEMO_FETCH_KEY && init[LK_MEMO_FETCH_KEY] === true) || (AR6_BYPASS_KEY && init[AR6_BYPASS_KEY] === true))) {
+      return { isPlugin: true, isStory: false, kind: 'lk_memo', label: '光域·镜忆', reason: 'lkm-symbol' };
+    }
     if (init && INTERNAL_FETCH_KEY && init[INTERNAL_FETCH_KEY] === true) {
       return { isPlugin: true, isStory: false, kind: 'acu_db', label: '龙血玄黄·数据库', reason: 'acu-symbol' };
     }
@@ -848,7 +853,13 @@ function finish(ev, meta) {
       (typeof JL !== 'undefined' && JL && JL.lock) ||
       (typeof jailAskPending === 'function' && jailAskPending()));
     if (!DISPOSED && !ev.internal && !pendingResume && HOST && typeof HOST.dispatchEvent === 'function') {
-      var settledDetail = { code: rec.code, chars: rec.chars, requestId: ev.requestId || '' };
+      var settledChatIdx = -1;
+      try {
+        var sCtx = (typeof stCtx === 'function') ? stCtx() : null;
+        if (sCtx && Array.isArray(sCtx.chat) && sCtx.chat.length > 0) settledChatIdx = sCtx.chat.length - 1;
+      } catch (eScI) {}
+      var settledChars = Number(rec.chars) || 0;
+      var settledDetail = { code: rec.code, chars: settledChars, finalChars: settledChars, chatIndex: settledChatIdx, requestId: ev.requestId || '' };
       var settledEv = (typeof HOST.CustomEvent === 'function')
         ? new HOST.CustomEvent('ar6:turn-settled', { detail: settledDetail })
         : { type: 'ar6:turn-settled', detail: settledDetail, bubbles: false, cancelable: false };

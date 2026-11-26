@@ -1,10 +1,10 @@
 {
-  "version": "5.94",
-  "releasedAt": "2026-11-26T01:41:44.738Z",
-  "changelog": "V5.94 · 行文口径与素材隔离增强 + 开源免费防骗与法律免责首弹声明：补齐④内部审查留内不落纸、⑤思考通道专注剧情承接两条约束，单一委托块新增【素材说明】；新增云端更新首次强制弹出的类脑社区免费开源防骗与合规免责声明弹窗（10 皮肤自适应 / 单主按钮 3 秒防手滑 / 面板设置常驻复看入口）。",
+  "version": "5.95",
+  "releasedAt": "2026-11-26T04:35:32.767Z",
+  "changelog": "V5.95 · 卢克家族四生合体全量适配（携手《光域·镜忆》+《光域·镜界》+《光域·镜影》）：顶栏四开手机窄屏自动 2×2 网格防截断、按成员数动态显示「⚡ 四生合体」徽标、补齐漫威/帝皇/西幻/诡秘/赛博 5 套新皮肤四生顶栏配色、雷达专属识别光域·镜忆旁路 Symbol 与主聊白名单双保险、`ar6:turn-settled` 增补 `finalChars`/`chatIndex`、导出 `getSkinPalette`/`LIVE`/`isLive`/`isJailAskPending`。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.94/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.95/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.95/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.95/dist/luke-light-desktop.json"
   }
 }
