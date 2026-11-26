@@ -153,7 +153,7 @@ for (const tgt of TARGETS) {
   new vm.Script(pkg.content, { filename: tgt.file }).runInContext(ctx);
   const api = win.__AR6__;
   try {
-    ok(api && api.VERSION === '5.96', 'VERSION === 5.96', api && api.VERSION);
+    ok(api && api.VERSION === '5.97', 'VERSION === 5.97', api && api.VERSION);
 
     // 2. 通道分类 6 类全覆盖
     const chOffMs = api.lkClassifyChannel('/api/backends/chat-completions/generate', { chat_completion_source: 'makersuite' });

@@ -216,18 +216,25 @@ function makeMiniDom(sharedLs) {
   }
 
   const docListeners = Object.create(null);
+  const docEl = new Node('html');
+  docEl.clientWidth = 412;
+  docEl.clientHeight = 844;
+  const bodyEl = new Node('body');
+  const headEl = new Node('head');
+  docEl.appendChild(headEl);
+  docEl.appendChild(bodyEl);
   const document = {
-    body: new Node('body'),
-    head: new Node('head'),
-    documentElement: { clientWidth: 412, clientHeight: 844, style: {} },
+    body: bodyEl,
+    head: headEl,
+    documentElement: docEl,
     hidden: false,
     activeElement: null,
     createElement: tag => new Node(tag),
     getElementById(id) {
-      return this.body.querySelector('#' + id) || this.head.querySelector('#' + id) || null;
+      return this.documentElement.querySelector('#' + id) || null;
     },
-    querySelector(sel) { return this.body.querySelector(sel) || this.head.querySelector(sel) || null; },
-    querySelectorAll(sel) { return [...this.body.querySelectorAll(sel), ...this.head.querySelectorAll(sel)]; },
+    querySelector(sel) { return this.documentElement.querySelector(sel) || null; },
+    querySelectorAll(sel) { return this.documentElement.querySelectorAll(sel); },
     addEventListener(t, fn) { (docListeners[t] = docListeners[t] || []).push(fn); },
     removeEventListener(t, fn) {
       if (!docListeners[t]) return;
@@ -272,7 +279,7 @@ for (const fileName of TARGETS) {
   const r1 = loadTarget(fileName, store);
   const { win, api, ft } = r1;
 
-  check(api && api.VERSION === '5.96', `${fileName}: VERSION === 5.96`, api && api.VERSION);
+  check(api && api.VERSION === '5.97', `${fileName}: VERSION === 5.97`, api && api.VERSION);
   check(typeof api.isNoticeAcked === 'function' && typeof api.openNoticeModal === 'function' && typeof api.closeNoticeModal === 'function', `${fileName}: 声明弹窗 API 完整导出`);
   check(api.isNoticeAcked() === false, `${fileName}: 首次加载/云端更新后 isNoticeAcked 为 false`);
   check(!win.document.getElementById('ar6-notice-modal'), `${fileName}: boot 同步阶段不阻塞 DOM`);
@@ -289,7 +296,8 @@ for (const fileName of TARGETS) {
   const txt = modal ? modal.textContent : '';
   const btns = modal ? modal.querySelectorAll('button') : [];
   check(btns.length === 1, `${fileName}: 弹窗内严格只有唯一一个主按钮`, `got=${btns.length}`);
-  check(modalStyle.includes('inset:0') && modalStyle.includes('width:100%') && modalStyle.includes('box-sizing:border-box') && !modalStyle.includes('100vw'), `${fileName}: 遮罩使用 inset:0 + width:100% + border-box 零超宽`, modalStyle);
+  check(modalStyle.includes('right:auto') && modalStyle.includes('bottom:auto') && modalStyle.includes('box-sizing:border-box') && !modalStyle.includes('inset:0') && !modalStyle.includes('height:100%'), `${fileName}: 遮罩使用显式视口高 + border-box 绝不被压扁进 40px 顶栏`, modalStyle);
+  check(!modal.getAttribute('role'), `${fileName}: 外层遮罩不挂 role="dialog" 防主题 CSS 误命中`);
   check(html.includes('max-height:816px') && html.includes('white-space:normal'), `${fileName}: 手机动态锁高(innerHeight-28)且主按钮允许换行不撑宽`);
   check(!/https?:\/\/|github\.com|jsdelivr/i.test(html), `${fileName}: 弹窗内零外部链接、零仓库地址`);
   check(txt.includes('类脑社区（类脑 ΟΔΥΣΣΕΙΑ）') && txt.includes('上当受骗'), `${fileName}: 含类脑社区免费开源与付费即受骗红框警示`);
@@ -339,6 +347,16 @@ for (const fileName of TARGETS) {
   api.onPanelClick({ target: { getAttribute: k => (k === 'data-ar6' ? 'help' : null), parentNode: null }, type: 'click' });
   const helpNode = win.document.getElementById('ar6-help');
   check(!!helpNode && helpNode.textContent.includes('类脑社区免费开源') && helpNode.textContent.includes('严禁商业倒卖'), `${fileName}: 功能图鉴页脚含类脑开源防倒卖注记`);
+
+  // V5.97 ST 手机 Edge 专项：body 坍缩为 0px 或挂 transform/contain 时逃逸挂载至 documentElement (<html>)
+  win.getComputedStyle = el => (el === win.document.body ? { transform: 'translateZ(0)', filter: 'none', backdropFilter: 'none', perspective: 'none', contain: 'layout' } : {});
+  win.document.body.getBoundingClientRect = () => ({ width: 412, height: 0 });
+  api.openNoticeModal(false);
+  const escapedModal = win.document.getElementById('ar6-notice-modal');
+  check(!!escapedModal && escapedModal.parentNode === win.document.documentElement, `${fileName}: body=0px/含 transform 时弹窗自动逃逸挂载至 html 根避免 20px 压扁`);
+  api.closeNoticeModal(true);
+  delete win.getComputedStyle;
+  delete win.document.body.getBoundingClientRect;
 
   // dispose 清理校验
   api.openNoticeModal(true);

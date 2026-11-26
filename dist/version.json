@@ -1,10 +1,10 @@
 {
-  "version": "5.96",
-  "releasedAt": "2026-11-26T05:19:02.102Z",
-  "changelog": "V5.96 · 手机端声明弹窗防超宽/防超高/触控秒关修复 + 四生合体热更重挂载与过期兄弟自愈：修复手机竖屏下安全声明弹窗因 100vw+padding 超宽与 100vh 按钮掉屏导致关不掉的问题（改用 inset:0 + border-box + visualViewport 动态锁高 + pointerup/click 双触控 + 时间戳防卡死解锁）；syncGlobalSiblings() 自动清理过期队列兄弟并保护直连项；render() 补齐 AR6_SIB_MOUNTED.spec !== sibSpec 热更重挂载校验。",
+  "version": "5.97",
+  "releasedAt": "2026-11-26T08:04:32.188Z",
+  "changelog": "V5.97 · 根治酒馆主题下声明弹窗被压扁进 40px 顶栏的问题：遮罩废除 inset:0 + height:100%，改用与主面板一致的显式视口高（100vw / visualViewport.height / --TH-viewport-height）+ flex-start + 盒体 margin:auto 0 + 去掉外层 role=\"dialog\"，即使宿主 body 含 transform 或主题覆盖也 100% 满屏居中且按钮完整可点。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.96/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.96/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.96/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v5.97/dist/luke-light-desktop.json"
   }
 }

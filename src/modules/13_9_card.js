@@ -897,7 +897,7 @@ function openDiagModal(initialCode, tab) {
 /* ---------------- V5.94 开源免费、防骗警示与法律免责声明弹窗 ---------------- */
 var NOTICE_KEY = 'ar6.notice.ack';
 var NOTICE_VER = '5.94-v1';
-var NOTICE_MODAL = { open: false, forced: false, waitLeft: 0, unlockAt: 0, timer: null, bootTimer: null, onResize: null };
+var NOTICE_MODAL = { open: false, forced: false, waitLeft: 0, unlockAt: 0, timer: null, bootTimer: null, healTimer: null, onResize: null };
 
 function isNoticeAcked() {
   try {
@@ -1018,23 +1018,48 @@ function noticeBtnLabel(forced, waitLeft) {
 function noticeViewportH() {
   var h = 0;
   try {
-    if (HOST && HOST.visualViewport && HOST.visualViewport.height > 120) h = HOST.visualViewport.height;
+    if (HOST && HOST.visualViewport && HOST.visualViewport.height > 200) h = HOST.visualViewport.height;
   } catch (e0) {}
   try {
     var ih = HOST && HOST.innerHeight ? Number(HOST.innerHeight) : 0;
-    if (ih > 120 && (!h || ih < h)) h = ih;
+    if (ih > 200 && (!h || ih < h)) h = ih;
   } catch (e1) {}
   try {
     var ch = DOC && DOC.documentElement && DOC.documentElement.clientHeight ? Number(DOC.documentElement.clientHeight) : 0;
-    if (ch > 120 && (!h || ch < h)) h = ch;
+    if (ch > 200 && (!h || ch < h)) h = ch;
   } catch (e2) {}
-  return h > 120 ? Math.floor(h) : 0;
+  return h > 200 ? Math.floor(h) : 0;
+}
+
+function noticeViewportW() {
+  var w = 0;
+  try {
+    if (HOST && HOST.visualViewport && HOST.visualViewport.width > 200) w = HOST.visualViewport.width;
+  } catch (e0) {}
+  try {
+    var iw = HOST && HOST.innerWidth ? Number(HOST.innerWidth) : 0;
+    if (iw > 200 && (!w || iw < w)) w = iw;
+  } catch (e1) {}
+  try {
+    var cw = DOC && DOC.documentElement && DOC.documentElement.clientWidth ? Number(DOC.documentElement.clientWidth) : 0;
+    if (cw > 200 && (!w || cw < w)) w = cw;
+  } catch (e2) {}
+  return w > 200 ? Math.floor(w) : 0;
+}
+
+function noticeViewportTop() {
+  try {
+    if (HOST && HOST.visualViewport && typeof HOST.visualViewport.offsetTop === 'number' && isFinite(HOST.visualViewport.offsetTop)) {
+      return Math.max(0, Math.round(HOST.visualViewport.offsetTop));
+    }
+  } catch (e0) {}
+  return 0;
 }
 
 function noticeBoxMaxH() {
   var vh = noticeViewportH();
-  if (vh > 180) return Math.max(220, vh - 28) + 'px';
-  return '84dvh';
+  if (vh >= 260) return Math.max(220, vh - 28) + 'px';
+  return 'calc(var(--TH-viewport-height,100dvh) - 24px)';
 }
 
 function noticeModalHTML(forced, waitLeft) {
@@ -1047,10 +1072,16 @@ function noticeModalHTML(forced, waitLeft) {
       ? ('cursor:not-allowed;opacity:.78;background:' + th.btnOffBg + ';border:1px solid ' + th.btnOffBd + ';color:' + th.btnOffInk)
       : ('cursor:pointer;opacity:1;background:' + th.btnBg + ';border:1px solid ' + th.btnBd + ';color:' + th.btnInk + ';box-shadow:0 6px 20px rgba(2,6,23,.32)'));
   var boxMaxH = noticeBoxMaxH();
+  var vh = noticeViewportH();
+  var vw = noticeViewportW();
+  var vvTop = noticeViewportTop();
+  var maskH = (vh >= 260) ? (vh + 'px') : 'var(--TH-viewport-height,100dvh)';
+  var maskW = (vw >= 240) ? (vw + 'px') : '100vw';
 
-  var h = '<div id="ar6-notice-modal" role="dialog" aria-modal="true" aria-label="卢克之光版权防骗与法律免责声明" data-ar6-forced="' + (forced ? '1' : '0') + '" style="position:fixed;inset:0;left:0;top:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:10px;overflow:hidden;z-index:2147483606;background:rgba(4,8,18,.88);font-family:system-ui,-apple-system,Segoe UI,\'PingFang SC\',\'Microsoft YaHei\',sans-serif">';
-  h += '<style>#ar6-notice-modal,#ar6-notice-modal *{box-sizing:border-box!important;min-width:0}#ar6-notice-modal button[data-ar6-nm]{width:100%!important;max-width:100%!important;white-space:normal!important;word-break:break-word!important;pointer-events:auto!important;touch-action:manipulation!important;margin:0!important}</style>';
-  h += '<div data-ar6-nm-box="1" style="width:100%;max-width:460px;max-height:' + boxMaxH + ';display:flex;flex-direction:column;overflow:hidden;background:' + th.bg + ';color:' + th.ink + ';border:1.5px solid ' + th.bd + ';border-radius:14px;box-shadow:' + th.sh + '">';
+  /* V5.97 关键修复：严禁对固定遮罩写 inset:0 + height:100%（ST 手机 Edge / 主题下 body 若带 transform/backdrop-filter/contain 且 #sheld 为 fixed，body 高度仅 0px，导致 height:100% 退化为 padding:10px*2=20px 细条并截断上下只剩第三条标题）；改用显式像素视口宽高 + flex-start + 盒体 margin:auto 0 + 逃逸挂载 html + 去掉 role="dialog" */
+  var h = '<div id="ar6-notice-modal" aria-modal="true" aria-label="卢克之光版权防骗与法律免责声明" data-ar6-forced="' + (forced ? '1' : '0') + '" style="position:fixed;left:0;top:' + vvTop + 'px;right:auto;bottom:auto;width:' + maskW + ';max-width:' + maskW + ';height:100dvh;height:' + maskH + ';box-sizing:border-box;display:flex;align-items:flex-start;justify-content:center;padding:10px;padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;z-index:2147483606;background:rgba(4,8,18,.88);font-family:system-ui,-apple-system,Segoe UI,\'PingFang SC\',\'Microsoft YaHei\',sans-serif">';
+  h += '<style>#ar6-notice-modal{position:fixed!important;left:0!important;top:' + vvTop + 'px!important;right:auto!important;bottom:auto!important;width:' + maskW + '!important;max-width:' + maskW + '!important;height:100dvh!important;height:' + maskH + '!important;max-height:none!important;min-height:0!important;box-sizing:border-box!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow-y:auto!important;overflow-x:hidden!important;z-index:2147483606!important;transform:none!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;clip:auto!important;clip-path:none!important;contain:none!important}#ar6-notice-modal,#ar6-notice-modal *{box-sizing:border-box!important;min-width:0}#ar6-notice-modal [data-ar6-nm-box="1"]{position:relative!important;flex:0 1 auto!important;width:100%!important;max-width:460px!important;min-height:0!important;margin:auto 0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;transform:none!important;visibility:visible!important;opacity:1!important}#ar6-notice-modal [data-ar6-nm-body="1"]{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}#ar6-notice-modal [data-ar6-nm-foot="1"]{flex:0 0 auto!important;display:block!important;visibility:visible!important}#ar6-notice-modal button[data-ar6-nm]{position:static!important;display:block!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:44px!important;white-space:normal!important;word-break:break-word!important;pointer-events:auto!important;touch-action:manipulation!important;margin:0!important;transform:none!important;clip:auto!important;clip-path:none!important}</style>';
+  h += '<div data-ar6-nm-box="1" style="width:100%;max-width:460px;max-height:' + boxMaxH + ';margin:auto 0;display:flex;flex-direction:column;overflow:hidden;background:' + th.bg + ';color:' + th.ink + ';border:1.5px solid ' + th.bd + ';border-radius:14px;box-shadow:' + th.sh + '">';
 
   /* 固定顶栏（无外链、无关闭叉号） */
   h += '<div style="flex:0 0 auto;padding:10px 13px 9px;background:' + th.headBg + ';border-bottom:1px solid ' + th.headBd + '">' +
@@ -1060,7 +1091,7 @@ function noticeModalHTML(forced, waitLeft) {
     '</div>';
 
   /* 可滚动正文区 */
-  h += '<div style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;padding:10px 12px">';
+  h += '<div data-ar6-nm-body="1" style="flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;padding:10px 12px">';
 
   /* 核心红框：反倒卖防诈骗警示 */
   h += '<div style="margin:0 0 10px;padding:10px 12px;border-radius:11px;background:' + th.alertBg + ';border:1.5px solid ' + th.alertBd + ';font-size:12.5px;line-height:1.68;color:' + th.alertInk + '">' +
@@ -1117,7 +1148,7 @@ function noticeModalHTML(forced, waitLeft) {
   h += '</div>';
 
   /* 固定底栏：唯一主按钮（不用 disabled 硬锁，改用 data-locked + 实时时间戳解锁，防移动端 WebView 冻结卡死） */
-  h += '<div style="flex:0 0 auto;padding:9px 12px calc(10px + env(safe-area-inset-bottom,0px));background:' + th.footBg + ';border-top:1px solid ' + th.headBd + '">' +
+  h += '<div data-ar6-nm-foot="1" style="flex:0 0 auto;padding:9px 12px calc(10px + env(safe-area-inset-bottom,0px));background:' + th.footBg + ';border-top:1px solid ' + th.headBd + '">' +
     '<button type="button" data-ar6-nm="agree" data-locked="' + (locked ? '1' : '0') + '" aria-disabled="' + (locked ? 'true' : 'false') + '" style="' + btnStyle + '">' + esc(noticeBtnLabel(forced, waitLeft)) + '</button>' +
     '</div>';
 
@@ -1132,9 +1163,13 @@ function closeNoticeModal(forceClose) {
       clearInterval(NOTICE_MODAL.timer);
       NOTICE_MODAL.timer = null;
     }
+    if (NOTICE_MODAL.healTimer) {
+      clearTimeout(NOTICE_MODAL.healTimer);
+      NOTICE_MODAL.healTimer = null;
+    }
     if (NOTICE_MODAL.onResize) {
       try { if (HOST && HOST.removeEventListener) HOST.removeEventListener('resize', NOTICE_MODAL.onResize); } catch (eR0) {}
-      try { if (HOST && HOST.visualViewport && HOST.visualViewport.removeEventListener) HOST.visualViewport.removeEventListener('resize', NOTICE_MODAL.onResize); } catch (eR1) {}
+      try { if (HOST && HOST.visualViewport && HOST.visualViewport.removeEventListener) { HOST.visualViewport.removeEventListener('resize', NOTICE_MODAL.onResize); HOST.visualViewport.removeEventListener('scroll', NOTICE_MODAL.onResize); } } catch (eR1) {}
       NOTICE_MODAL.onResize = null;
     }
     var old = DOC && DOC.getElementById('ar6-notice-modal');
@@ -1147,9 +1182,39 @@ function closeNoticeModal(forceClose) {
   } catch (e) { return false; }
 }
 
+function noticeMountParent() {
+  try {
+    var b = DOC && DOC.body;
+    var de = DOC && DOC.documentElement;
+    if (!b) return de || null;
+    var canDe = !!(de && typeof de.appendChild === 'function');
+    if (canDe && typeof HOST !== 'undefined' && HOST && typeof HOST.getComputedStyle === 'function') {
+      var cs = HOST.getComputedStyle(b);
+      var hasLayer = false;
+      if (cs) {
+        var bf = cs.backdropFilter || cs.webkitBackdropFilter || '';
+        var ct = String(cs.contain || '');
+        var wc = String(cs.willChange || '');
+        var ctype = String(cs.containerType || '');
+        hasLayer = !!((cs.transform && cs.transform !== 'none') ||
+          (cs.filter && cs.filter !== 'none') ||
+          (bf && bf !== 'none') ||
+          (cs.perspective && cs.perspective !== 'none') ||
+          /(layout|paint|strict|content)/i.test(ct) ||
+          /(transform|filter|backdrop|perspective)/i.test(wc) ||
+          (ctype && ctype !== 'normal'));
+      }
+      var br = (typeof b.getBoundingClientRect === 'function') ? b.getBoundingClientRect() : null;
+      var collapsed = !!(br && (br.height < 260 || br.width < 200));
+      if (hasLayer || collapsed) return de;
+    }
+    return b;
+  } catch (eMp) { return (DOC && (DOC.body || DOC.documentElement)) || null; }
+}
+
 function openNoticeModal(forced, opts) {
   try {
-    if (DISPOSED || !DOC || !DOC.body) return false;
+    if (DISPOSED || !DOC || !(DOC.body || DOC.documentElement)) return false;
     closeNoticeModal(true);
     var isForced = !!forced;
     var waitSec = isForced ? 3 : 0;
@@ -1163,19 +1228,71 @@ function openNoticeModal(forced, opts) {
     wrap.innerHTML = noticeModalHTML(isForced, waitSec);
     var node = wrap.firstChild;
     if (!node) return false;
-    DOC.body.appendChild(node);
+    var mountParent = noticeMountParent();
+    if (!mountParent || typeof mountParent.appendChild !== 'function') return false;
+    mountParent.appendChild(node);
     NOTICE_MODAL.open = true;
 
     var th = noticeTheme();
+    var setImp = function (el, prop, val) {
+      try {
+        if (!el || !el.style) return;
+        if (el.style.setProperty) el.style.setProperty(prop, val, 'important');
+        else el.style[prop] = val;
+      } catch (eSi) {}
+    };
     var syncBoxSize = function () {
       try {
+        if (!node || !node.parentNode) return;
+        var vh2 = noticeViewportH();
+        var vw2 = noticeViewportW();
+        var top2 = noticeViewportTop();
+        setImp(node, 'top', top2 + 'px');
+        if (vw2 >= 240) {
+          setImp(node, 'width', vw2 + 'px');
+          setImp(node, 'max-width', vw2 + 'px');
+        }
+        if (vh2 >= 260) {
+          setImp(node, 'height', vh2 + 'px');
+        }
         var bx = node.querySelector && node.querySelector('[data-ar6-nm-box="1"]');
-        if (bx) bx.style.maxHeight = noticeBoxMaxH();
+        if (bx) setImp(bx, 'max-height', noticeBoxMaxH());
       } catch (eSz) {}
     };
+    var healGeometry = function () {
+      try {
+        if (DISPOSED || !NOTICE_MODAL.open || !node || !node.parentNode) return;
+        var vhCheck = noticeViewportH();
+        if (vhCheck >= 300 && typeof node.getBoundingClientRect === 'function') {
+          var nr = node.getBoundingClientRect();
+          if (nr && (nr.height < 240 || nr.width < 220)) {
+            var de = DOC && DOC.documentElement;
+            if (de && typeof de.appendChild === 'function' && node.parentNode !== de) {
+              de.appendChild(node);
+            }
+            setImp(node, 'position', 'fixed');
+            setImp(node, 'left', '0px');
+            setImp(node, 'right', 'auto');
+            setImp(node, 'bottom', 'auto');
+            setImp(node, 'min-height', vhCheck + 'px');
+            syncBoxSize();
+          }
+        }
+      } catch (eHl) {}
+    };
+    healGeometry();
+    NOTICE_MODAL.healTimer = setTimeout(function () {
+      NOTICE_MODAL.healTimer = null;
+      healGeometry();
+    }, 120);
     NOTICE_MODAL.onResize = syncBoxSize;
     try { if (HOST && HOST.addEventListener) HOST.addEventListener('resize', syncBoxSize); } catch (eRs0) {}
-    try { if (HOST && HOST.visualViewport && HOST.visualViewport.addEventListener) HOST.visualViewport.addEventListener('resize', syncBoxSize); } catch (eRs1) {}
+    try {
+      if (HOST && HOST.visualViewport && HOST.visualViewport.addEventListener) {
+        HOST.visualViewport.addEventListener('resize', syncBoxSize);
+        HOST.visualViewport.addEventListener('scroll', syncBoxSize);
+      }
+    } catch (eRs1) {}
 
     var syncBtn = function () {
       try {
