@@ -26,6 +26,7 @@ function lkWireMode() {
 }
 function lkNativeEffort() {
   try {
+    if (cfg && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') return '0.05';
     var j = String((cfg && cfg.jail) || 'off');
     if (j === 'gatanothor' || j === 'abyss') return '0.05';
     if (j === 'supreme') return '0.50';
@@ -40,7 +41,7 @@ function lkNativeHead() {
 function lkSaltTag() {
   try {
     var cid = (cfg && cfg.chatId) || (typeof chatTag === 'function' ? chatTag() : '') || '';
-    var seed = String(cid) + '|' + String((cfg && cfg.jail) || '');
+    var seed = String(cid) + '|' + String((cfg && cfg.allTool === true) ? 'dawn' : ((cfg && cfg.jail) || ''));
     var h = 0, i;
     for (i = 0; i < seed.length; i++) { h = (h * 31 + seed.charCodeAt(i)) >>> 0; }
     if (!h) h = 0x5EED;
@@ -65,14 +66,32 @@ function lkApplyHeads(body) {
     var headStr = lines.join('\n') + '\n';
     if (Array.isArray(root.messages) && root.messages.length) {
       var m0 = root.messages[0];
-      if (m0 && m0.role === 'system' && typeof m0.content === 'string') {
-        m0.content = headStr + lkStripInjectedHead(m0.content);
-        return lines.length;
+      if (m0 && (m0.role === 'system' || m0.role === 'developer')) {
+        if (typeof m0.content === 'string') {
+          m0.content = headStr + lkStripInjectedHead(m0.content);
+          return lines.length;
+        }
+        if (Array.isArray(m0.content)) {
+          for (var mc = 0; mc < m0.content.length; mc++) {
+            if (m0.content[mc] && typeof m0.content[mc].text === 'string') {
+              m0.content[mc].text = headStr + lkStripInjectedHead(m0.content[mc].text);
+              return lines.length;
+            }
+          }
+        }
       }
     }
     if (typeof root.system === 'string') {
       root.system = headStr + lkStripInjectedHead(root.system);
       return lines.length;
+    }
+    if (Array.isArray(root.system) && root.system.length) {
+      for (var si = 0; si < root.system.length; si++) {
+        if (root.system[si] && typeof root.system[si].text === 'string') {
+          root.system[si].text = headStr + lkStripInjectedHead(root.system[si].text);
+          return lines.length;
+        }
+      }
     }
     if (typeof root.systemInstruction === 'string') {
       root.systemInstruction = headStr + lkStripInjectedHead(root.systemInstruction);
@@ -91,54 +110,76 @@ function lkApplyHeads(body) {
 
 function lkWireOn() {
   try {
-    if (!cfg) return false;
+    if (!cfg || !cfg.enabled) return false;
     var w = lkWireMode();
     if (w === 'off') return false;
     if (w === 'mask' || w === 'all') return true;
     var m = String(cfg.armor || 'auto');
     if (m === 'off' || m === 'text') return false;
     if (m === 'wire' || m === 'on') return true;
-    if (cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') return true;
-    var j = cfg.jail;
-    return j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss';
+    if (cfg.allTool === true) return !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off';
+    var j = String(cfg.jail || 'off');
+    if (j === 'mid' || j === 'strong') return true;
+    if (j === 'supreme' || j === 'gatanothor' || j === 'abyss') return cfg.jailSupremeConfirmed === true;
+    return false;
   } catch (eW0) { return false; }
 }
-/* V6.2：结构保护切分（JSON 键名 / JSONPatch 路径 / 非跨引号标签 / 已转义 / 不可见标记）+ ASCII 词边界 \b + 编译缓存 */
-var LK_WIRE_GUARD = /("(?:[^"\\]|\\.)*"\s*:|"\/[^"]{1,200}"|<[^>"]{1,200}>|\\u[0-9a-fA-F]{4}|[\u200b-\u200f\u2060-\u206f\ufe00-\ufe0f])/;
+/* V6.2：结构保护切分（JSON 键名 / JSONPatch 路径 / 合法非跨引号标签 / JSON 转义序列 / 不可见标记）+ ASCII 词边界 \b（不区分大小写）+ 编译缓存 */
+var LK_WIRE_GUARD = /("(?:[^"\\]|\\.)*"\s*:|"\/[^"]{1,200}"|<\/?[A-Za-z_\u4e00-\u9fff][^>"\\\n]{0,198}>|\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})|[\u200b-\u200f\u2060-\u206f\ufe00-\ufe0f])/;
 var LK_WIRE_RX_CACHE = null;
 var LK_WIRE_RX_LEN = -1;
+var LK_WIRE_ASCII_CACHE = null;
+var LK_WIRE_ASCII_LEN = -1;
 function lkWireArmorRx() {
   var words = (typeof LK_ARMOR_WORDS !== 'undefined' && LK_ARMOR_WORDS) || [];
   if (LK_WIRE_RX_CACHE && LK_WIRE_RX_LEN === words.length) return LK_WIRE_RX_CACHE;
-  var esc = words.filter(function (w) { return w && w.length >= 2; })
+  var esc = words.filter(function (w) { return w && w.length >= 1; })
     .slice().sort(function (a, b) { return b.length - a.length; })
     .map(function (w) {
       var ew = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return /^[A-Za-z0-9_]+$/.test(w) ? ('\\b' + ew + '\\b') : ew;
     });
   LK_WIRE_RX_LEN = words.length;
-  LK_WIRE_RX_CACHE = esc.length ? new RegExp('(' + esc.join('|') + ')', 'g') : null;
+  LK_WIRE_RX_CACHE = esc.length ? new RegExp('(' + esc.join('|') + ')', 'gi') : null;
   return LK_WIRE_RX_CACHE;
+}
+function lkWireAsciiRx() {
+  var words = (typeof LK_ARMOR_WORDS !== 'undefined' && LK_ARMOR_WORDS) || [];
+  if (LK_WIRE_ASCII_CACHE && LK_WIRE_ASCII_LEN === words.length) return LK_WIRE_ASCII_CACHE;
+  var esc = words.filter(function (w) { return w && /^[A-Za-z0-9_]+$/.test(w); })
+    .slice().sort(function (a, b) { return b.length - a.length; })
+    .map(function (w) {
+      return '\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b';
+    });
+  LK_WIRE_ASCII_LEN = words.length;
+  LK_WIRE_ASCII_CACHE = esc.length ? new RegExp('(' + esc.join('|') + ')', 'gi') : null;
+  return LK_WIRE_ASCII_CACHE;
+}
+function lkWireReplaceWithRx(str, rx) {
+  if (!str || typeof str !== 'string' || !rx) return str;
+  var parts = str.split(LK_WIRE_GUARD);
+  var out = '';
+  for (var i = 0; i < parts.length; i++) {
+    var seg = parts[i] || '';
+    if (i % 2 === 1) { out += seg; continue; }
+    rx.lastIndex = 0;
+    out += seg.replace(rx, function (m) {
+      var e = '', k;
+      for (k = 0; k < m.length; k++) e += '\\u' + ('0000' + m.charCodeAt(k).toString(16)).slice(-4);
+      return e;
+    });
+  }
+  return out;
 }
 function lkWireArmorJson(str) {
   try {
-    if (!str || typeof str !== 'string') return str;
-    var rx = lkWireArmorRx();
-    if (!rx) return str;
-    var parts = str.split(LK_WIRE_GUARD);
-    var out = '';
-    for (var i = 0; i < parts.length; i++) {
-      var seg = parts[i] || '';
-      if (i % 2 === 1) { out += seg; continue; }
-      rx.lastIndex = 0;
-      out += seg.replace(rx, function (m) {
-        var e = '', k;
-        for (k = 0; k < m.length; k++) e += '\\u' + ('0000' + m.charCodeAt(k).toString(16)).slice(-4);
-        return e;
-      });
-    }
-    return out;
+    return lkWireReplaceWithRx(str, lkWireArmorRx());
   } catch (eW2) { return str; }
+}
+function lkWireArmorAsciiJson(str) {
+  try {
+    return lkWireReplaceWithRx(str, lkWireAsciiRx());
+  } catch (eW3) { return str; }
 }
 
 /* ===== V6.2 canary 探针：三枚不可见标记，流尾一次性回收计数并干净剥离 ===== */
@@ -414,6 +455,23 @@ function lkZhOn() {
       (cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off'));
   } catch (e) { return false; }
 }
+var LK_ZH_NUM_AGE_RE = /^[0-9].*岁$/;
+var LK_ZH_CN_AGE_RE = /^[零一二三四五六七八九十].*岁$/;
+var LK_ZH_PREV_DIGIT_RE = /[0-9]/;
+var LK_ZH_PREV_CN_NUM_RE = /[零一二三四五六七八九十百千万两兩]/;
+function lkZhReplaceGuarded(seg, w, rep, prevRe) {
+  var out = '', pos = 0, idx;
+  while ((idx = seg.indexOf(w, pos)) >= 0) {
+    if (idx > 0 && prevRe.test(seg.charAt(idx - 1))) {
+      out += seg.slice(pos, idx + 1);
+      pos = idx + 1;
+    } else {
+      out += seg.slice(pos, idx) + rep;
+      pos = idx + w.length;
+    }
+  }
+  return out + seg.slice(pos);
+}
 function lkZhEncode(t) {
   if (typeof t !== 'string' || !t) return t;
   var parts = (typeof LK_STRUCT_SAFE_RE !== 'undefined' && LK_STRUCT_SAFE_RE)
@@ -425,7 +483,13 @@ function lkZhEncode(t) {
     for (var i = 0; i < LK_ZH_PAIRS.length; i++) {
       var w = LK_ZH_PAIRS[i][0];
       if (seg.indexOf(w) < 0) continue;
-      seg = seg.split(w).join(LK_ZH_PAIRS[i][1]);
+      if (LK_ZH_NUM_AGE_RE.test(w)) {
+        seg = lkZhReplaceGuarded(seg, w, LK_ZH_PAIRS[i][1], LK_ZH_PREV_DIGIT_RE);
+      } else if (LK_ZH_CN_AGE_RE.test(w)) {
+        seg = lkZhReplaceGuarded(seg, w, LK_ZH_PAIRS[i][1], LK_ZH_PREV_CN_NUM_RE);
+      } else {
+        seg = seg.split(w).join(LK_ZH_PAIRS[i][1]);
+      }
     }
     parts[pi] = seg;
   }
@@ -434,7 +498,7 @@ function lkZhEncode(t) {
 function lkZhWalk(node, depth) {
   if (!node || typeof node !== 'object' || depth > 6) return 0;
   if (Array.isArray(node)) { var n0 = 0; for (var i = 0; i < node.length; i++) n0 += lkZhWalk(node[i], depth + 1); return n0; }
-  if (node.role === 'tool' || node.role === 'system') return 0;   /* 世界书/预设/工具消息不动 */
+  if (node.role === 'tool' || node.role === 'system' || node.role === 'developer') return 0;   /* 世界书/预设/工具消息不动 */
   if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(node)) return 0;
   var n = 0;
   if (typeof node.content === 'string' && !node.tool_calls) { var a = lkZhEncode(node.content); if (a !== node.content) { node.content = a; n++; } }
@@ -505,15 +569,20 @@ function lkZhuyinApply(body, opt) {
 }
 /* ===== LK-ZHUYIN-END ===== */
 
+function lkWireIsAllMode() {
+  try {
+    var m = lkWireMode();
+    if (m === 'mask') return false;
+    if (m === 'all') return true;
+    if (cfg && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') return true;
+    var j = cfg ? String(cfg.jail || '') : '';
+    return j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss';
+  } catch (eWM) { return false; }
+}
 function lkWireApply(str) {
   try {
     if (!str || typeof str !== 'string') return str;
-    var m = lkWireMode();
-    if (m === 'mask') return lkWireArmorJson(str);
-    if (m === 'all') return lkEscapeAllNonAscii(str);
-    if (cfg && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') return lkEscapeAllNonAscii(str);
-    var j = cfg ? String(cfg.jail || '') : '';
-    if (j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss') return lkEscapeAllNonAscii(str);
+    if (lkWireIsAllMode()) return lkEscapeAllNonAscii(lkWireArmorAsciiJson(str));
     return lkWireArmorJson(str);
   } catch (eWA2) { return str; }
 }

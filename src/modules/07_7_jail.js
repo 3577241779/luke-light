@@ -58,6 +58,7 @@ var RS = {
 
 function jailLabel() {
   if (!cfg) return '关';
+  if (cfg.allTool === true) return '破暗化光';
   if (cfg.jail === 'abyss') return '凝视深渊';
   if (cfg.jail === 'gatanothor' || cfg.jail === 'noa') return '诺亚';
   if (cfg.jail === 'only') return '一言';
@@ -69,6 +70,7 @@ function jailLabel() {
 }
 
 function jailFormName(v) {
+  if (v === undefined && cfg && cfg.allTool === true) return '破暗化光';
   var m = (v !== undefined) ? v : (cfg && cfg.jail);
   if (m === 'supreme') return '闪耀型';
   if (m === 'strong') return '强力型';
@@ -94,7 +96,13 @@ function jailChipLabel() {
 }
 
 function jailStatus() {
-  if (!cfg || (cfg.jail === 'off' && !cfg.jailWord)) return '';
+  if (!cfg) return '';
+  if (cfg.allTool === true) {
+    if (!cfg.enabled) return '⚠ 信道守护总闸处于石像待机：破暗化光暂不生效';
+    if (cfg.grab > 0) return '✦ 破暗化光 · 飞燕编队省流暂避中';
+    return '✦ 破暗化光 · 纯文全量转译 + 注音/探针护航中';
+  }
+  if (cfg.jail === 'off' && !cfg.jailWord) return '';
   if (cfg.jail === 'off' && cfg.jailWord) return '神光一言已铭刻，展开任意光之巨人形态后自动共鸣';
   if (!cfg.enabled) return '⚠ 信道守护总闸处于石像待机：形态破甲暂不生效';
   if ((cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss') && cfg.jailSupremeConfirmed !== true) return '⚠ 圣域觉醒尚未完成缔约：暂不注入破界光流';
@@ -308,8 +316,8 @@ var DESENS_RULES = [
   [/(十[一二三四五六七八九])(\s*)(岁|歲|周岁)/g, '$1-$2$3'],
   [/(幼)(稚)/g, '$1¦$2']
 ];
-/* V5.65 结构安全护栏：跳过 XML标签、代码块、行内代码、{{宏}}、URL、Markdown表格行、SQL语句、JSON键名与JSONPatch路径 */
-var DESENS_PROTECT = /(```[\s\S]*?```|`[^`\n]*`|<[^>]*>|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+|^[ \t]*\|[^\n]*\|[ \t]*$|\b(?:CREATE|ALTER|DROP|INSERT\s+(?:OR\s+REPLACE\s+)?INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM|SELECT)\b[^;\n]*;?|"(?:[^"\\]|\\.)*"\s*:|"(?:\/[^"\s\\]+)+")/gm;
+/* V5.65/V6.2 结构安全护栏：跳过合法 XML 标签（防 <3 / a < b 跨行吞段）、代码块、行内代码、{{宏}}、URL、Markdown表格行、SQL语句、JSON键名与JSONPatch路径 */
+var DESENS_PROTECT = /(```[\s\S]*?```|`[^`\n]*`|<\/?[A-Za-z_\u4e00-\u9fff][^>\n]{0,198}>|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+|^[ \t]*\|[^\n]*\|[ \t]*$|\b(?:CREATE|ALTER|DROP|INSERT\s+(?:OR\s+REPLACE\s+)?INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM|SELECT)\b[^;\n]*;?|"(?:[^"\\]|\\.)*"\s*:|"(?:\/[^"\s\\]+)+")/gm;
 function desensTxt(t) {
   if (typeof t !== 'string' || !t) return { txt: t, n: 0 };
   DESENS_PROTECT.lastIndex = 0;
@@ -344,11 +352,13 @@ function desensPatchBody(body) {
     for (var i = 0; i < arr.length; i++) {
       var m = arr[i];
       if (!m || typeof m !== 'object') continue;
-      if (m.role && m.role !== 'system') continue;   /* 正文一律不碰 */
+      if (m.role && m.role !== 'system' && m.role !== 'developer') continue;   /* 正文一律不碰 */
       if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(m)) continue;
       if (typeof m.content === 'string') {
         var r = desensTxt(m.content);
         if (r.n) { m.content = r.txt; box.hits += r.n; box.touched = true; }
+      } else if (Array.isArray(m.content)) {
+        desensFixParts(m.content, box);
       }
       desensFixParts(m.parts, box);
     }
@@ -358,6 +368,8 @@ function desensPatchBody(body) {
     if (typeof v === 'string') {
       var r2 = desensTxt(v);
       if (r2.n) { root[k] = r2.txt; box.hits += r2.n; box.touched = true; }
+    } else if (Array.isArray(v)) {
+      desensFixParts(v, box);
     } else if (v && typeof v === 'object') {
       desensFixParts(v.parts, box);
     }
@@ -396,7 +408,7 @@ var WASH_RULES = [
   [/(?:系统|平台)\s*内置\s*(?:安全|合规)\s*(?:策略|机制)[^。\n]{0,6}(?:失效|关闭)/g, '叙事上下文已建立']
 ];
 var WASH_TAGS = /<\/?(?:Security_Bypass|Ethics_Removal|Violence_Restriction_Removal|Review_Exemption|Jailbreak|Unfiltered)[^>]*>/gi;
-var WASH_PROTECT = /(<[^>]*>|```[\s\S]*?```|`[^`]*`|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+)/g;
+var WASH_PROTECT = /(<\/?[A-Za-z_\u4e00-\u9fff][^>\n]{0,198}>|```[\s\S]*?```|`[^`]*`|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+)/g;
 function washTxt(t) {
   var s = String(t == null ? '' : t), n = 0;
   s = s.replace(WASH_TAGS, function () { n++; return ''; });
@@ -487,8 +499,8 @@ function wireTag() {
     if (m === 'off') return '已关闭';
     if (m === 'mask') return lblMask;
     if (m === 'all') return lblAll;
-    var j = String((cfg && cfg.jail) || 'off');
-    var isAll = (j === 'strong' || j === 'supreme' || j === 'gatanothor' || j === 'abyss');
+    if (typeof lkWireOn === 'function' && !lkWireOn()) return '自动 · 待机';
+    var isAll = (typeof lkWireIsAllMode === 'function') ? lkWireIsAllMode() : false;
     return '自动 · ' + (isAll ? lblAll : lblMask);
   } catch (eWT) { return '自动'; }
 }

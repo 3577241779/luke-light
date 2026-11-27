@@ -1473,8 +1473,9 @@ function runSelfTest() {
     } finally { cfg.jail = oldJ; cfg.jailSupremeConfirmed = oldC; cfg.enabled = oldE; }
   });
   T('T67 V5.4 面板：五档 + 诺亚/凝视深渊双殿堂大键 + 仪式弹窗焕新', function () {
-    var oldJ = cfg.jail;
+    var oldJ = cfg.jail, oldAll = cfg.allTool;
     try {
+      cfg.allTool = false;
       cfg.jail = 'strong'; var h1 = uiJailHTML();
       var fiveOk = h1.indexOf('石像待机') >= 0 && h1.indexOf('闪耀型') >= 0;
       var ultOk = h1.indexOf('tier:gatanothor') > 0 && h1.indexOf('tier:abyss') > 0 &&
@@ -1491,7 +1492,7 @@ function runSelfTest() {
         cardA.indexOf('凝视深渊') > 0 && cardA.indexOf('融入黑暗') > 0;
       var askOk = typeof lkUltAsk === 'function';
       return fiveOk && ultOk && noSub && noTool && noWord && selOk && cardOk && askOk;
-    } finally { cfg.jail = oldJ; }
+    } finally { cfg.jail = oldJ; cfg.allTool = oldAll; }
   });
 
   T('T68 V5.21 归一化：零宽剥净、间隔符收敛、正文标点不动', function () {
@@ -1742,17 +1743,19 @@ function runSelfTest() {
     return o1.indexOf('正文正文') < 0 && o1.indexOf('tool_calls') > 0 && o2 === s2;
   });
 
-  T('T96 V5.26/V5.78 护甲分层：常规高档走透明传输护甲，终极两档叠字面护甲', function () {
-    var o = cfg.jail, oa = cfg.armor, ow = cfg.wire, oAll = cfg.allTool;
+  T('T96 V5.26/V6.2 护甲分层：复合/强力走透明传输护甲，终极两档与破暗化光叠字面护甲', function () {
+    var o = cfg.jail, oa = cfg.armor, ow = cfg.wire, oAll = cfg.allTool, oe = cfg.enabled, oc = cfg.jailSupremeConfirmed, og = cfg.grab, ojt = cfg.jailTool;
     try {
-      cfg.armor = 'auto'; cfg.wire = 'auto'; cfg.allTool = false;
+      cfg.enabled = true; cfg.armor = 'auto'; cfg.wire = 'auto'; cfg.allTool = false; cfg.jailSupremeConfirmed = true; cfg.grab = 0; cfg.jailTool = 'off';
       cfg.jail = 'mid'; var a = lkArmorOn(), wa = lkWireOn();
       cfg.jail = 'strong'; var b = lkArmorOn(), wb = lkWireOn();
       cfg.jail = 'abyss'; var c = lkArmorOn(), wc = lkWireOn();
       cfg.jail = 'off'; var d = lkArmorOn(), wd = lkWireOn();
-      return a === false && wa === false && b === false && wb === true &&
-        c === true && wc === true && d === false && wd === false;
-    } finally { cfg.jail = o; cfg.armor = oa; cfg.wire = ow; cfg.allTool = oAll; }
+      cfg.allTool = true; var e = lkArmorOn(), we = lkWireOn();
+      return a === false && wa === true && b === false && wb === true &&
+        c === true && wc === true && d === false && wd === false &&
+        e === true && we === true;
+    } finally { cfg.jail = o; cfg.armor = oa; cfg.wire = ow; cfg.allTool = oAll; cfg.enabled = oe; cfg.jailSupremeConfirmed = oc; cfg.grab = og; cfg.jailTool = ojt; }
   });
 
 
@@ -1910,7 +1913,7 @@ function runSelfTest() {
         expectRewrite: false }
     ];
     try {
-      cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'strong', jailSupremeConfirmed: true, jailWord: true, toolChan: 'off', refract: 'off' });
+      cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'strong', allTool: false, jailSupremeConfirmed: true, jailWord: true, toolChan: 'off', refract: 'off' });
       for (var i = 0; i < cases.length; i++) {
         var raw = JSON.stringify(cases[i].body);
         var r1 = planRequest(raw, cases[i].url, false);
@@ -2085,7 +2088,7 @@ function runSelfTest() {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx, oldAll = cfg.allTool;
     try {
       cfg.allTool = false;
-      if (VERSION !== '6.2') throw new Error('VERSION 应为 6.2，实际 ' + VERSION);
+      if (VERSION !== '6.8') throw new Error('VERSION 应为 6.8，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2993,6 +2996,13 @@ var AR6_API = {
   lkDawnAsk: lkDawnAsk,
   lkDawnHTML: lkDawnHTML,
   lkVisualTier: lkVisualTier,
+  uiTierMeta: uiTierMeta,
+  ar6NormActKey: ar6NormActKey,
+  focusKeyHit: focusKeyHit,
+  focusBack: focusBack,
+  lkNativeEffort: lkNativeEffort,
+  wireTag: wireTag,
+  readCfg: readCfg,
   jailSupremeText: JAIL_SUPREME_TEXT,
   thinkApply: thinkApply,
   thinkTag: thinkTag,
@@ -3481,6 +3491,20 @@ var AR6_API = {
   isNoticeAcked: (typeof isNoticeAcked === 'function') ? isNoticeAcked : null,
   openNoticeModal: (typeof openNoticeModal === 'function') ? openNoticeModal : null,
   closeNoticeModal: (typeof closeNoticeModal === 'function') ? closeNoticeModal : null,
+  /* ---- V6.2 转码与护甲测试导出 ---- */
+  lkWireIsAllMode: (typeof lkWireIsAllMode === 'function') ? lkWireIsAllMode : null,
+  lkWireArmorAsciiJson: (typeof lkWireArmorAsciiJson === 'function') ? lkWireArmorAsciiJson : null,
+  lkApplyHeads: (typeof lkApplyHeads === 'function') ? lkApplyHeads : null,
+  modelOutOfScope: (typeof modelOutOfScope === 'function') ? modelOutOfScope : null,
+  lkCreateFieldUnmasker: (typeof lkCreateFieldUnmasker === 'function') ? lkCreateFieldUnmasker : null,
+  lkCreateArmorStream: (typeof lkCreateArmorStream === 'function') ? lkCreateArmorStream : null,
+  lkArmorFeed: (typeof lkArmorFeed === 'function') ? lkArmorFeed : null,
+  lkMarsOn: (typeof lkMarsOn === 'function') ? lkMarsOn : null,
+  lkMarsCode: (typeof lkMarsCode === 'function') ? lkMarsCode : null,
+  lkMarsApplyText: (typeof lkMarsApplyText === 'function') ? lkMarsApplyText : null,
+  lkMarsRestore: (typeof lkMarsRestore === 'function') ? lkMarsRestore : null,
+  lkMarsBody: (typeof lkMarsBody === 'function') ? lkMarsBody : null,
+  getArmorBusy: function () { return (typeof LK_ARMOR_BUSY !== 'undefined') ? !!LK_ARMOR_BUSY : false; },
   /* ---- 导出表 ---- */
 };
 try { if (typeof globalThis !== 'undefined') globalThis.__AR6__ = AR6_API; } catch (e) {}

@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist';
-const CHANGELOG_LATEST = 'V6.2 · 破暗化光纯文全量转译重构 + 540 词注音层与流尾完整性探针加固：破暗化光（allTool）彻底切换为纯文全量 \\uXXXX 透明转译 + 注音/探针护航（不走工具通道、根治脑裂冲突、完整保留暗转明闪耀仪式与 10 皮肤联动）；接入 540 词注音层（修复 5 处错拼、加 LK_STRUCT_SAFE_RE 结构护栏与仅命中附加说明、消除深渊 4 倍复制）；重构三枚零宽探针至流尾一次性回收并干净剥离（支持 desens=off 与 Gemini 原生 contents）；修复透明护甲 ASCII 词边界与跨引号标签保护，并持久化 zhuyin/canary 配置项。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.8/dist';
+const CHANGELOG_LATEST = 'V6.8 · 火星文转译独立按键全 10 套皮肤专属命名适配（☄️ 火星文转译 / 仙篆密文 / 太古异文 / 樱花密语 / 异星密电 / 番邦密诏 / 龙语密符 / 亵渎密文 / 乱码协议）+ ❀Base36❀ 密文端到端与跨分片流式无损还原 + 全 8 档严格单选互斥与转译全链路加固。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -87,10 +87,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V6.2·ST酒馆适配.json',
+    fileName: '卢克之光 V6.8·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V6.2·ST酒馆适配',
-    info: '卢克之光 V6.2「光之守护」· 手机 ST 酒馆适配（破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹）',
+    name: '卢克之光 V6.8·ST酒馆适配',
+    info: '卢克之光 V6.8「光之守护」· 手机 ST 酒馆适配（10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +98,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V6.2·TT酒馆适配.json',
+    fileName: '卢克之光 V6.8·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V6.2·TT酒馆适配',
-    info: '卢克之光 V6.2「光之守护」· TT 酒馆适配（破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / TT 双入口）',
+    name: '卢克之光 V6.8·TT酒馆适配',
+    info: '卢克之光 V6.8「光之守护」· TT 酒馆适配（10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +109,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V6.2·桌面版.json',
+    fileName: '卢克之光 V6.8·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V6.2·桌面版',
-    info: '卢克之光 V6.2「光之守护」· 电脑桌面版（破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
+    name: '卢克之光 V6.8·桌面版',
+    info: '卢克之光 V6.8「光之守护」· 电脑桌面版（10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 凝视深渊协议化输入保护 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

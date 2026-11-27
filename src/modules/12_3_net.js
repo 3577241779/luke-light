@@ -379,18 +379,8 @@ function modelOutOfScope(model, url) {
         if (mode === 'only' && !hit) return true;
       }
     }
-    if (cfg && cfg.onlyGemini !== false) {
-      if (/api\.deepseek\.com|api\.openai\.com|api\.anthropic\.com|api\.siliconflow\.cn|open\.bigmodel\.cn|dashscope\.aliyuncs\.com/.test(u)) {
-        if (!/gemini|argon|carbon|hydrogen|neon|gemma/.test(m)) return true;
-      }
-      /* 只对「不走酒馆后端」的请求按模型名判族：主聊天常被渠道挂别名，
-         真正想吃 Gemini 的请求名里也带 gemini/argon/...；副 API 通常直接给 deepseek 之类。 */
-      if (!/\/api\/backends\/|\/chat-completions\/generate\b/.test(u)) {
-        var fam = familyOf(m);
-        if (fam && fam !== 'google') return true;
-        if (/\bds[-_]|deepseek|^ds$/i.test(m)) return true;
-      }
-    }
+    /* V6.2：onlyGemini 仅用于监测判定与建基线（见 verdictOf / scopeHitGemini），绝不在请求改写前旁路，
+       确保 TT/直连反代上的 Claude / GPT / DeepSeek 照常享受破甲、转码与抗截断，不丢转义 */
   } catch (e) {}
   return false;
 }
@@ -2135,6 +2125,14 @@ function desensSafeCut(s) {
   /* 码点护甲转义半截（\、\\、\u、\u4e、\\u4e2）：跨分片先攥住，绝不放出半截转义 */
   var mArm = /\\{1,2}(?:u[0-9A-Fa-f]{0,3})?$/.exec(s);
   if (mArm) best = Math.min(best, mArm.index);
+  /* V6.7 火星文半截（未闭合的 ❀ 或 ❀A1B）：先屏蔽已完整闭合的 ❀Base36❀，绝不误攥闭合尾花 */
+  if (s.indexOf('\u2740') >= 0) {
+    var sNoMars = s.replace(/\u2740[0-9A-Za-z]{1,6}\u2740/g, function (mm) {
+      return new Array(mm.length + 1).join(' ');
+    });
+    var mMars = /\u2740[0-9A-Za-z]{0,6}$/.exec(sNoMars);
+    if (mMars) best = Math.min(best, mMars.index);
+  }
   return best < 0 ? 0 : best;
 }
 /* V5.72/V6.2：字段级流式还原（只在解析后的 JSON 文本字段上执行，支持脱敏/码点/Canary 零宽探针单次收尾检验与剥离） */
@@ -2143,7 +2141,11 @@ function lkCreateFieldUnmasker(opt) {
   var canaryActive = !!(opt && opt.canary);
   var canaryHits = [false, false, false], canaryTail = '', canaryDone = false;
   var canDesens = function () { return !!(cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false); };
-  var canArmor = function () { return !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function'); };
+  var armorOpt = (opt && typeof opt.armor === 'boolean') ? opt.armor : null;
+  var canArmor = function () {
+    return typeof lkArmorRestore === 'function' &&
+      (armorOpt === true || (armorOpt !== false && typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY));
+  };
   function scanCanary(raw) {
     if (!canaryActive || !raw || typeof LK_CANARY_MARKS === 'undefined') return;
     var joined = canaryTail + raw;
@@ -2156,7 +2158,7 @@ function lkCreateFieldUnmasker(opt) {
     if (!s) return '';
     var out = s;
     if (canDesens()) out = desensRestoreTxt(out);
-    else if (canArmor()) out = lkArmorRestore(out);
+    if (canArmor()) out = lkArmorRestore(out);
     if (canaryActive && typeof lkCanaryStrip === 'function') out = lkCanaryStrip(out);
     return out;
   }
@@ -2382,7 +2384,7 @@ function desensMaybeRestore(res, plan, internal) {
     var ct = '';
     try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eC) {}
     if (ct && !/json|event-stream|text/i.test(ct)) return res;
-    var wrapped = desensWrapResponse(res, { canary: needCanary });
+    var wrapped = desensWrapResponse(res, { canary: needCanary, armor: needArmor });
     if (wrapped !== res && (needDesens || needArmor)) DESENS_FIXED += 1;
     return wrapped;
   } catch (e) { return res; }
@@ -2562,7 +2564,8 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eCt) {}
   var useTool = !!(cfg && cfg.enabled && !internal && (cfg.toolChan === 'on' || (plan && plan.proto)) && plan && plan.tool && res.status >= 200 && res.status < 300);
   var needDesens = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.desens && cfg.desens === 'a' && cfg.desensUnmask !== false);
-  var needArmor = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.armor);
+  var planArmor = !!(cfg && cfg.enabled && !internal && plan && plan.armor);
+  var needArmor = !useTool && planArmor;
   var needCanary = !!(cfg && cfg.enabled && !internal && plan && plan.canary && res.status >= 200 && res.status < 300);
   var useFieldUnmask = !useTool && !!(needDesens || needArmor || needCanary) && (!ct || /json|event-stream|text/i.test(ct));
   if (useFieldUnmask && (needDesens || needArmor)) DESENS_FIXED += 1;
@@ -2584,8 +2587,8 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   var dec = new H.TextDecoder('utf-8');
   var enc = new H.TextEncoder();
   var hbBytes = enc.encode(': keepalive\n\n');
-  var uw = useTool ? toolCreateUnwrapper({ canary: needCanary }) : null;
-  var fum = useFieldUnmask ? lkCreateFieldUnmasker({ canary: needCanary }) : null;
+  var uw = useTool ? toolCreateUnwrapper({ canary: needCanary, armor: planArmor }) : null;
+  var fum = useFieldUnmask ? lkCreateFieldUnmasker({ canary: needCanary, armor: needArmor }) : null;
   var canarySettled = false;
 
   var rawChunks = [], rawBytes = 0, teeChars = 0, outBytes = 0;
@@ -2849,7 +2852,7 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
                 try {
                   var jObj = JSON.parse(lineBuf.trim());
                   if (uw) {
-                    var fixOpt = { canary: needCanary, canaryDone: false };
+                    var fixOpt = { canary: needCanary, armor: planArmor, canaryDone: false };
                     if (!toolFixJson(jObj, fixOpt)) {
                       uw.handleObj(jObj);
                       if (needCanary && !fixOpt.canaryDone) {
@@ -3135,7 +3138,13 @@ function lkTryTok400Clamp(res, args, internal) {
     var a2 = args.slice();
     var ni = {};
     for (var k in args[1]) if (Object.prototype.hasOwnProperty.call(args[1], k)) ni[k] = args[1][k];
-    ni.body = JSON.stringify(lkClampTok(b2, nextCap));
+    var clampedBody = JSON.stringify(lkClampTok(b2, nextCap));
+    try {
+      if (cfg && cfg.enabled && typeof lkWireOn === 'function' && lkWireOn() && typeof lkWireApply === 'function') {
+        clampedBody = lkWireApply(clampedBody);
+      }
+    } catch (eCW) {}
+    ni.body = clampedBody;
     if (AR6_REQ_DONE_SYM) { try { ni[AR6_REQ_DONE_SYM] = true; } catch (eSm) {} }
     if (AR6_FETCH_REENTRY) { try { AR6_FETCH_REENTRY.add(ni); } catch (eAd) {} }
     a2[1] = ni;
@@ -3886,7 +3895,7 @@ function installXhrHook() {
         var u = this.__ar6url || '';
         if (isGenerateUrl(u) && cfg.enabled && typeof body === 'string' && body.trim().charAt(0) === '{') {
           var bodyObj = null; try { bodyObj = JSON.parse(body); } catch (eBody) {}
-          var internal = isInternalRequest(this, bodyObj);
+          var internal = isInternalRequest(this, bodyObj, u);
           var plan = planRequest(body, u, internal);
           if (plan.changed.length && plan.body !== body) { body = plan.body; }
           this.__ar6plan = plan;

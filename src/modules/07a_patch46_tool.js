@@ -1417,14 +1417,16 @@ function toolCreateUnwrapper(opt) {
     return !!(cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false &&
       typeof desensSafeCut === 'function' && typeof desensRestoreTxt === 'function');
   };
+  var armorOpt = (opt && typeof opt.armor === 'boolean') ? opt.armor : null;
   var hasArmor = function () {
-    return !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function');
+    return typeof lkArmorRestore === 'function' &&
+      (armorOpt === true || (armorOpt !== false && typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY));
   };
   function restoreRaw(s) {
     if (!s) return '';
     var out = s;
     if (canUnmask()) out = desensRestoreTxt(out);
-    else if (hasArmor()) out = lkArmorRestore(out);
+    if (hasArmor()) out = lkArmorRestore(out);
     if (canaryActive && typeof lkCanaryStrip === 'function') out = lkCanaryStrip(out);
     return out;
   }
@@ -2120,7 +2122,9 @@ function toolFixJson(obj, opt) {
       }
       if (cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false && typeof desensRestoreTxt === 'function') {
         cleanTxt = desensRestoreTxt(cleanTxt);
-      } else if (typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function') {
+      }
+      var fixArmor = (opt && typeof opt.armor === 'boolean') ? opt.armor : (typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY);
+      if (fixArmor && typeof lkArmorRestore === 'function') {
         cleanTxt = lkArmorRestore(cleanTxt);
       }
       if (opt && opt.canary && typeof lkCanaryStrip === 'function') {
@@ -2277,7 +2281,7 @@ function toolWrapSniff(res, opt) {
                 outEnd = buf;
                 try {
                   var obj = JSON.parse(buf);
-                  var sOpt = { canary: !!(opt && opt.canary), canaryDone: false };
+                  var sOpt = { canary: !!(opt && opt.canary), armor: (opt && typeof opt.armor === 'boolean') ? opt.armor : null, canaryDone: false };
                   if (toolFixJson(obj, sOpt)) outEnd = JSON.stringify(obj);
                   else {
                     if (sOpt.canary && !sOpt.canaryDone) {
@@ -2374,7 +2378,7 @@ function toolMaybeWrap(res, plan, internal) {
     if (!res.body || typeof res.body.getReader !== 'function') return res;
     var ct = '';
     try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eC) {}
-    var wOpt = { canary: !!(plan && plan.canary) };
+    var wOpt = { canary: !!(plan && plan.canary), armor: !!(plan && plan.armor) };
     if (ct && /event-stream/i.test(ct)) return toolWrapStream(res, wOpt);
     if (ct && /\bjson\b/i.test(ct)) return toolWrapJson(res, wOpt);
     return toolWrapSniff(res, wOpt);

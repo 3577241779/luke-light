@@ -822,7 +822,7 @@ function onPanelClick(e) {
       a0 = 'nav:' + a0Node.getAttribute('data-ar6-nav');
     }
     if (a0) {
-      a0 = (typeof ar6NormActKey === 'function') ? ar6NormActKey(a0) : ((a0.indexOf('wsmode:') === 0 || a0.indexOf('prism-') === 0) ? a0 : String(a0).replace(/[:：](?:开|关|on|off|safe|mid|strong|supreme|only|auto|low|medium|high)$/, '').replace(/\s(?:开|关)$/, ''));
+      a0 = (typeof ar6NormActKey === 'function') ? ar6NormActKey(a0) : ((a0.indexOf('wsmode:') === 0 || a0.indexOf('prism-') === 0 || a0.indexOf('tier:') === 0 || a0.indexOf('model:') === 0 || a0.indexOf('scope:') === 0 || a0.indexOf('think:') === 0 || a0.indexOf('gm:') === 0 || a0.indexOf('skin:') === 0 || a0.indexOf('refract:') === 0 || a0.indexOf('probe:') === 0) ? a0 : String(a0).replace(/[:：](?:开|关|听预设|已开启|已关闭|待机|随主闸待机|已挂载|未挂载|已暂停|自动|手动|轻档|中档|\d+次)$/, '').replace(/\s(?:开|关)$/, ''));
       var ty0 = (e && e.type) || 'click';
       var nowT = Date.now();
       if (ty0 === 'click' && LAST_PTR_FIRE_AT && LAST_PTR_FIRE_KEY === a0 && nowT - LAST_PTR_FIRE_AT < 750) return;
@@ -1470,6 +1470,18 @@ function onPanelClick(e) {
       : '计时器光印已关闭（不再注入 Session-ID）', cfg.salt !== 'off' ? (wOffS ? 'warn' : 'ok') : 'gray');
     return;
   }
+  if (act === 'mars:toggle') {
+    cfg.mars = !(cfg && cfg.mars === true);
+    saveCfg(); ensureHooks(); UI_SIG = {}; render();
+    var marsOnTxt = (typeof sk === 'function')
+      ? sk('marsBannerOn', '☄️ 火星文转译已开启：敏感词化作 ❀Base36❀ 星语密文穿透封锁，回包无损还原')
+      : '☄️ 火星文转译已开启：敏感词化作 ❀Base36❀ 星语密文穿透封锁，回包无损还原';
+    var marsOffTxt = (typeof sk === 'function')
+      ? sk('marsBannerOff', '☄️ 火星文转译已关闭：恢复常规传输')
+      : '☄️ 火星文转译已关闭：恢复常规传输';
+    banner(cfg.mars ? marsOnTxt : marsOffTxt, cfg.mars ? 'ok' : 'gray');
+    return;
+  }
   if (act.indexOf('sem:') === 0) {
     var wantSem = act.slice(4);
     cfg.semantic = (wantSem === 'toggle') ? ((typeof lkSemOn === 'function' && lkSemOn()) ? 'off' : 'on') : (wantSem === 'on' ? 'on' : 'off');
@@ -1484,10 +1496,14 @@ function onPanelClick(e) {
     if (turningOn) {
       if (typeof lkDawnAsk === 'function') { lkDawnAsk(); return; }
       cfg.allTool = true;
+      cfg.jail = 'off';
+      cfg.jailSupremeConfirmed = false;
       var allNote = '';
       if (String(cfg.toolChan || 'off') === 'on') { allNote += '武装货舱本轮让位'; }
-      if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
-      if (cfg.toolLoop === true) { cfg.toolLoop = false; allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      if (String(cfg.jailTool || 'off') !== 'off') { allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      if (cfg.toolLoop === true) { allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      cfg.jailTool = 'off';
+      cfg.toolLoop = false;
       if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间破暗化光暂避'; }
       saveCfg(); ensureHooks(); UI_SIG = {}; render();
       try { if (typeof syncPill === 'function') syncPill(); } catch (eSpA) {}
@@ -1496,10 +1512,12 @@ function onPanelClick(e) {
       return;
     }
     cfg.allTool = false;
+    cfg.jail = 'off';
+    cfg.jailSupremeConfirmed = false;
     saveCfg(); ensureHooks(); UI_SIG = {}; render();
     try { if (typeof syncPill === 'function') syncPill(); } catch (eSpB) {}
     try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvB) {}
-    var offMsg = (typeof sk === 'function') ? sk('allToolBannerOff', '破暗化光已收束：恢复当前形态常规通道') : '破暗化光已收束：恢复当前形态常规通道';
+    var offMsg = (typeof sk === 'function') ? sk('allToolBannerOff', '破暗化光已收束：已归位石像待机') : '破暗化光已收束：已归位石像待机';
     banner(offMsg, 'gray');
     return;
   }
@@ -1509,11 +1527,14 @@ function onPanelClick(e) {
     if (want === 'strong') { jailSuperAsk(); return; }
     if (want === 'supreme') { jailSupremeAsk(); return; }
     if (want === 'gatanothor' || want === 'abyss') { lkUltAsk(want); return; }
+    cfg.allTool = false;
     cfg.jail = (want === 'off' ? 'off' : want);
     if (want === 'off') cfg.jailTool = 'off';   /* 形态切回石像待机时工具域破甲一起待机 */
     if (cfg.jail !== 'supreme' && cfg.jail !== 'gatanothor' && cfg.jail !== 'abyss') cfg.jailSupremeConfirmed = false;
     if (cfg.jail !== 'off' && !cfg.observe) cfg.observe = true;
-    saveCfg(); ensureHooks(); render();
+    saveCfg(); ensureHooks(); UI_SIG = {}; render();
+    try { if (typeof syncPill === 'function') syncPill(); } catch (eSpT) {}
+    try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvT) {}
     var spTier = (typeof skinSpec === 'function') ? skinSpec() : null;
     var skTierKey = (want === 'off') ? 'idle' : want;
     var skTierSub = (spTier && spTier.id !== 'ultra' && spTier.tiers && spTier.tiers[skTierKey] && spTier.tiers[skTierKey].sub) ? spTier.tiers[skTierKey].sub : '';

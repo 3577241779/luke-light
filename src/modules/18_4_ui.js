@@ -75,7 +75,7 @@ var CSS_TEXT = [
   '#ar6-root svg.ar6-i{width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important;max-width:14px!important;max-height:14px!important;flex:0 0 14px!important;display:inline-block!important;vertical-align:-2px;fill:none!important;stroke:currentColor!important;stroke-width:1.75!important;stroke-linecap:round!important;stroke-linejoin:round!important;overflow:visible!important;}',
   '#ar6-root .ar6-b svg.ar6-i{width:13px!important;height:13px!important;min-width:13px!important;max-width:13px!important;flex:0 0 13px!important;}',
   /* 触控流畅滚动：严禁在 .ar6-mk 上写 touch-action:none */
-  '#ar6-root button[data-ar6],#ar6-root .ar6-mk{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}',
+  '#ar6-root button[data-ar6],#ar6-root .ar6-mk,#ar6-card button[data-ar6-card]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}',
   '#ar6-root .ar6-p{position:relative;display:flex;flex-direction:column;width:min(540px,calc(100vw - 24px));max-width:100%;min-width:0;height:auto;max-height:min(750px,92vh);overflow:hidden;background:linear-gradient(180deg,#0F182B 0%,#080D18 100%);border:1.5px solid rgba(148,163,184,.42);border-radius:16px;box-shadow:0 0 0 1px rgba(56,189,248,.14),0 24px 64px rgba(2,6,23,.82);color:#F0F9FF;pointer-events:auto;transition:transform .18s cubic-bezier(.2,.8,.2,1),opacity .18s,border-color .24s ease,box-shadow .24s ease,background .24s ease;}',
   '#ar6-root.ar6-mobile .ar6-p{width:calc(100vw - 16px);border-radius:14px;max-height:calc(100% - 16px);}',
   '#ar6-root .ar6-p::before{content:"";position:absolute;top:0;left:0;right:0;height:3.5px;background:linear-gradient(90deg,#38BDF8,#E0F2FE 35%,#FCD34D 68%,#38BDF8);background-size:200% 100%;animation:ar6SpeciumFlow 7s linear infinite;opacity:.96;pointer-events:none;z-index:5;}',
@@ -1111,7 +1111,7 @@ function triggerAwakenFx(tier) {
         '</svg>' +
         (glitSrc ? '<img class="ar6-dawn-sprite' + (glitKeyed ? '' : ' ar6-dawn-raw') + '" data-dawn-sp="glitter" src="' + glitSrc + '" alt="">' : '') +
       '</div>' +
-      '<div class="ar6-dawn-banner"><span>FINAL ODYSSEY · 破暗化光</span>闪耀迪迦归来 · 三路神光分流就绪</div>';
+      '<div class="ar6-dawn-banner"><span>FINAL ODYSSEY · 破暗化光</span>闪耀迪迦归来 · 纯文耀光全量就绪</div>';
       try { if (typeof ar6SfxPlay === 'function') ar6SfxPlay('glitter', false); } catch (eSfxD) {}
     } else if (k === 'noa') {
       /* 诺亚：左右对称舒展的 V 型太古铂银圣翼 SVG + 七彩棱镜斜贯光束 + 银白星尘光环 */
@@ -1315,11 +1315,14 @@ var LAST_PTR_FIRE_X = NaN;
 var LAST_PTR_FIRE_Y = NaN;
 function ar6NormActKey(s) {
   var k = String(s || '');
-  if (k.indexOf('wsmode:') === 0 || k.indexOf('prism-') === 0) return k;
+  if (k.indexOf('wsmode:') === 0 || k.indexOf('prism-') === 0 ||
+      k.indexOf('tier:') === 0 || k.indexOf('model:') === 0 || k.indexOf('scope:') === 0 ||
+      k.indexOf('think:') === 0 || k.indexOf('gm:') === 0 || k.indexOf('skin:') === 0 ||
+      k.indexOf('refract:') === 0 || k.indexOf('probe:') === 0) return k;
   if (k === '● 已开启' || k === '○ 已关闭' || k.indexOf('● 已开启') >= 0) return 'toggle';
   if (k.indexOf('⏸ 暂停重发') === 0 || k.indexOf('⏸ 已暂停') === 0) return 'pvp-pause';
   return k
-    .replace(/[:：](?:开|关|听预设|已开启|已关闭|待机|随主闸待机|已挂载|未挂载|已暂停|自动|手动|轻档|中档|\d+次|on|off|safe|mid|strong|supreme|gatanothor|noa|abyss|only|auto|low|medium|high)$/, '')
+    .replace(/[:：](?:开|关|听预设|已开启|已关闭|待机|随主闸待机|已挂载|未挂载|已暂停|自动|手动|轻档|中档|\d+次)$/, '')
     .replace(/\s(?:开|关)$/, '');
 }
 function bindDirect(r) {

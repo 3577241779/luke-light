@@ -1,11 +1,11 @@
 /* ===== 1_core.js ===== */
 /* ============================================================================
- * Anti-Route v6.2 — 1/4 Core
+ * Anti-Route v6.8 — 1/4 Core
  * 宿主 / 存储 / 模型归一化 / 保护区 / 静态区选择
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '6.2';
+var VERSION = '6.8';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -92,6 +92,7 @@ var CFG_DEFAULT = {
   wire: 'auto', /* off/mask/all/auto：mask=65 词表，all=整包字符串全量 \uXXXX，auto=强力档以上全量、复合型词表 */
   salt: 'auto', /* off/auto：会话盐 */
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
+  mars: false, /* V6.7 火星文转译：将敏感词转为 ❀Base36❀ 密文穿透代理，回包实时无损还原 */
   zhuyin: 'auto', /* V6.2 注音层：auto（深渊/破暗化光自动启用）| on | off */
   canary: 'auto', /* V6.2 探针：auto（深渊/破暗化光自动启用）| on | off */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
@@ -497,6 +498,9 @@ function readCfg() {
   d.allTool = d.allTool === true;
   d.zhuyin = ar6Pick(d.zhuyin, ['auto', 'on', 'off'], 'auto');
   d.canary = ar6Pick(d.canary, ['auto', 'on', 'off'], 'auto');
+  d.wire = ar6Pick(d.wire, ['off', 'mask', 'all', 'auto'], 'auto');
+  d.armor = ar6Pick(d.armor, ['off', 'on', 'auto', 'wire', 'text'], 'auto');
+  d.mars = d.mars === true;
   d.toolLoop = d.toolLoop === true;
   d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');
@@ -524,6 +528,10 @@ function readCfg() {
   d.jailWord = d.jailWord === true;
   d.updAuto = d.updAuto !== false;
   d.jailSupremeConfirmed = d.jailSupremeConfirmed === true;
+  if (d.allTool === true) {
+    d.jail = 'off';
+    d.jailSupremeConfirmed = false;
+  }
   d.jailSafe = d.jailSafe === true;
   try { delete d.jailHdr; delete d.jailHdrOn; } catch (eJH) {}
   d.silent = d.silent === true;

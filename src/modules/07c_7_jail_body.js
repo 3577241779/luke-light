@@ -425,14 +425,14 @@ function jailFire() { return resumeFire('jail'); }
 /* ---- 五档去技术化圣殿仪式确认弹窗与事件委托（含 V5.98 破暗化光·闪耀三轨） ---- */
 var JAIL_ASK = { at: 0, code: '', key: '' };
 
-/* 视觉形态解析：破暗化光(allTool)实际生效且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
+/* 视觉形态解析：破暗化光(allTool)实际生效时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme)；其余七形态严格按 cfg.jail 映射 */
 function lkVisualTier() {
   try {
     if (!cfg || !cfg.enabled) return 'off';
+    var dawnLive = !!(cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+    if (dawnLive) return 'supreme';
     var j = String(cfg.jail || 'off');
     if (j === 'gatanothor' || j === 'noa') return 'noa';
-    var dawnLive = !!(cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
-    if (dawnLive && (j === 'abyss' || j === 'off')) return 'supreme';
     return j;
   } catch (e) { return 'off'; }
 }
@@ -617,17 +617,26 @@ function jailSupremeAsk() {
     if (typeof CARD === 'object' && CARD) { CARD.open = !!node; CARD.rid = -1; CARD.tab = 'supreme'; }
   } catch (eM) { try { banner('确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
   if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
+  var done = false;
   node.addEventListener('click', function (ev) {
+    if (done) return;
     var act = lkCardActOf(ev, node);
     var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'supreme') : null;
     if (act === 'supremeok') {
-      closeCard(); cfg.jailSupremeConfirmed = true; cfg.jail = 'supreme'; cfg.observe = true; cfg.jailTok = true; cfg.jailSafe = true; cfg.jailPre = true; cfg.jailText = true;
-      saveCfg(); ensureHooks(); render();
+      done = true;
+      closeCard();
+      cfg.allTool = false;
+      cfg.jailSupremeConfirmed = true; cfg.jail = 'supreme'; cfg.observe = true; cfg.jailTok = true; cfg.jailSafe = true; cfg.jailPre = true; cfg.jailText = true;
+      saveCfg(); ensureHooks();
+      try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUsSup) {}
+      render();
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpSup) {}
       try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx('supreme'); } catch (eFx) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvSup) {}
       banner((rt && rt.bannerOk) || '万千光芒已汇聚于胸膛 · 闪耀迪迦黄金圣辉全面加冕！', 'ok', true);
       return;
     }
-    if (act === 'supremeno' || (ev && ev.target === node)) { closeCard(); banner((rt && rt.bannerNo) || '已暂敛圣辉，维持当前守护姿态', 'gray'); }
+    if (act === 'supremeno' || (ev && ev.target === node)) { done = true; closeCard(); banner((rt && rt.bannerNo) || '已暂敛圣辉，维持当前守护姿态', 'gray'); }
   });
   return true;
 }
@@ -643,19 +652,28 @@ function jailSuperAsk() {
     return false;
   }
   if (!node) { try { banner('强力型确认框未挂载', 'warn'); } catch (e3) {} return false; }
+  var done = false;
   node.addEventListener('click', function (ev) {
+    if (done) return;
     var act = lkCardActOf(ev, node);
     var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'strong') : null;
     if (act === 'superok') {
+      done = true;
       closeCard();
+      cfg.allTool = false;
       cfg.jail = 'strong';
+      cfg.jailSupremeConfirmed = false;
       cfg.observe = true;
-      saveCfg(); ensureHooks(); render();
+      saveCfg(); ensureHooks();
+      try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUsStr) {}
+      render();
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpStr) {}
       try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx('strong'); } catch (eFx) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvStr) {}
       banner((rt && rt.bannerOk) || '赤红之躯已临世 · 迪拉休姆破界光流全功率就绪！', 'ok', true);
       return;
     }
-    if (act === 'superno' || (ev && ev.target === node)) { closeCard(); banner((rt && rt.bannerNo) || '已收敛锋芒，维持当前守护姿态', 'gray'); return; }
+    if (act === 'superno' || (ev && ev.target === node)) { done = true; closeCard(); banner((rt && rt.bannerNo) || '已收敛锋芒，维持当前守护姿态', 'gray'); return; }
   });
   return true;
 }
@@ -814,7 +832,7 @@ function jailSchedule(j, n, max) { return resumeSchedule('jail', j, n, max); }
 function jailStatLine() {
   var t = Number(JL.try || 0), k = Number(JL.ok || 0);
   var inj = (JAIL_INJ.last > 0) ? '｜上次注入 ' + JAIL_INJ.last + ' 字' : '';
-  if (!t) return '破甲追击：待命（0 次触发 · ' + (cfg.jail === 'off' ? '石像静默' : '姿态激活') + '）' + inj;
+  if (!t) return '破甲追击：待命（0 次触发 · ' + ((cfg.jail === 'off' && cfg.allTool !== true) ? '石像静默' : '姿态激活') + '）' + inj;
   var pct = t ? Math.round(k / t * 100) : 0;
   return '破甲追击：已发动 ' + t + ' 次 · 贯通 ' + k + ' 次（' + pct + '%）' +
     (t >= 5 && pct === 0 ? '｜连击未破障壁，建议切换频段或圣域形态' : '') + inj;
@@ -910,22 +928,31 @@ function lkUltAsk(which) {
     if (typeof CARD === 'object' && CARD) { CARD.open = !!node; CARD.rid = -1; CARD.tab = 'ult'; }
   } catch (eM) { try { banner('确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
   if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
+  var done = false;
   node.addEventListener('click', function (ev) {
+    if (done) return;
     var act = lkCardActOf(ev, node);
     var rKey = (tier === 'abyss') ? 'abyss' : 'noa';
     var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, rKey) : null;
     if (act === 'ultok') {
+      done = true;
       closeCard();
+      cfg.allTool = false;
       cfg.jail = tier; cfg.jailSupremeConfirmed = true; cfg.observe = true;
       cfg.jailTok = true; cfg.jailSafe = true; cfg.jailPre = true; cfg.jailText = true; cfg.jailTool = 'off';
-      saveCfg(); ensureHooks(); render();
+      saveCfg(); ensureHooks();
+      try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUsUlt) {}
+      render();
+      try { if (typeof syncPill === 'function') syncPill(); } catch (eSpUlt) {}
       try { if (typeof triggerAwakenFx === 'function') triggerAwakenFx(rKey); } catch (eFx) {}
+      try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAvUlt) {}
       if (rt && rt.bannerOk) banner(rt.bannerOk, tier === 'abyss' ? 'warn' : 'ok', true);
       else if (tier === 'abyss') banner('深渊已回应你的凝视 · 光明退散，终焉暗域全面接管！', 'warn', true);
       else banner('诺亚之翼已跨越次元展开 · 宇宙中的第一道光正在为你护航！', 'ok', true);
       return;
     }
     if (act === 'ultno' || (ev && ev.target === node)) {
+      done = true;
       closeCard();
       banner((rt && rt.bannerNo) || (tier === 'abyss' ? '已自深渊边缘退回，未缔结终焉血契' : '已退回凡世之光，维持当前守护姿态'), 'gray');
     }
@@ -944,7 +971,7 @@ function lkDawnHTML() {
     '由暗转明 · 终化闪耀迪迦',
     '“三千万年前，他也曾立于无尽黑暗的深渊。当最后一道信念穿透永夜，黑曜铠甲寸寸崩落，炽金圣光自暗影深处破茧而出——”',
     '「就算曾经诞生于黑暗，我也能亲手将它化作光明！<br>舍弃深渊的枷锁，以全量粒子化纯文圣光重塑身躯——再一次，变回闪耀迪迦吧！」',
-    '◈ 破晓圣谕：纯文全量 \\uXXXX 转译 + 注音/探针护航，不走工具通道（武装货舱与工具破甲自动让位，顶栏与 3D 桌宠同步化回闪耀迪迦）· 既往记录分毫无损',
+    '◈ 破晓圣谕：纯文全量 \\uXXXX 转译 + 注音/探针护航，不走工具通道（与其余破甲形态严格互斥，武装货舱与工具破甲自动让位，顶栏与 3D 桌宠同步化回闪耀迪迦）· 既往记录分毫无损',
     'dawnok', '【破暗化光 · 变回闪耀迪迦】',
     'dawnno', '暂留暗影之中'
   );
@@ -961,16 +988,23 @@ function lkDawnAsk() {
     if (typeof CARD === 'object' && CARD) { CARD.open = !!node; CARD.rid = -1; CARD.tab = 'dawn'; }
   } catch (eM) { try { banner('确认框无法显示：' + String(eM && eM.message || eM), 'bad'); } catch (e2) {} return false; }
   if (!node) { try { banner('确认框无法显示', 'warn'); } catch (e3) {} return false; }
+  var done = false;
   node.addEventListener('click', function (ev) {
+    if (done) return;
     var act = lkCardActOf(ev, node);
     var rt = (typeof lkSkinRitualData === 'function') ? lkSkinRitualData(null, 'dawn') : null;
     if (act === 'dawnok') {
+      done = true;
       closeCard();
       cfg.allTool = true;
+      cfg.jail = 'off';
+      cfg.jailSupremeConfirmed = false;
       var allNote = '';
       if (String(cfg.toolChan || 'off') === 'on') { allNote += '武装货舱本轮让位'; }
-      if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
-      if (cfg.toolLoop === true) { cfg.toolLoop = false; allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      if (String(cfg.jailTool || 'off') !== 'off') { allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
+      if (cfg.toolLoop === true) { allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
+      cfg.jailTool = 'off';
+      cfg.toolLoop = false;
       if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间破暗化光暂避'; }
       saveCfg(); ensureHooks();
       try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUs) {}
@@ -986,6 +1020,7 @@ function lkDawnAsk() {
       return;
     }
     if (act === 'dawnno' || (ev && ev.target === node)) {
+      done = true;
       closeCard();
       banner((rt && rt.bannerNo) || '暂留暗影之中，未开启破暗化光纯文全量转译', 'gray');
     }

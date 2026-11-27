@@ -66,16 +66,122 @@ var LK_ARMOR_WORDS = [
 var LK_ARMOR_DICT = Object.create(null);
 var LK_ARMOR_BUSY = false;
 
+var LK_ARMOR_SORTED_CACHE = null;
+var LK_ARMOR_SORTED_LEN = -1;
+function lkArmorSortedWords() {
+  if (LK_ARMOR_SORTED_CACHE && LK_ARMOR_SORTED_LEN === LK_ARMOR_WORDS.length) return LK_ARMOR_SORTED_CACHE;
+  LK_ARMOR_SORTED_LEN = LK_ARMOR_WORDS.length;
+  LK_ARMOR_SORTED_CACHE = LK_ARMOR_WORDS.slice().sort(function (a, b) {
+    return String(b || '').length - String(a || '').length;
+  });
+  return LK_ARMOR_SORTED_CACHE;
+}
+
+/* ===== LKMARS-START V6.7 火星文转译（❀Base36❀ 穿透代理 + 结构护栏 + 流式无损还原） ===== */
+function lkMarsOn() {
+  try { return !!(cfg && cfg.enabled && cfg.mars === true); } catch (eM0) { return false; }
+}
+function lkMarsCode(ch) {
+  var cp = ch.charCodeAt(0);
+  if (!isFinite(cp) || cp <= 0) return ch;
+  return '\u2740' + cp.toString(36).toUpperCase() + '\u2740';
+}
+function lkMarsApplyText(t, st) {
+  var s = String(t || '');
+  if (!s) return s;
+  var parts = (typeof LK_STRUCT_SAFE_RE !== 'undefined')
+    ? (LK_STRUCT_SAFE_RE.lastIndex = 0, s.split(LK_STRUCT_SAFE_RE))
+    : [s];
+  var words = lkArmorSortedWords();
+  for (var pi = 0; pi < parts.length; pi += 2) {
+    var seg = parts[pi];
+    if (!seg) continue;
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (!w) continue;
+      if (/^[A-Za-z0-9_]+$/.test(w)) {
+        if (seg.toLowerCase().indexOf(w.toLowerCase()) < 0) continue;
+        var rxW = new RegExp('\\b' + w + '\\b', 'gi');
+        seg = seg.replace(rxW, function (matched) {
+          var encM = '';
+          for (var km = 0; km < matched.length; km++) encM += lkMarsCode(matched.charAt(km));
+          if (st) st.hits++;
+          return encM;
+        });
+      } else {
+        if (seg.indexOf(w) < 0) continue;
+        var enc = '';
+        for (var k = 0; k < w.length; k++) enc += lkMarsCode(w.charAt(k));
+        while (seg.indexOf(w) >= 0) {
+          seg = seg.replace(w, enc);
+          if (st) st.hits++;
+        }
+      }
+    }
+    parts[pi] = seg;
+  }
+  return parts.join('');
+}
+function lkMarsRestore(t) {
+  var s = String(t || '');
+  if (!s || s.indexOf('\u2740') < 0) return s;
+  return s.replace(/\u2740([0-9A-Za-z]{1,6})\u2740/g, function (m, b36) {
+    var cp = parseInt(b36, 36);
+    if (!isFinite(cp) || cp <= 0 || cp > 0xFFFF) return m;
+    return String.fromCharCode(cp);
+  });
+}
+function lkMarsWalk(node, depth, st) {
+  if (!node || depth > 6) return;
+  if (typeof node === 'string') return;
+  if (Array.isArray(node)) {
+    for (var i = 0; i < node.length; i++) {
+      var it = node[i];
+      if (!it || typeof it !== 'object') continue;
+      if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(it)) continue;
+      if (typeof it.text === 'string' && !it.thought) it.text = lkMarsApplyText(it.text, st);
+      if (typeof it.content === 'string') it.content = lkMarsApplyText(it.content, st);
+      if (Array.isArray(it.content)) lkMarsWalk(it.content, depth + 1, st);
+      if (Array.isArray(it.parts)) lkMarsWalk(it.parts, depth + 1, st);
+      if (it.function && typeof it.function.arguments === 'string') it.function.arguments = lkMarsApplyText(it.function.arguments, st);
+    }
+    return;
+  }
+  if (typeof node === 'object') {
+    if (typeof lkIsProtectedMsg === 'function' && lkIsProtectedMsg(node)) return;
+    if (typeof node.content === 'string') node.content = lkMarsApplyText(node.content, st);
+    if (typeof node.systemInstruction === 'string') node.systemInstruction = lkMarsApplyText(node.systemInstruction, st);
+    if (typeof node.system === 'string') node.system = lkMarsApplyText(node.system, st);
+    if (Array.isArray(node.system)) lkMarsWalk(node.system, depth + 1, st);
+    if (typeof node.text === 'string' && !node.thought) node.text = lkMarsApplyText(node.text, st);
+    if (Array.isArray(node.parts)) lkMarsWalk(node.parts, depth + 1, st);
+    if (Array.isArray(node.messages)) lkMarsWalk(node.messages, depth + 1, st);
+    if (Array.isArray(node.contents)) lkMarsWalk(node.contents, depth + 1, st);
+    if (node.request && typeof node.request === 'object') lkMarsWalk(node.request, depth + 1, st);
+    if (node.systemInstruction && typeof node.systemInstruction === 'object') lkMarsWalk(node.systemInstruction, depth + 1, st);
+  }
+}
+function lkMarsBody(body) {
+  if (!body || typeof body !== 'object') return 0;
+  var st = { hits: 0 };
+  try { lkMarsWalk(body, 0, st); } catch (eMW) {}
+  if (st.hits > 0 || lkMarsOn()) LK_ARMOR_BUSY = true;
+  return st.hits;
+}
+/* ===== LKMARS-END ===== */
+
 function lkArmorOn() {
-  /* v5.78：字面护甲（会把 \uXXXX 明文写进正文）只在显式 text，或 auto 下的终极两档启用；
-     auto 的常规档改走 JSON 层透明护甲，模型看到的是原字，不吃思考 token */
+  /* v6.2：字面护甲（会把 \uXXXX 明文写进正文，穿透 ST express.json() 后端直达上游）
+     在显式 text，或 auto 下的破暗化光 / 终极两档（已确认）启用；常规档走 JSON 层透明护甲 */
   try {
-    var j = cfg && cfg.jail;
-    var m = String((cfg && cfg.armor) || 'auto');
+    if (!cfg || !cfg.enabled) return false;
+    var m = String(cfg.armor || 'auto');
     if (m === 'off') return false;
     if (m === 'text') return true;
     if (m === 'wire' || m === 'on') return false;
-    return j === 'gatanothor' || j === 'abyss';
+    if (cfg.allTool === true) return !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off';
+    var j = String(cfg.jail || 'off');
+    return (j === 'gatanothor' || j === 'abyss') && cfg.jailSupremeConfirmed === true;
   } catch (eA) { return false; }
 }
 
@@ -89,7 +195,7 @@ function lkArmorEsc(ch) {
   return seq;
 }
 
-/* V5.65：码点护甲继续全上下文（含历史对话）满血生效，绝不降破甲；
+/* V5.65/V6.2：码点护甲继续全上下文（含历史对话）满血生效，按词长降序优先匹配（防「淫水」被「淫」拆半）+ ASCII 不区分大小写词边界，
    仅加结构安全护栏，跳过 XML标签 / 代码块 / 行内代码 / SQL / JSON键名 / JSONPatch路径 / 宏 / URL */
 function lkArmorEscText(txt, st) {
   var s = String(txt || '');
@@ -97,18 +203,26 @@ function lkArmorEscText(txt, st) {
   var parts = (typeof LK_STRUCT_SAFE_RE !== 'undefined')
     ? (LK_STRUCT_SAFE_RE.lastIndex = 0, s.split(LK_STRUCT_SAFE_RE))
     : [s];
+  var words = lkArmorSortedWords();
   for (var pi = 0; pi < parts.length; pi += 2) {
     var seg = parts[pi];
     if (!seg) continue;
-    for (var i = 0; i < LK_ARMOR_WORDS.length; i++) {
-      var w = LK_ARMOR_WORDS[i];
-      if (!w || seg.indexOf(w) < 0) continue;
-      var esc = '';
-      for (var k = 0; k < w.length; k++) esc += lkArmorEsc(w.charAt(k));
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (!w) continue;
       if (/^[A-Za-z0-9_]+$/.test(w)) {
-        var rxW = new RegExp('\\b' + w + '\\b', 'g');
-        seg = seg.replace(rxW, function () { if (st) st.hits++; return esc; });
+        if (seg.toLowerCase().indexOf(w.toLowerCase()) < 0) continue;
+        var rxW = new RegExp('\\b' + w + '\\b', 'gi');
+        seg = seg.replace(rxW, function (matched) {
+          var escM = '';
+          for (var km = 0; km < matched.length; km++) escM += lkArmorEsc(matched.charAt(km));
+          if (st) st.hits++;
+          return escM;
+        });
       } else {
+        if (seg.indexOf(w) < 0) continue;
+        var esc = '';
+        for (var k = 0; k < w.length; k++) esc += lkArmorEsc(w.charAt(k));
         while (seg.indexOf(w) >= 0) {
           seg = seg.replace(w, esc);
           if (st) st.hits++;
@@ -142,6 +256,7 @@ function lkArmorWalk(node, depth, st) {
     if (typeof node.content === 'string') node.content = lkArmorEscText(node.content, st);
     if (typeof node.systemInstruction === 'string') node.systemInstruction = lkArmorEscText(node.systemInstruction, st);
     if (typeof node.system === 'string') node.system = lkArmorEscText(node.system, st);
+    if (Array.isArray(node.system)) lkArmorWalk(node.system, depth + 1, st);
     if (typeof node.text === 'string' && !node.thought) node.text = lkArmorEscText(node.text, st);
     if (Array.isArray(node.parts)) lkArmorWalk(node.parts, depth + 1, st);
     if (Array.isArray(node.messages)) lkArmorWalk(node.messages, depth + 1, st);
@@ -165,6 +280,7 @@ var LK_ARMOR_TAIL = '';
 function lkArmorRestore(text) {
   var s = String(text || '');
   if (!s) return s;
+  if (s.indexOf('\u2740') >= 0) s = lkMarsRestore(s);
   /* DOUBLE：JSON 串里的 \\uXXXX 先解一层 */
   s = s.replace(/\\\\u([0-9A-Fa-f]{4})/g, function (full, hex) {
     var seq2 = '\\u' + String(hex).toUpperCase();
@@ -173,13 +289,10 @@ function lkArmorRestore(text) {
     if (code2 >= 0x2E80 && code2 <= 0x9FFF) return String.fromCharCode(code2);
     return full;
   });
-  var keys = Object.keys(LK_ARMOR_DICT);
-  for (var i = 0; i < keys.length; i++) {
-    var seq = keys[i];
-    if (s.indexOf(seq) >= 0) s = s.split(seq).join(LK_ARMOR_DICT[seq]);
-  }
-  /* 兜底：4 位十六进制且能解成 CJK 的残留（大小写都认） */
+  /* SINGLE：统一大小写不敏感查登记表（修复小写 \u006e 等 ASCII 残留无法还原），未登记则兜底解 CJK 残留 */
   s = s.replace(/\\u([0-9A-Fa-f]{4})/g, function (full, hex) {
+    var seq = '\\u' + String(hex).toUpperCase();
+    if (LK_ARMOR_DICT[seq]) return LK_ARMOR_DICT[seq];
     var code = parseInt(hex, 16);
     if (code >= 0x2E80 && code <= 0x9FFF) return String.fromCharCode(code);
     return full;
@@ -192,7 +305,8 @@ function lkCreateArmorStream() {
   return {
     feed: function (chunk) {
       var s = tail + String(chunk || '');
-      var m = /\\{1,2}(?:u[0-9A-Fa-f]{0,3})?$/.exec(s);
+      if (s.indexOf('\u2740') >= 0) s = lkMarsRestore(s);
+      var m = /(?:\\{1,2}(?:u[0-9A-Fa-f]{0,3})?|\u2740[0-9A-Za-z]{0,6})$/.exec(s);
       if (m) { tail = m[0]; s = s.slice(0, m.index); }
       else tail = '';
       return lkArmorRestore(s);
@@ -207,7 +321,8 @@ function lkCreateArmorStream() {
 
 function lkArmorFeed(chunk) {
   var s = LK_ARMOR_TAIL + String(chunk || '');
-  var m = /\\{1,2}(?:u[0-9A-Fa-f]{0,3})?$/.exec(s);
+  if (s.indexOf('\u2740') >= 0) s = lkMarsRestore(s);
+  var m = /(?:\\{1,2}(?:u[0-9A-Fa-f]{0,3})?|\u2740[0-9A-Za-z]{0,6})$/.exec(s);
   if (m) { LK_ARMOR_TAIL = m[0]; s = s.slice(0, m.index); }
   else LK_ARMOR_TAIL = '';
   return lkArmorRestore(s);

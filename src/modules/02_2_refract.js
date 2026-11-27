@@ -852,7 +852,12 @@ function planRequest(rawBody, url, internal) {
         }
       } catch (eZh) {}
       try {
-        if (!skipForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
+        if (!skipForPreset && typeof lkMarsOn === 'function' && lkMarsOn() && typeof lkMarsBody === 'function') {
+          var marsHits = lkMarsBody(body);
+          out.armor = true;
+          out.mars = true;
+          if (marsHits > 0) out.changed.push('火星文 ' + marsHits + ' 处');
+        } else if (!skipForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
           var arHits = lkArmorApply(body);
           if (arHits > 0) { out.armor = true; out.changed.push('码点护甲 ' + arHits + ' 处'); }
         }
@@ -863,18 +868,23 @@ function planRequest(rawBody, url, internal) {
       assistantBefore = assistantSnapshot(body);
     } catch (eWash) { criticalWarn('预设话术中和', eWash); }
   }
+  if (!out.armor && typeof LK_ARMOR_BUSY !== 'undefined') LK_ARMOR_BUSY = false;
 
   var wantTool = !!(cfg.jailTool && cfg.jailTool !== 'off');
   var wantJail = (cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss' || cfg.jail === 'only' || (cfg.jail && cfg.jail !== 'off' && cfg.jailWord === true));
   if (cfg.enabled && (wantJail || wantTool)) {
     try {
       var jch = jailPatchBody(body, protoWillRun ? { protoMode: true } : null);
-      for (var jz = 0; jz < jch.length; jz++) out.changed.push(jch[jz]);
+      for (var jz = 0; jz < jch.length; jz++) {
+        out.changed.push(jch[jz]);
+        if (String(jch[jz]).indexOf('已注入确认回合') >= 0) assistantBefore = assistantSnapshot(body);
+      }
     } catch (eJail) { criticalWarn('破甲请求补丁', eJail); }
   }
 
   /* 3.2.7 设定段脱敏（档 A）：在破甲之后、序列化之前跑；只改 system 段，正文不动 */
-  if (cfg.enabled && cfg.desens === 'a' && (cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss')) {
+  var dawnLiveDs = !!(cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  if (cfg.enabled && cfg.desens === 'a' && (dawnLiveDs || cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss')) {
     try {
       var dch = desensPatchBody(body);
       if (dch.length) out.desens = true;
@@ -920,7 +930,7 @@ function planRequest(rawBody, url, internal) {
       var tch2 = toolChanPatch(body, toolMeta);
       for (var t2 = 0; t2 < tch2.length; t2++) out.changed.push(tch2[t2]);
       out.tool = tch2.join('').indexOf('已发') >= 0;
-      if (toolMeta.poppedEmptyAsst) assistantBefore = assistantSnapshot(body);
+      if (toolMeta.poppedEmptyAsst || toolMeta.toolLoop) assistantBefore = assistantSnapshot(body);
       if (out.tool) {
         out.toolBaseKey = String(toolMeta.baseKey || out.base || curBase() || 'default').replace(/\/+$/, '');
         out.toolForcedChoice = !!toolMeta.forcedChoice;
@@ -942,7 +952,15 @@ function planRequest(rawBody, url, internal) {
       var rawSerialized = JSON.stringify(body);
       try { JAIL_INJ.ver = jailVerify(rawSerialized); } catch (eV) {}
       out.body = rawSerialized;
-      try { if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) out.body = lkWireApply(out.body); } catch (eWA) {}
+      try {
+        if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) {
+          var wOut = lkWireApply(out.body);
+          if (wOut && wOut !== out.body) {
+            out.body = wOut;
+            out.changed.push('透明护甲(' + ((typeof lkWireIsAllMode === 'function' && lkWireIsAllMode()) ? '全量' : '词表') + ')');
+          }
+        }
+      } catch (eWA) {}
     }
     catch (eSerialize) { out.body = rawBody; out.changed = []; out.reason = 'serialize-failed'; criticalWarn('请求序列化', eSerialize); }
   } else if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) {
@@ -950,7 +968,7 @@ function planRequest(rawBody, url, internal) {
       var wOnly = lkWireApply(rawBody);
       if (wOnly && wOnly !== rawBody) {
         out.body = wOnly;
-        out.changed.push('透明护甲');
+        out.changed.push('透明护甲(' + ((typeof lkWireIsAllMode === 'function' && lkWireIsAllMode()) ? '全量' : '词表') + ')');
         try { JAIL_INJ.ver = jailVerify(rawBody); } catch (eV2) {}
       }
     } catch (eWA2) {}

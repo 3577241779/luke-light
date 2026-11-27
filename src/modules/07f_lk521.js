@@ -13,8 +13,8 @@ var LK_SEP = '\u00a6';
 /* 零宽与不可见控制符 */
 var LK_ZW = /[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD\u180E]/g;
 
-/* V5.65 结构安全保护段：代码块 / 行内代码 / XML标签 / ST宏 / URL / Markdown表格行 / SQL语句 / JSON键名与JSONPatch路径 */
-var LK_STRUCT_SAFE_RE = /(```[\s\S]*?```|`[^`\n]*`|<[^>]*>|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+|^[ \t]*\|[^\n]*\|[ \t]*$|\b(?:CREATE|ALTER|DROP|INSERT\s+(?:OR\s+REPLACE\s+)?INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM|SELECT)\b[^;\n]*;?|"(?:[^"\\]|\\.)*"\s*:|"(?:\/[^"\s\\]+)+")/gm;
+/* V5.65/V6.2 结构安全保护段：代码块 / 行内代码 / 合法 XML 标签（防 <3 / a < b 跨行吞段）/ ST宏 / URL / Markdown表格行 / SQL语句 / JSON键名与JSONPatch路径 */
+var LK_STRUCT_SAFE_RE = /(```[\s\S]*?```|`[^`\n]*`|<\/?[A-Za-z_\u4e00-\u9fff][^>\n]{0,198}>|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+|^[ \t]*\|[^\n]*\|[ \t]*$|\b(?:CREATE|ALTER|DROP|INSERT\s+(?:OR\s+REPLACE\s+)?INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM|SELECT)\b[^;\n]*;?|"(?:[^"\\]|\\.)*"\s*:|"(?:\/[^"\s\\]+)+")/gm;
 
 /* 判定消息是否携带工具调用/思考签名等协议元数据（不可被降权/清洗/码点破坏结构） */
 function lkIsProtectedMsg(m) {

@@ -198,7 +198,7 @@ for (const fileName of TARGETS) {
   vm.runInNewContext(raw.content, win, { filename: fileName });
   const api = win.__AR6__;
   try {
-    check(api && api.VERSION === '6.2', `${fileName}: VERSION === 6.2`, api && api.VERSION);
+    check(api && api.VERSION === '6.8', `${fileName}: VERSION === 6.8`, api && api.VERSION);
     check(typeof api.lkDawnHTML === 'function' && typeof api.lkDawnAsk === 'function' && typeof api.lkVisualTier === 'function',
       `${fileName}: 导出 lkDawnHTML / lkDawnAsk / lkVisualTier`);
     check(api.getCfg().allTool === false, `${fileName}: 默认 allTool === false`);
@@ -228,34 +228,38 @@ for (const fileName of TARGETS) {
       `${fileName}: 点击破暗化光正确弹出第 5 套「由暗转明 → 变回闪耀迪迦」圣殿仪式弹窗`);
     check(api.getCfg().allTool === false, `${fileName}: 未点确认前不提前打开 cfg.allTool`);
 
-    // 点确认按钮 dawnok（V6.2：不再代开 toolChan，而是纯文全量转译 + 注音/探针护航）
+    // 点确认按钮 dawnok（V6.2：不再代开 toolChan，严格单档互斥：allTool=true, jail='off'）
     const okBtn = card.querySelectorAll('[data-ar6-card]').find((b) => b.getAttribute('data-ar6-card') === 'dawnok');
     check(!!okBtn, `${fileName}: 弹窗含 dawnok 确认按钮`);
     card.dispatchEvent({ type: 'click', target: okBtn });
-    check(api.getCfg().allTool === true, `${fileName}: 点确认后 cfg.allTool === true`);
+    check(api.getCfg().allTool === true && api.getCfg().jail === 'off' && api.getCfg().jailSupremeConfirmed === false,
+      `${fileName}: 点确认后 cfg.allTool === true 且严格互斥归位 jail=off`);
     check(api.getCfg().toolChan === 'off' && api.getCfg().jailTool === 'off',
       `${fileName}: V6.2 确认开启后绝不强开武装货舱且让出旧版工具破甲`);
 
     // 验证两段式黑转闪耀全屏演出 DOM
     const fxEl = win.document.getElementById('ar6-fx');
-    check(!!fxEl && fxEl.getAttribute('data-fx') === 'dawn' && fxEl.innerHTML.includes('ar6-dawn-dark') && fxEl.innerHTML.includes('ar6-dawn-glitter') && fxEl.innerHTML.includes('闪耀迪迦归来'),
-      `${fileName}: 确认后触发两段式黑暗裂解 → 闪耀迪迦归来全屏演出 (#ar6-fx[data-fx="dawn"])`);
+    check(!!fxEl && fxEl.getAttribute('data-fx') === 'dawn' && fxEl.innerHTML.includes('ar6-dawn-dark') && fxEl.innerHTML.includes('ar6-dawn-glitter') && fxEl.innerHTML.includes('闪耀迪迦归来 · 纯文耀光全量就绪'),
+      `${fileName}: 确认后触发两段式黑暗裂解 → 闪耀迪迦归来纯文耀光全屏演出 (#ar6-fx[data-fx="dawn"])`);
 
-    // 3. 视觉形态 & 3D 桌宠闪耀迪迦联动（toolChan=off + allTool=true => 顶栏/圆章/桌宠仍变回闪耀 supreme！）
-    check(api.lkVisualTier() === 'supreme', `${fileName}: 深渊 + 破暗化光(toolChan=off) 下 lkVisualTier() === 'supreme'`);
+    // 3. 视觉形态 & 3D 桌宠闪耀迪迦联动（toolChan=off + allTool=true + jail=off => 顶栏/圆章/桌宠仍变回闪耀 supreme，且仅破暗化光按钮亮 .on！）
+    check(api.lkVisualTier() === 'supreme', `${fileName}: 破暗化光(allTool=true, jail=off) 下 lkVisualTier() === 'supreme'`);
     const rootEl = win.document.getElementById('ar6-root');
     check(rootEl && rootEl.getAttribute('data-tier') === 'supreme' && rootEl.getAttribute('data-alltool') === '1',
       `${fileName}: #ar6-root 顶栏流光同步转为 supreme 闪耀金并挂 data-alltool="1"`);
-    check(api.uiJailHTML().includes('ar6-temple-btn dawn on') && api.uiJailHTML().includes('✦ 破暗闪耀'),
-      `${fileName}: 激活态按键亮起闪耀金徽标「✦ 破暗闪耀」`);
+    const jailHtmlDawn = api.uiJailHTML();
+    check(jailHtmlDawn.includes('ar6-temple-btn dawn on') && jailHtmlDawn.includes('✦ 破暗闪耀') &&
+      !jailHtmlDawn.includes('class="ar6-ubtn on" data-form=') &&
+      !jailHtmlDawn.includes('ar6-temple-btn noa on') && !jailHtmlDawn.includes('ar6-ultb deep on'),
+      `${fileName}: 破暗化光激活态仅亮起破暗化光单一按钮（其余七档均不亮 .on）`);
 
-    // 再次点击 alltool:toggle（等待越过 400ms 防连点去抖窗口）-> 无需二次确认直接关闭，并还原回深渊视觉
+    // 再次点击 alltool:toggle（等待越过 400ms 防连点去抖窗口）-> 无需二次确认直接关闭，严格回到石像待机
     await new Promise((r) => setTimeout(r, 420));
     api.onPanelClick({ target: { getAttribute: (k) => (k === 'data-ar6' ? 'alltool:toggle' : null), parentNode: null }, type: 'click' });
-    check(api.getCfg().allTool === false && api.lkVisualTier() === 'abyss',
-      `${fileName}: 再次点击立即关闭并干净还原回 abyss 视觉`);
-    check(rootEl && rootEl.getAttribute('data-tier') === 'abyss' && !rootEl.getAttribute('data-alltool'),
-      `${fileName}: 关闭后 #ar6-root 恢复 data-tier="abyss" 并移除 data-alltool`);
+    check(api.getCfg().allTool === false && api.getCfg().jail === 'off' && api.lkVisualTier() === 'off',
+      `${fileName}: 再次点击立即关闭并干净归位石像待机 (allTool=false, jail=off)`);
+    check(rootEl && rootEl.getAttribute('data-tier') === 'off' && !rootEl.getAttribute('data-alltool'),
+      `${fileName}: 关闭后 #ar6-root 恢复 data-tier="off" 并移除 data-alltool`);
 
     // 4. V6.2 后端纯文全量 \uXXXX 转译 + 注音/探针护航 + 彻底根治 C1 工具脑裂冲突
     api.setCfg('allTool', true);
@@ -318,9 +322,10 @@ for (const fileName of TARGETS) {
 
     // (v) V6.2 开关独立性：飞燕暂避保留配置；关闭武装货舱或能量续航不再误关 allTool；手动开启双轮工具链时让位关闭 allTool
     api.setCfg('allTool', true);
+    api.setCfg('jail', 'off');
     api.setCfg('toolChan', 'on');
     api.setCfg('grab', 2);
-    check(api.lkVisualTier() === 'abyss' && api.uiJailHTML().includes('飞燕暂避'),
+    check(api.lkVisualTier() === 'off' && api.uiJailHTML().includes('飞燕暂避') && api.uiTierMeta().gem === '飞燕暂避',
       `${fileName}: 飞燕编队开启时保留 allTool 配置但视觉与文案显式标「飞燕暂避」不假亮`);
     api.setCfg('grab', 0);
     await new Promise((r) => setTimeout(r, 420));

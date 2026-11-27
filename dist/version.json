@@ -1,10 +1,10 @@
 {
-  "version": "6.5",
-  "releasedAt": "2026-11-27T09:07:30.356Z",
-  "changelog": "V6.5 · 全 8 档严格单选互斥与形态切换修复 + 破暗化光纯文全量转译与流尾探针优化。",
+  "version": "6.8",
+  "releasedAt": "2026-11-27T13:19:33.060Z",
+  "changelog": "V6.8 · 火星文转译独立按键全 10 套皮肤专属命名适配（☄️ 火星文转译 / 仙篆密文 / 太古异文 / 樱花密语 / 异星密电 / 番邦密诏 / 龙语密符 / 亵渎密文 / 乱码协议）+ ❀Base36❀ 密文端到端与跨分片流式无损还原 + 全 8 档严格单选互斥与转译全链路加固。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.8/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.8/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.8/dist/luke-light-desktop.json"
   }
 }

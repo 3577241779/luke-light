@@ -79,13 +79,15 @@ function actBtn(act, iconName, text, extraCls) {
 function uiTierMeta() {
   var on = !!(cfg && cfg.enabled);
   var j = String((cfg && cfg.jail) || 'off');
-  var dawnLive = !!(on && cfg && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
-  var dawnGlow = !!(dawnLive && (j === 'abyss' || j === 'off'));
+  var allOn = !!(on && cfg && cfg.allTool === true);
+  var dawnLive = !!(allOn && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var dawnPaused = !!(allOn && (cfg.grab > 0));
   var base;
   var tKey = 'idle';
   if (!on) { tKey = 'off'; base = { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' }; }
+  else if (dawnLive) { tKey = 'dawn'; base = { tier: 'supreme', gem: '破暗闪耀', sub: '由暗转明 · 破暗化光纯文全量转译 + 注音/探针护航，不走工具通道', badgeTxt: '✦ 破暗化光 · 纯文耀光', badgeCls: 'gold' }; }
+  else if (dawnPaused) { tKey = 'idle'; base = { tier: 'off', gem: '飞燕暂避', sub: '飞燕编队省流期间破暗化光暂避 · 编队待命后自动恢复纯文耀光', badgeTxt: '破暗化光 · 飞燕暂避', badgeCls: 'cyan' }; }
   else if (j === 'gatanothor' || j === 'noa') { tKey = 'noa'; base = { tier: 'noa', gem: '圣翼共鸣', sub: '诺亚太古圣翼 · 宇宙第一道光圣域归位中', badgeTxt: '✦ 诺亚 · 圣域归位', badgeCls: 'noa' }; }
-  else if (dawnGlow) { tKey = 'dawn'; base = { tier: 'supreme', gem: '破暗闪耀', sub: '由暗转明 · 破暗化光纯文全量转译 + 注音/探针护航，不走工具通道', badgeTxt: '✦ 破暗化光 · 纯文耀光', badgeCls: 'gold' }; }
   else if (j === 'abyss') { tKey = 'abyss'; base = { tier: 'abyss', gem: '深渊接管', sub: '凝视深渊 · 终焉暗域全量下沉接管中', badgeTxt: '❖ 凝视深渊 · 沉渊接管', badgeCls: 'abyss' }; }
   else if (j === 'supreme') { tKey = 'supreme'; base = { tier: 'supreme', gem: '闪耀觉醒', sub: '闪耀迪迦 · 黄金希望圣辉与终极护盾就绪', badgeTxt: '闪耀型 · 黄金护盾', badgeCls: 'gold' }; }
   else if (j === 'strong') { tKey = 'strong'; base = { tier: 'strong', gem: '刚力解放', sub: '迪迦强力型 · 赤红刚力破甲光流护航中', badgeTxt: '强力型 · 赤红刚力', badgeCls: 'red' }; }
@@ -94,7 +96,7 @@ function uiTierMeta() {
   else { tKey = 'idle'; base = { tier: 'off', gem: '守护开启', sub: '只锁定异常信号，绝不阻断正常对话', badgeTxt: '石像待机 · 零注入', badgeCls: '' }; }
   try {
     var sp = (typeof skinSpec === 'function') ? skinSpec() : null;
-    if (sp && sp.id !== 'ultra' && sp.tiers) {
+    if (sp && sp.id !== 'ultra' && sp.tiers && !dawnPaused) {
       var ov = sp.tiers[tKey] || (tKey === 'dawn' ? sp.tiers.supreme : null);
       if (ov) {
         if (ov.gem) base.gem = ov.gem;
@@ -279,7 +281,10 @@ function uiJailHTML() {
     : ('当前已固定为 ' + mpLabel(curModel) + ' 波段（重开酒馆持久保留）；更换模型后可点「恢复自动匹配」。');
   var h = segBarHTML(sk('modelTitle', '作战波段 · 话术适配'), modelSub, modelRows, curModel, 'model:', '', modelBadge, modelBadgeCls, modelActBar);
 
-  var curJail = String(cfg.jail || 'off');
+  var allOn = !!(cfg && cfg.allTool === true);
+  var allGrabPaused = allOn && !!(cfg && cfg.grab > 0);
+  var allLive = allOn && !!(cfg && cfg.enabled && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var curJail = allOn ? '' : String(cfg.jail || 'off');
   if (curJail === 'noa') curJail = 'gatanothor';
   var jailRows = sk('jailRows', [
     ['石像待机', 'off'],
@@ -305,16 +310,13 @@ function uiJailHTML() {
         esc((jst ? jst + ' · ' : '') + statLine) + '</div>')
     : '';
 
-  var allOn = !!(cfg && cfg.allTool === true);
-  var allGrabPaused = allOn && !!(cfg && cfg.grab > 0);
-  var allLive = allOn && !!(cfg && cfg.enabled && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
   var allStTxt = allLive
     ? sk('allToolStOn', '✦ 破暗闪耀')
     : (allGrabPaused ? '飞燕暂避' : (allOn ? '待机' : sk('allToolStOff', '暗影蛰伏')));
   var ultHTML = '<div class="ar6-ult-wrap">' +
     '<div class="ar6-ult-head"><span>' + esc(sk('ultHead', '✦ 终极圣域 · 超越界限 ✦')) + '</span></div>' +
     '<div class="ar6-ult-grid">' +
-      '<button type="button" class="ar6-ultb ar6-temple-btn noa' + (curJail === 'gatanothor' ? ' on' : '') + '" data-ar6="tier:gatanothor">' +
+      '<button type="button" class="ar6-ultb ar6-temple-btn noa' + (!allOn && curJail === 'gatanothor' ? ' on' : '') + '" data-ar6="tier:gatanothor">' +
         sv.noaBg +
         '<span class="ar6-temple-ico">' + sv.noaIco + '</span>' +
         '<span class="ar6-temple-txt">' +
@@ -322,7 +324,7 @@ function uiJailHTML() {
           '<span class="ar6-temple-sub">' + esc(sk('ultASub', '宇宙第一道光 · 圣域归位')) + '</span>' +
         '</span>' +
       '</button>' +
-      '<button type="button" class="ar6-ultb deep' + (curJail === 'abyss' ? ' on' : '') + ' ar6-temple-btn abyss" data-ar6="tier:abyss">' +
+      '<button type="button" class="ar6-ultb deep' + (!allOn && curJail === 'abyss' ? ' on' : '') + ' ar6-temple-btn abyss" data-ar6="tier:abyss">' +
         sv.abyssBg +
         '<span class="ar6-temple-ico">' + sv.abyssIco + '</span>' +
         '<span class="ar6-temple-txt">' +
@@ -337,7 +339,7 @@ function uiJailHTML() {
         '<span class="ar6-temple-ico">' + sv.dawnIco + '</span>' +
         '<span class="ar6-temple-txt">' +
           '<span class="ar6-temple-name">' + esc(sk('allToolLabel', '◤ 破暗化光 · 纯文耀光 ◢')) + '</span>' +
-          '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 纯文全量 \\uXXXX 转译 + 注音/探针护航，不走工具通道')) + '</span>' +
+          '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 纯文全量 \\uXXXX 转译 + 65 词字面护甲穿透与注音/探针护航')) + '</span>' +
         '</span>' +
         '<em class="ar6-dawn-st">' + esc(allStTxt) + '</em>' +
       '</button>' +
@@ -375,10 +377,12 @@ function uiJailHTML() {
     wireBar += '<button type="button" class="' + wCls + '" data-wire="' + esc(wVal) + '" data-ar6="gm:wire:' + wi + '">' + esc(wIt[0]) + '</button>';
   }
   wireBar += '</div>';
+  var marsOn = !!(cfg && cfg.mars === true);
   var saltGrid = '<div class="ar6-tgrid ar6-salt-row">' +
-    swCell('salt:toggle', sk('saltLabel', '✦ 计时器光印 · 会话盐'), saltOn, 'span-2', saltSt, wireOff ? 'data-off="1"' : (!saltRawOn ? '' : '')) +
+    swCell('salt:toggle', sk('saltLabel', '✦ 计时器光印 · 会话盐'), saltOn, '', saltSt, wireOff ? 'data-off="1"' : (!saltRawOn ? '' : '')) +
+    swCell('mars:toggle', sk('marsLabel', '☄️ 火星文转译 · 星语密文'), marsOn, marsOn ? 'gold' : '', marsOn ? '已开启' : '待机') +
     '</div>';
-  var wireSub = sk('wireSub', '在 JSON 传输层将敏感词或整包非 ASCII 粒子化转为 \\uXXXX 绕过中转关键词扫描，上游解析无损还原且不耗思考预算；「自动」在强力型及以上启全量粒子化。');
+  var wireSub = sk('wireSub', '在 JSON 传输层将敏感词或整包非 ASCII 粒子化转为 \\uXXXX 绕过中转关键词扫描，上游解析无损还原且不耗思考预算；「自动」在强力型及以上启全量粒子化；「火星文转译」将敏感词转为 ❀Base36❀ 密文穿透代理并实时还原。');
   h += '<div class="ar6-ugroup ar6-wire-card">' +
     '<div class="ar6-ug-top"><span class="ar6-ug-title">' + esc(sk('wireTitle', '细胞转换光束 · 传输转译')) + '</span>' +
       '<span class="ar6-badge' + (wireBdgCls ? ' ' + wireBdgCls : '') + '">' + esc(wireBdg) + '</span></div>' +
@@ -832,21 +836,30 @@ function focusKeyPre(key) {
   var i = k.indexOf(':');
   return i > 0 ? k.slice(0, i) : k;
 }
+var FOCUS_EXACT_PRE = { tier: 1, model: 1, scope: 1, think: 1, gm: 1, skin: 1, wsmode: 1, refract: 1, probe: 1 };
 function focusKeyHit(key, cand) {
   var a = String(key || ''), b = String(cand || '');
   if (!a || !b) return false;
   if (a === b) return true;
-  if (a.indexOf('prism-') === 0 || b.indexOf('prism-') === 0 || a.indexOf('wsmode:') === 0 || b.indexOf('wsmode:') === 0) return false;
+  if (a.indexOf('prism-') === 0 || b.indexOf('prism-') === 0) return false;
   var pa = focusKeyPre(a), pb = focusKeyPre(b);
-  return !!pa && pa === pb;
+  if (!pa || pa !== pb) return false;
+  if (FOCUS_EXACT_PRE[pa]) return false;
+  return true;
 }
 function focusBack(scope, key, selStart, selEnd) {
   if (!scope || !key) return false;
   var nodes = [];
   try { nodes = scope.querySelectorAll ? scope.querySelectorAll('[data-ar6]') : []; } catch (e) { return false; }
   var hit = null;
+  var keyStr = String(key);
   for (var i = 0; i < nodes.length; i++) {
-    if (focusKeyHit(key, focusKeyOf(nodes[i]))) { hit = nodes[i]; break; }
+    if (focusKeyOf(nodes[i]) === keyStr) { hit = nodes[i]; break; }
+  }
+  if (!hit) {
+    for (var j = 0; j < nodes.length; j++) {
+      if (focusKeyHit(keyStr, focusKeyOf(nodes[j]))) { hit = nodes[j]; break; }
+    }
   }
   if (!hit) return false;
   try {

@@ -95,8 +95,8 @@ function lkJbRules() {
 }
 function lkJbCount() { lkJbRules(); return LK_JB_COUNT; }
 
-/* 保护段：标签、代码块、宏、链接不参与清洗 */
-var LK_PROTECT = /(<[^>]*>|```[\s\S]*?```|`[^`]*`|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+)/g;
+/* 保护段：合法标签（防 <3 / a < b 跨行吞段）、代码块、宏、链接不参与清洗 */
+var LK_PROTECT = /(<\/?[A-Za-z_\u4e00-\u9fff][^>\n]{0,198}>|```[\s\S]*?```|`[^`]*`|\{\{[^}]*\}\}|https?:\/\/[^\s"'<>]+)/g;
 
 
 /* V5.3：宽规则只用于「指令位置」（system / systemInstruction），正文不碰；
@@ -158,9 +158,11 @@ function lkPresetOwnsJail(body) {
 function lkPurifyBody(body) {
   var out = [];
   var tp = lkTierParams();
-  if (!tp || tp.purify === 'off') return out;
+  var dawnPurify = !!(cfg && cfg.enabled && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var pMode = (tp && tp.purify !== 'off') ? tp.purify : (dawnPurify ? 'gated' : 'off');
+  if (pMode === 'off') return out;
   if (typeof presetCompatForce === 'function' && !presetCompatForce() && lkPresetOwnsJail(body)) return out;
-  if (tp.purify === 'gated' && !lkWashAllowed(body)) return out;
+  if (pMode === 'gated' && !lkWashAllowed(body)) return out;
   var hits = 0;
   try {
     var arr = jailMsgArray(body);
