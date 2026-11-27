@@ -91,7 +91,7 @@ for (const fileName of TARGETS) {
   console.log(`\n=== V5.95 四生合体专项回归: ${fileName} ===`);
   const { win, api, rawCode } = loadTarget(fileName);
 
-  check(api && api.VERSION === '6.0', `${fileName}: VERSION === 6.0`);
+  check(api && api.VERSION === '6.2', `${fileName}: VERSION === 6.2`);
 
   // P0-1 & P0-2: 动态成员数徽标 + ar6-quad 手机 2×2 网格类
   const unregLens = api.registerSibling({ id: 'lightlens', label: '光域·镜影', icon: '🎞️', mount() {}, unmount() {} });

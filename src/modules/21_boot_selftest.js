@@ -1160,7 +1160,7 @@ function runSelfTest() {
   T('T54 V5.0 武装货舱(toolChan)五重加固：源校验/预填回退/非自毁提示词/强制调用与降级/双层JSON与伪流式解包', function () {
     var oldCfg = cfg;
     try {
-      cfg = Object.assign({}, oldCfg, { enabled: true, safe: false, grab: 0, toolChan: 'on', jailTool: 'off', trunc: 'light', truncLen: 800, truncTail: true, truncNoCert: true });
+      cfg = Object.assign({}, oldCfg, { enabled: true, safe: false, grab: 0, toolChan: 'on', allTool: false, jail: 'off', jailTool: 'off', trunc: 'light', truncLen: 800, truncTail: true, truncNoCert: true });
       /* 1. 非兼容源 makersuite 自动跳过并回退常规抗截断 */
       var p1 = JSON.parse(planRequest(JSON.stringify({ model: 'gemini-3-pro', chat_completion_source: 'makersuite', messages: [{ role: 'user', content: '写一段' }] }), 'https://x/api/backends/chat-completions/generate').body);
       var srcFallbackOk = !p1.tools && String(p1.messages[0].content).indexOf(TRUNC_OPEN) >= 0;
@@ -1743,16 +1743,16 @@ function runSelfTest() {
   });
 
   T('T96 V5.26/V5.78 护甲分层：常规高档走透明传输护甲，终极两档叠字面护甲', function () {
-    var o = cfg.jail, oa = cfg.armor;
+    var o = cfg.jail, oa = cfg.armor, ow = cfg.wire, oAll = cfg.allTool;
     try {
-      cfg.armor = 'auto';
+      cfg.armor = 'auto'; cfg.wire = 'auto'; cfg.allTool = false;
       cfg.jail = 'mid'; var a = lkArmorOn(), wa = lkWireOn();
       cfg.jail = 'strong'; var b = lkArmorOn(), wb = lkWireOn();
       cfg.jail = 'abyss'; var c = lkArmorOn(), wc = lkWireOn();
       cfg.jail = 'off'; var d = lkArmorOn(), wd = lkWireOn();
       return a === false && wa === false && b === false && wb === true &&
         c === true && wc === true && d === false && wd === false;
-    } finally { cfg.jail = o; cfg.armor = oa; }
+    } finally { cfg.jail = o; cfg.armor = oa; cfg.wire = ow; cfg.allTool = oAll; }
   });
 
 
@@ -2006,7 +2006,7 @@ function runSelfTest() {
       if (!(cfg.__sd > 0) || !mc || mc.sd !== cfg.__sd) throw new Error('saveCfg 未同步 cfg.__sd');
 
       /* 2. 多轮对话在 abyss 下走 V6.0 协议化不误触发 assistant-protection，且完整保留世界书设定与用户本轮真实输入 */
-      cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'abyss', jailSupremeConfirmed: true, demote: 'auto', singleSec: false, toolChan: 'off', silent: true });
+      cfg = Object.assign({}, oldCfg, { enabled: true, jail: 'abyss', jailSupremeConfirmed: true, demote: 'auto', singleSec: false, toolChan: 'off', allTool: false, grab: 0, jailTool: 'off', silent: true });
       var multiRaw = JSON.stringify({
         model: 'gemini-4-hydrogen',
         messages: [
@@ -2082,9 +2082,10 @@ function runSelfTest() {
   });
 
   T('T110 V5.7 3D CG 雕像桌宠 / 神光棒变身 / 诺亚圣翼与深渊仪式 / 星轨云端更新自检', function () {
-    var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx;
+    var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx, oldAll = cfg.allTool;
     try {
-      if (VERSION !== '6.0') throw new Error('VERSION 应为 6.0，实际 ' + VERSION);
+      cfg.allTool = false;
+      if (VERSION !== '6.2') throw new Error('VERSION 应为 6.2，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2126,7 +2127,7 @@ function runSelfTest() {
       clearAwakenFx();
       return true;
     } finally {
-      cfg.jail = oldJ; cfg.enabled = oldE; cfg.rm = oldRm; cfg.fx = oldFx;
+      cfg.jail = oldJ; cfg.enabled = oldE; cfg.rm = oldRm; cfg.fx = oldFx; cfg.allTool = oldAll;
       try { clearAwakenFx(); patchRole(); } catch (eF) {}
     }
   });
@@ -3031,6 +3032,20 @@ var AR6_API = {
       lkArmorOn: (typeof lkArmorOn === 'function') ? lkArmorOn : null,
       lkWireOn: (typeof lkWireOn === 'function') ? lkWireOn : null,
       lkWireArmorJson: (typeof lkWireArmorJson === 'function') ? lkWireArmorJson : null,
+      lkWireApply: (typeof lkWireApply === 'function') ? lkWireApply : null,
+      lkZhOn: (typeof lkZhOn === 'function') ? lkZhOn : null,
+      lkZhEncode: (typeof lkZhEncode === 'function') ? lkZhEncode : null,
+      lkZhAttachNote: (typeof lkZhAttachNote === 'function') ? lkZhAttachNote : null,
+      lkZhuyinApply: (typeof lkZhuyinApply === 'function') ? lkZhuyinApply : null,
+      LK_ZH_PAIRS: (typeof LK_ZH_PAIRS !== 'undefined') ? LK_ZH_PAIRS : null,
+      lkCanaryOn: (typeof lkCanaryOn === 'function') ? lkCanaryOn : null,
+      lkCanaryAttach: (typeof lkCanaryAttach === 'function') ? lkCanaryAttach : null,
+      lkCanaryCheck: (typeof lkCanaryCheck === 'function') ? lkCanaryCheck : null,
+      lkCanaryStrip: (typeof lkCanaryStrip === 'function') ? lkCanaryStrip : null,
+      lkCanarySafeCut: (typeof lkCanarySafeCut === 'function') ? lkCanarySafeCut : null,
+      lkCanaryLine: (typeof lkCanaryLine === 'function') ? lkCanaryLine : null,
+      LK_CANARY: (typeof LK_CANARY !== 'undefined') ? LK_CANARY : null,
+      LK_CANARY_MARKS: (typeof LK_CANARY_MARKS !== 'undefined') ? LK_CANARY_MARKS : null,
       jtFakeRound: (typeof jtFakeRound === 'function') ? jtFakeRound : null,
       lkArmorApply: (typeof lkArmorApply === 'function') ? lkArmorApply : null,
       lkArmorRestore: (typeof lkArmorRestore === 'function') ? lkArmorRestore : null,

@@ -79,13 +79,13 @@ function actBtn(act, iconName, text, extraCls) {
 function uiTierMeta() {
   var on = !!(cfg && cfg.enabled);
   var j = String((cfg && cfg.jail) || 'off');
-  var dawnLive = !!(on && cfg && cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var dawnLive = !!(on && cfg && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
   var dawnGlow = !!(dawnLive && (j === 'abyss' || j === 'off'));
   var base;
   var tKey = 'idle';
   if (!on) { tKey = 'off'; base = { tier: 'off', gem: '石像待机', sub: '信道守护总闸已待机 · 请求原样透传', badgeTxt: '总闸待机', badgeCls: '' }; }
   else if (j === 'gatanothor' || j === 'noa') { tKey = 'noa'; base = { tier: 'noa', gem: '圣翼共鸣', sub: '诺亚太古圣翼 · 宇宙第一道光圣域归位中', badgeTxt: '✦ 诺亚 · 圣域归位', badgeCls: 'noa' }; }
-  else if (dawnGlow) { tKey = 'dawn'; base = { tier: 'supreme', gem: '破暗闪耀', sub: '由暗转明 · 闪耀迪迦黄金三轨（正文/状态/选项）分流护航中', badgeTxt: '✦ 破暗化光 · 闪耀三轨', badgeCls: 'gold' }; }
+  else if (dawnGlow) { tKey = 'dawn'; base = { tier: 'supreme', gem: '破暗闪耀', sub: '由暗转明 · 破暗化光纯文全量转译 + 注音/探针护航，不走工具通道', badgeTxt: '✦ 破暗化光 · 纯文耀光', badgeCls: 'gold' }; }
   else if (j === 'abyss') { tKey = 'abyss'; base = { tier: 'abyss', gem: '深渊接管', sub: '凝视深渊 · 终焉暗域全量下沉接管中', badgeTxt: '❖ 凝视深渊 · 沉渊接管', badgeCls: 'abyss' }; }
   else if (j === 'supreme') { tKey = 'supreme'; base = { tier: 'supreme', gem: '闪耀觉醒', sub: '闪耀迪迦 · 黄金希望圣辉与终极护盾就绪', badgeTxt: '闪耀型 · 黄金护盾', badgeCls: 'gold' }; }
   else if (j === 'strong') { tKey = 'strong'; base = { tier: 'strong', gem: '刚力解放', sub: '迪迦强力型 · 赤红刚力破甲光流护航中', badgeTxt: '强力型 · 赤红刚力', badgeCls: 'red' }; }
@@ -307,10 +307,10 @@ function uiJailHTML() {
 
   var allOn = !!(cfg && cfg.allTool === true);
   var allGrabPaused = allOn && !!(cfg && cfg.grab > 0);
-  var allLive = allOn && !!(cfg && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+  var allLive = allOn && !!(cfg && cfg.enabled && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
   var allStTxt = allLive
     ? sk('allToolStOn', '✦ 破暗闪耀')
-    : (allGrabPaused ? '飞燕暂避' : (allOn ? '通道待机' : sk('allToolStOff', '暗影蛰伏')));
+    : (allGrabPaused ? '飞燕暂避' : (allOn ? '待机' : sk('allToolStOff', '暗影蛰伏')));
   var ultHTML = '<div class="ar6-ult-wrap">' +
     '<div class="ar6-ult-head"><span>' + esc(sk('ultHead', '✦ 终极圣域 · 超越界限 ✦')) + '</span></div>' +
     '<div class="ar6-ult-grid">' +
@@ -336,8 +336,8 @@ function uiJailHTML() {
         sv.dawnBg +
         '<span class="ar6-temple-ico">' + sv.dawnIco + '</span>' +
         '<span class="ar6-temple-txt">' +
-          '<span class="ar6-temple-name">' + esc(sk('allToolLabel', '◤ 破暗化光 · 闪耀三轨 ◢')) + '</span>' +
-          '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 正文 / 状态 / 选项三路圣柜分流，函数外零杂字')) + '</span>' +
+          '<span class="ar6-temple-name">' + esc(sk('allToolLabel', '◤ 破暗化光 · 纯文耀光 ◢')) + '</span>' +
+          '<span class="ar6-temple-sub">' + esc(sk('allToolSub', '由暗转明 · 纯文全量 \\uXXXX 转译 + 注音/探针护航，不走工具通道')) + '</span>' +
         '</span>' +
         '<em class="ar6-dawn-st">' + esc(allStTxt) + '</em>' +
       '</button>' +
@@ -399,8 +399,8 @@ function uiTruncHTML() {
     swCell('🚫 反自我认证:' + (noCertOn ? '开' : '关'), sk('truncNoCert', '净界律令 · 禁文末自证'), !truncOff && noCertOn, '', truncOff ? '随主闸待机' : (noCertOn ? '已开启' : '待机'), truncOff ? 'data-off="1"' : '') +
     swCell('🔔 补前先问:' + (cfg.jailConfirm === false ? '关' : '开'), sk('truncConfirm', '追击请示 · 续写前确认'), cfg.jailConfirm !== false) +
     swCell('📑 单节折叠:' + (cfg.singleSec === true ? '开' : '关'), sk('truncSingle', '记忆凝缩 · 旧轮单节折叠'), cfg.singleSec === true) +
-    swCell('🧰 工具通道:' + (cfg.toolChan === 'on' ? '开' : '关'), sk('truncTool', '武装货舱 · 独立圣柜信道交付'), cfg.toolChan === 'on', 'gold span-2') +
-    swCell('tool-loop', sk('truncToolLoop', '🔗 双轮工具链（Gemini 兼容增强）'), cfg.toolChan === 'on' && cfg.toolLoop === true && cfg.allTool !== true, '', cfg.allTool === true ? '三轨互斥·让位' : (cfg.toolChan !== 'on' ? (cfg.toolLoop === true ? '待机·已选' : '随工具通道待机') : (cfg.toolLoop === true ? '已开启' : '待机')), (cfg.toolChan !== 'on' || cfg.allTool === true) ? 'data-off="1"' : '') +
+    swCell('🧰 工具通道:' + (cfg.toolChan === 'on' ? '开' : '关'), sk('truncTool', '武装货舱 · 独立圣柜信道交付'), cfg.toolChan === 'on' && cfg.allTool !== true, 'gold span-2', (cfg.toolChan === 'on' && cfg.allTool === true) ? '破暗让位' : null) +
+    swCell('tool-loop', sk('truncToolLoop', '🔗 双轮工具链（Gemini 兼容增强）'), cfg.toolChan === 'on' && cfg.toolLoop === true && cfg.allTool !== true, '', cfg.allTool === true ? '破暗让位' : (cfg.toolChan !== 'on' ? (cfg.toolLoop === true ? '待机·已选' : '随工具通道待机') : (cfg.toolLoop === true ? '已开启' : '待机')), (cfg.toolChan !== 'on' || cfg.allTool === true) ? 'data-off="1"' : '') +
     swCell('tool-cover', sk('truncToolCover', '🧥 外衣剥壳（流式零延迟去头）'), cfg.toolChan === 'on' && cfg.toolCover === true, '', cfg.toolChan !== 'on' ? (cfg.toolCover === true ? '待机·已选' : '随工具通道待机') : (cfg.toolCover === true ? '已开启' : '待机'), cfg.toolChan !== 'on' ? 'data-off="1"' : '') +
     '</div>';
 
@@ -922,7 +922,7 @@ function patchRole() {
     ar6SetAttrIfDiff(r, 'data-skin', curSkin);
     var nextTier = (typeof lkVisualTier === 'function') ? lkVisualTier() : ((!cfg || !cfg.enabled) ? 'off' : ((cfg.jail === 'gatanothor' || cfg.jail === 'noa') ? 'noa' : String(cfg.jail || 'off')));
     ar6SetAttrIfDiff(r, 'data-tier', nextTier);
-    if (cfg && cfg.enabled && cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') ar6SetAttrIfDiff(r, 'data-alltool', '1');
+    if (cfg && cfg.enabled && cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off') ar6SetAttrIfDiff(r, 'data-alltool', '1');
     else ar6RmAttrIfHas(r, 'data-alltool');
     if (cfg && !cfg.enabled) ar6SetAttrIfDiff(r, 'data-off-master', '1');
     else ar6RmAttrIfHas(r, 'data-off-master');

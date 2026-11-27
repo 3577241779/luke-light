@@ -1,10 +1,10 @@
 {
-  "version": "6.0",
-  "releasedAt": "2026-11-26T16:42:06.907Z",
-  "changelog": "V6.0 · 凝视深渊协议化重写与破甲输入保护全量修复：根治开启破甲后丢失/覆写用户输入（消除底部声明顶替与连续 user 覆盖、修正历史 user→assistant 倒挂时序、防止降权抽空世界书与 lkApplyHeads 误杀协议化、补齐 soliumbra_reply 400 自动回退 auto 与三轨互斥让位，并同步升级强力/闪耀/诺亚委托块与底部声明口径，完整保留 V5.99 破暗化光·闪耀三轨冲突修复）。",
+  "version": "6.2",
+  "releasedAt": "2026-11-27T03:53:38.107Z",
+  "changelog": "V6.2 · 破暗化光纯文全量转译重构 + 540 词注音层与流尾完整性探针加固：破暗化光（allTool）彻底切换为纯文全量 \\uXXXX 透明转译 + 注音/探针护航（不走工具通道、根治脑裂冲突、完整保留暗转明闪耀仪式与 10 皮肤联动）；接入 540 词注音层（修复 5 处错拼、加 LK_STRUCT_SAFE_RE 结构护栏与仅命中附加说明、消除深渊 4 倍复制）；重构三枚零宽探针至流尾一次性回收并干净剥离（支持 desens=off 与 Gemini 原生 contents）；修复透明护甲 ASCII 词边界与跨引号标签保护，并持久化 zhuyin/canary 配置项。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.0/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-desktop.json"
   }
 }

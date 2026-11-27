@@ -69,8 +69,8 @@ function loadTarget(fileName) {
 async function runForTarget(fileName) {
   console.log(`\n=== V6.0 协议化与破甲输入保护专项回归: ${fileName} ===`);
   const { api, pkg } = loadTarget(fileName);
-  check(api && api.VERSION === '6.0', `${fileName}: VERSION === 6.0`, api && api.VERSION);
-  check(pkg.name.includes('V6.0'), `${fileName}: 包名含 V6.0`, pkg.name);
+  check(api && api.VERSION === '6.2', `${fileName}: VERSION === 6.2`, api && api.VERSION);
+  check(pkg.name.includes('V6.2'), `${fileName}: 包名含 V6.2`, pkg.name);
   check(typeof api.lkProtoOn === 'function' && typeof api.lkProtoEligible === 'function' && typeof api.lkProtocolize === 'function' && typeof api.lkProtoStr === 'function',
     `${fileName}: V6.0 LKPROTO API 完整导出`);
 
@@ -226,14 +226,17 @@ async function runForTarget(fileName) {
   check(protoStrCtx.world.includes('被下沉的世界观设定') && protoStrLast.content.includes(REAL_INPUT) && !protoStrLast.content.includes('ongoing fictional manuscript'),
     `${fileName}: 独立 lkProtoStr 自动剔除英文底部声明噪声并回收下沉设定`);
 
-  // 6) 破暗化光·闪耀三轨 (allTool) 优先让位
+  // 6) V6.2 破暗化光 (allTool) 优先让位：纯文全量转译，不走工具通道、不走协议化
   cfg.toolChan = 'on';
   cfg.allTool = true;
+  cfg.wire = 'auto';
+  cfg.armor = 'auto';
   const pDawn = api.planRequest(JSON.stringify(reqClean), URL, false);
   const bDawn = JSON.parse(pDawn.body);
-  const dawnNames = (bDawn.tools || []).map(t => t.function && t.function.name);
-  check(!pDawn.proto && dawnNames.includes('save_prose') && dawnNames.includes('save_status') && dawnNames.includes('save_options'),
-    `${fileName}: abyss + 破暗化光三轨时协议化自动让位于三轨 save_prose/save_status/save_options`, dawnNames.join(','));
+  check(!pDawn.proto && !pDawn.tool && !bDawn.tools && !/[^\x00-\x7F]/.test(pDawn.body),
+    `${fileName}: V6.2 abyss + 破暗化光时协议化与工具通道双让位，改走纯文全量 \\uXXXX 转译`, `proto=${pDawn.proto} tool=${pDawn.tool} hasTools=${!!bDawn.tools}`);
+  cfg.wire = 'off';
+  cfg.armor = 'off';
 
   // 7) abyss + toolChan=on + toolLoop=true (allTool=false)：不再触发 assistant-protection 回滚
   cfg.allTool = false;

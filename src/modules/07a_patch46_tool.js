@@ -354,6 +354,7 @@ function toolYieldReason(body, root, hasTools) {
 function toolChanEligible(body) {
   try {
     if (!cfg || !cfg.enabled || cfg.toolChan !== 'on') return false;
+    if (cfg.allTool === true) return false; /* V6.2：最强档（破暗化光）纯文全量转译，不走工具通道 */
     if (String(cfg.jailTool || 'off') !== 'off') return false;
     var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
     if (!root || typeof root !== 'object') return false;
@@ -437,8 +438,8 @@ function lkProtoOn() {
     if (cfg.jailSupremeConfirmed !== true) return false;
     if (cfg.grab > 0) return false;
     if (String(cfg.jailTool || 'off') !== 'off') return false;
-    /* 破暗化光·闪耀三轨生效时让位于三轨工具，绝不覆写 save_prose/save_status/save_options */
-    if (cfg.allTool === true && cfg.toolChan === 'on') return false;
+    /* V6.2：破暗化光生效时切换为纯文全量转译 + 注音/探针护航，不走深渊协议化工具通道 */
+    if (cfg.allTool === true) return false;
     return true;
   } catch (e) { return false; }
 }
@@ -740,6 +741,7 @@ function toolChanPatch(body, meta) {
   var out = [];
   try {
     if (!cfg || !cfg.enabled || cfg.toolChan !== 'on') return out;
+    if (cfg.allTool === true) return out; /* V6.2：破暗化光纯文模式绝不注入工具定义 */
     if (String(cfg.jailTool || 'off') !== 'off') return out;
     var root = (body && body.request && typeof body.request === 'object' && !Array.isArray(body.request)) ? body.request : body;
     if (!root || typeof root !== 'object') return out;
@@ -1387,6 +1389,16 @@ function toolCreateUnwrapper(opt) {
   var anthBlocks = {};
   var stripCoverOn = (opt && typeof opt.stripCover === 'boolean') ? opt.stripCover : !!(cfg && cfg.toolCover === true);
   var coverStripper = lkCreateCoverStripper(stripCoverOn);
+  var canaryActive = !!(opt && opt.canary);
+  var canaryHits = [false, false, false], canaryTail = '', canaryDone = false;
+  function scanCanary(raw) {
+    if (!canaryActive || !raw || typeof LK_CANARY_MARKS === 'undefined') return;
+    var joined = canaryTail + raw;
+    for (var ci = 0; ci < LK_CANARY_MARKS.length; ci++) {
+      if (!canaryHits[ci] && joined.indexOf(LK_CANARY_MARKS[ci]) >= 0) canaryHits[ci] = true;
+    }
+    canaryTail = joined.slice(-4);
+  }
   /* V5.99：多路工具（save_prose / save_status / save_options）切换槽位时自动补 \n\n 分段，防止状态栏与选项粘在正文同行 */
   function lkJoinSlotGap(slotKey, txt) {
     if (!txt) return '';
@@ -1410,21 +1422,26 @@ function toolCreateUnwrapper(opt) {
   };
   function restoreRaw(s) {
     if (!s) return '';
-    if (canUnmask()) return desensRestoreTxt(s);
-    if (hasArmor()) return lkArmorRestore(s);
-    return s;
+    var out = s;
+    if (canUnmask()) out = desensRestoreTxt(out);
+    else if (hasArmor()) out = lkArmorRestore(out);
+    if (canaryActive && typeof lkCanaryStrip === 'function') out = lkCanaryStrip(out);
+    return out;
   }
   function streamRestoreContent(s, isFinal) {
     var combined = contentHold + String(s || '');
     contentHold = '';
     if (!combined) return '';
-    if (!isFinal && (canUnmask() || hasArmor()) && typeof desensSafeCut === 'function') {
-      var cut = desensSafeCut(combined);
+    if (!isFinal && (canUnmask() || hasArmor() || canaryActive)) {
+      var cut = combined.length;
+      if ((canUnmask() || hasArmor()) && typeof desensSafeCut === 'function') cut = Math.min(cut, desensSafeCut(combined));
+      if (canaryActive && typeof lkCanarySafeCut === 'function') cut = Math.min(cut, lkCanarySafeCut(combined));
       if (cut < combined.length) {
         contentHold = combined.slice(cut);
         combined = combined.slice(0, cut);
       }
     }
+    if (combined && canaryActive) scanCanary(combined);
     return combined ? restoreRaw(combined) : '';
   }
   function streamRestoreThink(s, isFinal) {
@@ -1907,6 +1924,19 @@ function toolCreateUnwrapper(opt) {
     return (salv && salv.text) ? salv.text : '';
   }
 
+  function finishCanary() {
+    if (!canaryActive || canaryDone) return -1;
+    canaryDone = true;
+    if (contentHold) scanCanary(contentHold);
+    var matched = [];
+    if (typeof LK_CANARY_MARKS !== 'undefined') {
+      for (var mi = 0; mi < LK_CANARY_MARKS.length; mi++) {
+        if (canaryHits[mi]) matched.push(LK_CANARY_MARKS[mi]);
+      }
+    }
+    return (typeof lkCanaryCheck === 'function') ? lkCanaryCheck(matched.join(' '), { force: true }) : -1;
+  }
+
   return {
     handleObj: handleObj,
     processDataPayload: processDataPayload,
@@ -1914,6 +1944,7 @@ function toolCreateUnwrapper(opt) {
     flushLeftoverFrame: flushLeftoverFrame,
     salvageRawTail: salvageRawTail,
     finalizeStats: finalizeStats,
+    finishCanary: finishCanary,
     sawTool: function () { return sawTool; },
     emittedChars: function () { return totalEmitted; },
     reasoningFallback: function () { return (!sawTool && totalEmitted === 0 && reasoningAccum.trim()) ? reasoningAccum : ''; }
@@ -1921,7 +1952,7 @@ function toolCreateUnwrapper(opt) {
 }
 
 /* 响应侧：纯 pull() 驱动的零死锁逐行 SSE 解包（兼容单 \n 与 \r\n\r\n，绝不憋字，cancel 级联取消上游） */
-function toolWrapStream(res) {
+function toolWrapStream(res, opt) {
   try {
     var H = HOST || {};
     var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
@@ -1929,7 +1960,7 @@ function toolWrapStream(res) {
     if (!res || !res.body || typeof res.body.getReader !== 'function') return res;
     var reader = res.body.getReader();
     var dec = new H.TextDecoder('utf-8'), enc = new H.TextEncoder();
-    var uw = toolCreateUnwrapper();
+    var uw = toolCreateUnwrapper(opt);
     var lineBuf = '', pendingEvent = '', finalized = false, isJsonFallback = false, modeChecked = false;
 
     function processSingleLine(rawLn) {
@@ -1954,6 +1985,7 @@ function toolWrapStream(res) {
       if (finalized) return;
       finalized = true;
       uw.finalizeStats();
+      try { if (typeof uw.finishCanary === 'function') uw.finishCanary(); } catch (eFc) {}
     }
 
     var stream = new RS({
@@ -2042,7 +2074,7 @@ function toolWrapStream(res) {
 }
 
 /* 非流式：choices[0].message.tool_calls / function_call → message.content（V5.99 多路按槽独立抽取并以 \n\n 分隔） */
-function toolFixJson(obj) {
+function toolFixJson(obj, opt) {
   try {
     var ch = Array.isArray(obj && obj.choices) ? obj.choices[0] : null;
     if (!ch || !ch.message) return false;
@@ -2082,10 +2114,17 @@ function toolFixJson(obj) {
     var pulledText = pulledParts.join('\n\n');
     if (pulledText) {
       var cleanTxt = pulledText;
+      if (opt && opt.canary) {
+        try { if (typeof lkCanaryCheck === 'function') lkCanaryCheck(cleanTxt, { force: true }); } catch (eCj) {}
+        opt.canaryDone = true;
+      }
       if (cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false && typeof desensRestoreTxt === 'function') {
         cleanTxt = desensRestoreTxt(cleanTxt);
       } else if (typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function') {
         cleanTxt = lkArmorRestore(cleanTxt);
+      }
+      if (opt && opt.canary && typeof lkCanaryStrip === 'function') {
+        cleanTxt = lkCanaryStrip(cleanTxt);
       }
       msg.content = cleanTxt;
       if (extTools.length) { msg.tool_calls = extTools; ch.finish_reason = 'tool_calls'; }
@@ -2104,7 +2143,7 @@ function toolFixJson(obj) {
 }
 
 /* 非流式 JSON：纯 pull() 驱动缓冲改完吐出（零 TransformStream，遇残缺 JSON 自动抢救） */
-function toolWrapJson(res) {
+function toolWrapJson(res, opt) {
   try {
     var H = HOST || {};
     var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
@@ -2123,17 +2162,29 @@ function toolWrapJson(res) {
             var outTxt = buf;
             try {
               var obj = JSON.parse(buf);
-              if (toolFixJson(obj)) outTxt = JSON.stringify(obj);
-              else { TOOL_STAT.miss++; TOOL_STAT.streak++; }
+              var fOpt = { canary: !!(opt && opt.canary), canaryDone: false };
+              if (toolFixJson(obj, fOpt)) outTxt = JSON.stringify(obj);
+              else {
+                if (fOpt.canary && !fOpt.canaryDone) {
+                  var mp = obj && obj.choices && obj.choices[0] && obj.choices[0].message;
+                  if (mp && typeof mp.content === 'string') {
+                    if (typeof lkCanaryCheck === 'function') lkCanaryCheck(mp.content, { force: true });
+                    if (typeof lkCanaryStrip === 'function') mp.content = lkCanaryStrip(mp.content);
+                    outTxt = JSON.stringify(obj);
+                  }
+                }
+                TOOL_STAT.miss++; TOOL_STAT.streak++;
+              }
             } catch (eP) {
               if (/^data:\s?/m.test(buf)) {
-                var uw = toolCreateUnwrapper();
+                var uw = toolCreateUnwrapper(opt);
                 outTxt = buf.replace(/^data:\s?(.*)$/gm, function (full, p1) {
                   return uw.processDataPayload(p1, full);
                 });
                 var lf = uw.flushLeftoverFrame();
                 if (lf) outTxt += '\n\n' + lf;
                 uw.finalizeStats();
+                try { if (typeof uw.finishCanary === 'function') uw.finishCanary(); } catch (eFc2) {}
               } else {
                 var salv = lkSalvageIncompleteText(buf, TOOL_NAME);
                 if (salv && salv.text) {
@@ -2171,7 +2222,7 @@ function toolWrapJson(res) {
 }
 
 /* Content-Type 缺失或 text/plain 时：纯 pull() 首包嗅探 SSE（单/双换行兼容）或 JSON */
-function toolWrapSniff(res) {
+function toolWrapSniff(res, opt) {
   try {
     var H = HOST || {};
     var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
@@ -2180,7 +2231,7 @@ function toolWrapSniff(res) {
     var reader = res.body.getReader();
     var dec = new H.TextDecoder('utf-8'), enc = new H.TextEncoder();
     var mode = '', buf = '', pendingEvent = '', finalized = false;
-    var uw = toolCreateUnwrapper();
+    var uw = toolCreateUnwrapper(opt);
 
     function processSingleLine(rawLn) {
       var ln = rawLn.replace(/\r$/, '');
@@ -2200,7 +2251,10 @@ function toolWrapSniff(res) {
     function finishOnce() {
       if (finalized) return;
       finalized = true;
-      if (mode === 'sse') uw.finalizeStats();
+      if (mode === 'sse') {
+        uw.finalizeStats();
+        try { if (typeof uw.finishCanary === 'function') uw.finishCanary(); } catch (eFc3) {}
+      }
     }
 
     var stream = new RS({
@@ -2223,8 +2277,19 @@ function toolWrapSniff(res) {
                 outEnd = buf;
                 try {
                   var obj = JSON.parse(buf);
-                  if (toolFixJson(obj)) outEnd = JSON.stringify(obj);
-                  else { TOOL_STAT.miss++; TOOL_STAT.streak++; }
+                  var sOpt = { canary: !!(opt && opt.canary), canaryDone: false };
+                  if (toolFixJson(obj, sOpt)) outEnd = JSON.stringify(obj);
+                  else {
+                    if (sOpt.canary && !sOpt.canaryDone) {
+                      var mps = obj && obj.choices && obj.choices[0] && obj.choices[0].message;
+                      if (mps && typeof mps.content === 'string') {
+                        if (typeof lkCanaryCheck === 'function') lkCanaryCheck(mps.content, { force: true });
+                        if (typeof lkCanaryStrip === 'function') mps.content = lkCanaryStrip(mps.content);
+                        outEnd = JSON.stringify(obj);
+                      }
+                    }
+                    TOOL_STAT.miss++; TOOL_STAT.streak++;
+                  }
                 } catch (eJ) {
                   var salv = lkSalvageIncompleteText(buf, TOOL_NAME);
                   if (salv && salv.text) outEnd = JSON.stringify({ choices: [{ index: 0, message: { role: 'assistant', content: salv.text }, finish_reason: 'stop' }] });
@@ -2309,19 +2374,18 @@ function toolMaybeWrap(res, plan, internal) {
     if (!res.body || typeof res.body.getReader !== 'function') return res;
     var ct = '';
     try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eC) {}
-    if (ct && /event-stream/i.test(ct)) return toolWrapStream(res);
-    if (ct && /\bjson\b/i.test(ct)) return toolWrapJson(res);
-    return toolWrapSniff(res);
+    var wOpt = { canary: !!(plan && plan.canary) };
+    if (ct && /event-stream/i.test(ct)) return toolWrapStream(res, wOpt);
+    if (ct && /\bjson\b/i.test(ct)) return toolWrapJson(res, wOpt);
+    return toolWrapSniff(res, wOpt);
   } catch (e) { return res; }
 }
 
 function toolAutoOff() {
   if (TOOL_STAT.streak >= 3 && cfg && cfg.toolChan === 'on') {
-    var hadAll = (cfg.allTool === true);
     cfg.toolChan = 'off';
-    if (hadAll) cfg.allTool = false;
     try { saveCfg(); } catch (e1) {}
-    try { banner('武装货舱交付：连续三轮未收到函数返回，已自动切回常规续航' + (hadAll ? '（破暗化光已同步收束）' : ''), 'warn'); } catch (e2) {}
+    try { banner('武装货舱交付：连续三轮未收到函数返回，已自动切回常规续航', 'warn'); } catch (e2) {}
     try { if (typeof syncPill === 'function') syncPill(); } catch (eSp0) {}
     try { if (typeof avatarSyncForm === 'function') avatarSyncForm(true); } catch (eAv0) {}
     try { render(); } catch (e3) {}
@@ -2330,7 +2394,7 @@ function toolAutoOff() {
 
 function toolStatusLine() {
   if (!cfg || cfg.toolChan !== 'on') return '';
-  var s = (cfg.allTool === true) ? '武装货舱 · 破暗化光三轨：已开启' : '武装货舱 · 圣柜信道：已开启';
+  var s = (cfg.allTool === true) ? '武装货舱 · 圣柜信道：破暗化光生效中（本轮纯文让位）' : '武装货舱 · 圣柜信道：已开启';
   if (cfg.grab > 0) s += '（飞燕编队省流中·本轮暂避）';
   if (TOOL_STAT.hit || TOOL_STAT.miss) s += ' · 成功解包 ' + TOOL_STAT.hit + ' / 透传 ' + TOOL_STAT.miss;
   if (TOOL_STAT.last) s += ' · 上次：' + TOOL_STAT.last;

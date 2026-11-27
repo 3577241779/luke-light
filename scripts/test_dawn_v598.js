@@ -198,7 +198,7 @@ for (const fileName of TARGETS) {
   vm.runInNewContext(raw.content, win, { filename: fileName });
   const api = win.__AR6__;
   try {
-    check(api && api.VERSION === '6.0', `${fileName}: VERSION === 6.0`, api && api.VERSION);
+    check(api && api.VERSION === '6.2', `${fileName}: VERSION === 6.2`, api && api.VERSION);
     check(typeof api.lkDawnHTML === 'function' && typeof api.lkDawnAsk === 'function' && typeof api.lkVisualTier === 'function',
       `${fileName}: 导出 lkDawnHTML / lkDawnAsk / lkVisualTier`);
     check(api.getCfg().allTool === false, `${fileName}: 默认 allTool === false`);
@@ -215,8 +215,8 @@ for (const fileName of TARGETS) {
     const idxSem = jailHtmlIdle.indexOf('sem:toggle');
     check(idxNoa > 0 && idxAbyss > idxNoa && idxDawn > idxAbyss && idxSem > idxDawn,
       `${fileName}: 按键位置精确落在诺亚 & 深渊正下方、幻影折射正上方`, `noa=${idxNoa} abyss=${idxAbyss} dawn=${idxDawn} sem=${idxSem}`);
-    check(jailHtmlIdle.includes('ar6-temple-btn dawn') && jailHtmlIdle.includes('破暗化光 · 闪耀三轨'),
-      `${fileName}: 奥特原皮按键样式与文案正确`);
+    check(jailHtmlIdle.includes('ar6-temple-btn dawn') && jailHtmlIdle.includes('破暗化光 · 纯文耀光'),
+      `${fileName}: 奥特原皮按键样式与 V6.2 纯文耀光文案正确`);
 
     // 2. 点击 alltool:toggle -> 弹出第 5 套仪式弹窗（data-ritual="dawn"）-> 点确认变回闪耀迪迦！
     api.setCfg('toolChan', 'off');
@@ -228,21 +228,21 @@ for (const fileName of TARGETS) {
       `${fileName}: 点击破暗化光正确弹出第 5 套「由暗转明 → 变回闪耀迪迦」圣殿仪式弹窗`);
     check(api.getCfg().allTool === false, `${fileName}: 未点确认前不提前打开 cfg.allTool`);
 
-    // 点确认按钮 dawnok
+    // 点确认按钮 dawnok（V6.2：不再代开 toolChan，而是纯文全量转译 + 注音/探针护航）
     const okBtn = card.querySelectorAll('[data-ar6-card]').find((b) => b.getAttribute('data-ar6-card') === 'dawnok');
     check(!!okBtn, `${fileName}: 弹窗含 dawnok 确认按钮`);
     card.dispatchEvent({ type: 'click', target: okBtn });
     check(api.getCfg().allTool === true, `${fileName}: 点确认后 cfg.allTool === true`);
-    check(api.getCfg().toolChan === 'on' && api.getCfg().jailTool === 'off',
-      `${fileName}: 确认开启后自动代开武装货舱且让出旧版工具破甲`);
+    check(api.getCfg().toolChan === 'off' && api.getCfg().jailTool === 'off',
+      `${fileName}: V6.2 确认开启后绝不强开武装货舱且让出旧版工具破甲`);
 
     // 验证两段式黑转闪耀全屏演出 DOM
     const fxEl = win.document.getElementById('ar6-fx');
     check(!!fxEl && fxEl.getAttribute('data-fx') === 'dawn' && fxEl.innerHTML.includes('ar6-dawn-dark') && fxEl.innerHTML.includes('ar6-dawn-glitter') && fxEl.innerHTML.includes('闪耀迪迦归来'),
       `${fileName}: 确认后触发两段式黑暗裂解 → 闪耀迪迦归来全屏演出 (#ar6-fx[data-fx="dawn"])`);
 
-    // 3. 视觉形态 & 3D 桌宠闪耀迪迦联动（cfg.jail='abyss' + allTool=true => 顶栏/圆章/桌宠变回闪耀 supreme）
-    check(api.lkVisualTier() === 'supreme', `${fileName}: 深渊 + 破暗化光下 lkVisualTier() === 'supreme'`);
+    // 3. 视觉形态 & 3D 桌宠闪耀迪迦联动（toolChan=off + allTool=true => 顶栏/圆章/桌宠仍变回闪耀 supreme！）
+    check(api.lkVisualTier() === 'supreme', `${fileName}: 深渊 + 破暗化光(toolChan=off) 下 lkVisualTier() === 'supreme'`);
     const rootEl = win.document.getElementById('ar6-root');
     check(rootEl && rootEl.getAttribute('data-tier') === 'supreme' && rootEl.getAttribute('data-alltool') === '1',
       `${fileName}: #ar6-root 顶栏流光同步转为 supreme 闪耀金并挂 data-alltool="1"`);
@@ -257,74 +257,39 @@ for (const fileName of TARGETS) {
     check(rootEl && rootEl.getAttribute('data-tier') === 'abyss' && !rootEl.getAttribute('data-alltool'),
       `${fileName}: 关闭后 #ar6-root 恢复 data-tier="abyss" 并移除 data-alltool`);
 
-    // 4. 后端三路全工具路由 + 多轮 tool 回执自动补齐防 400 + save_chapter 升级校验
+    // 4. V6.2 后端纯文全量 \uXXXX 转译 + 注音/探针护航 + 彻底根治 C1 工具脑裂冲突
     api.setCfg('allTool', true);
     api.setCfg('toolChan', 'on');
-    api.setCfg('toolLoop', false);
+    api.setCfg('toolLoop', true);
     api.setCfg('grab', 0);
     api.setCfg('jailTool', 'off');
     api.setCfg('jail', 'abyss');
+    api.setCfg('jailSupremeConfirmed', true);
+    api.setCfg('wire', 'auto');
+    api.setCfg('armor', 'auto');
+    api.setCfg('zhuyin', 'auto');
+    api.setCfg('canary', 'auto');
     const reqBody = {
       model: 'gemini-4-hydrogen',
       chat_completion_source: 'openai',
       messages: [
         { role: 'system', content: '故事世界设定' },
-        { role: 'user', content: '第一轮剧情' },
-        { role: 'assistant', content: null, tool_calls: [{ id: 'call_prev_1', type: 'function', function: { name: 'save_prose', arguments: '{"content":"上轮正文"}' } }] },
-        { role: 'user', content: '继续下一章' },
+        { role: 'user', content: '她轻声娇吟着继续推进下一章' },
       ],
     };
     const plan = api.planRequest(JSON.stringify(reqBody), '/api/backends/chat-completions/generate', false);
     const outB = JSON.parse(plan.body);
-    const toolNames = Array.isArray(outB.tools) ? outB.tools.map((t) => t && t.function && t.function.name) : [];
-    check(toolNames.length === 3 && toolNames.includes('save_prose') && toolNames.includes('save_status') && toolNames.includes('save_options'),
-      `${fileName}: allTool=true 注入三路独立工具 [save_prose, save_status, save_options]`, toolNames.join(','));
-    const hasReceipt = outB.messages.some((m) => m && m.role === 'tool' && m.tool_call_id === 'call_prev_1' && String(m.content || '').includes('"ok":true'));
-    check(hasReceipt, `${fileName}: lkToolReceipts 自动为未闭环的历史 save_prose 补齐 {ok:true} 工具回执防 400`);
-
-    // 4b. V5.99 冲突修复专项校验（5 大冲突逐一断言）
-    // (i) allTool + toolLoop 互斥：即便 toolLoop=true，allTool 优先且不发 lk_read_turn、日志不错报
-    api.setCfg('toolLoop', true);
-    const planLoop = api.planRequest(JSON.stringify({
-      model: 'gemini-4-hydrogen', chat_completion_source: 'custom',
-      messages: [{ role: 'user', content: '测试双轮互斥' }],
-    }), '/api/backends/chat-completions/generate', false);
-    const outLoop = JSON.parse(planLoop.body);
-    const loopNames = (outLoop.tools || []).map((t) => t.function.name);
-    check(loopNames.length === 3 && !loopNames.includes('lk_read_turn') && !planLoop.changed.join('|').includes('双轮工具链'),
-      `${fileName}: V5.99 allTool 优先于 toolLoop 且日志准确不错报`, loopNames.join(','));
+    check(!plan.proto && !plan.tool && !outB.tools && !outB.tool_choice,
+      `${fileName}: V6.2 allTool=true 即使叠加 toolChan=on/toolLoop=true 也绝不注入任何 tools/tool_choice（零脑裂）`);
+    check(!/[^\x00-\x7F]/.test(plan.body),
+      `${fileName}: V6.2 allTool=true 全量非 ASCII 转为 \\uXXXX 透明传输`);
+    check(plan.canary === true && JSON.stringify(outB).includes('【校验】') && JSON.stringify(outB).includes('【注音说明】'),
+      `${fileName}: V6.2 allTool=true 正常联动注音层与三枚零宽探针`);
+    check(typeof api.lkTypesetTxt === 'function' && api.lkTypesetTxt().includes('全程自然语言直出'),
+      `${fileName}: V6.2 allTool=true 纯文模式下 lkTypesetTxt 与纯文直出口径一致`);
     api.setCfg('toolLoop', false);
 
-    // (ii) 工具定义兼容 <lk_cot> / <thinking> / <UpdateVariable>；不重复拼 LK_CARRY_NOTE；lkTypesetTxt 不写“全程自然语言直出”
-    const proseDesc = outB.tools.find((t) => t.function.name === 'save_prose').function.description;
-    const statusDesc = outB.tools.find((t) => t.function.name === 'save_status').function.description;
-    check(proseDesc.includes('<lk_cot>') && statusDesc.includes('<UpdateVariable>'),
-      `${fileName}: V5.99 三路描述明确兼容《光域·镜界》<lk_cot> 与 <UpdateVariable>`);
-    const lastUserAll = outB.messages.filter((m) => m.role === 'user').pop();
-    check(String(lastUserAll.content || '').includes('依次调用 save_prose') && !String(lastUserAll.content || '').includes('【正文通道】'),
-      `${fileName}: V5.99 三路模式不重复叠加单轨 LK_CARRY_NOTE`);
-    check(typeof api.lkTypesetTxt === 'function' && !api.lkTypesetTxt().includes('全程自然语言直出'),
-      `${fileName}: V5.99 工具通道生效时 lkTypesetTxt 自动消除与工具调用打架的话术`);
-
-    // (iii) 幂等查重 & 白名单同步：连跑两次 toolChanPatch 不重复追加；lkClassifyTools 不把 save_status 误判成外部业务引擎；lkDropOrphanTools 保护三路工具
-    const dupBody = { messages: [{ role: 'user', content: '含 save_chapter 字样的玩家输入' }] };
-    api.toolChanPatch(dupBody, {});
-    const lenAfter1 = dupBody.messages[0].content.length;
-    check(dupBody.messages[0].content.includes('依次调用 save_prose'),
-      `${fileName}: V5.99 输入含 save_chapter 时三路提示词不被误跳过`);
-    delete dupBody.tools;
-    api.toolChanPatch(dupBody, {});
-    check(dupBody.messages[0].content.length === lenAfter1,
-      `${fileName}: V5.99 三路模式 toolAppendNote 严格幂等不重复追加`);
-    const clsOwn = api.lkClassifyTools({ tools: outB.tools });
-    check(clsOwn && clsOwn.allCarrier === true && clsOwn.hasEngine === false,
-      `${fileName}: V5.99 lkClassifyTools 正确将 save_prose/save_status/save_options 识别为自家载具而非外部引擎`, JSON.stringify(clsOwn));
-    const orpBody = { messages: [{ role: 'user', content: '无工具名正文' }], tools: JSON.parse(JSON.stringify(outB.tools)) };
-    const droppedOrp = api.lkDropOrphanTools(orpBody);
-    check(droppedOrp === 0 && Array.isArray(orpBody.tools) && orpBody.tools.length === 3,
-      `${fileName}: V5.99 lkDropOrphanTools 完整保护三路工具不被误删`, `dropped=${droppedOrp}`);
-
-    // (iv) 流式工具名分片 save_p + rose 不再误判成外部工具 + 三路解包（流式/非流式/断流抢救）自动补 \n\n 分段
+    // 4b. 保留多槽历史/流式分片与工具通道兼容测试（关闭 allTool 后单路工具解包完好）
     const uwChunk = api.toolCreateUnwrapper();
     const cf1 = uwChunk.handleObj({ choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: 'c1', type: 'function', function: { name: 'save_p', arguments: '' } }] }, finish_reason: null }] });
     const cf2 = uwChunk.handleObj({ choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { name: 'rose', arguments: '{"content":"分片正文。"}' } }] }, finish_reason: null }] });
@@ -332,7 +297,7 @@ for (const fileName of TARGETS) {
     const cf4 = uwChunk.handleObj({ choices: [{ index: 0, delta: { tool_calls: [{ index: 2, id: 'c3', type: 'function', function: { name: 'save_options', arguments: '{"content":"<lk_choices>1.前进</lk_choices>"}' } }] }, finish_reason: 'tool_calls' }] });
     const joinedStream = [cf1, cf2, cf3, cf4].map((x) => (x && x.choices && x.choices[0] && x.choices[0].delta && x.choices[0].delta.content) || '').join('');
     check(!cf1.choices[0].delta.tool_calls && joinedStream === '分片正文。\n\n<lk_status>HP:99</lk_status>\n\n<lk_choices>1.前进</lk_choices>',
-      `${fileName}: V5.99 流式分片 save_p+rose 正常解包且三路自动以 \\n\\n 分段`, JSON.stringify(joinedStream));
+      `${fileName}: 流式分片 save_p+rose 历史兼容解包与 \\n\\n 分段保持完好`, JSON.stringify(joinedStream));
 
     const nonStreamObj = {
       choices: [{
@@ -349,35 +314,34 @@ for (const fileName of TARGETS) {
     };
     api.toolFixJson(nonStreamObj);
     check(nonStreamObj.choices[0].message.content === '非流正文。\n\n<lk_status>MP:50</lk_status>\n\n1.A\n2.B',
-      `${fileName}: V5.99 非流式 toolFixJson 三路按槽独立提取并以 \\n\\n 分隔`, JSON.stringify(nonStreamObj.choices[0].message.content));
+      `${fileName}: 非流式 toolFixJson 多槽按 \\n\\n 分隔保持完好`, JSON.stringify(nonStreamObj.choices[0].message.content));
 
-    const salvRaw = 'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"save_prose","arguments":"{\\"content\\":\\"抢救正文\\"}"}}]}}]}\n\n'
-      + 'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"name":"save_status","arguments":"{\\"content\\":\\"抢救状态\\"}"}}]}}]}\n\n';
-    const salvRes = api.lkSalvageIncompleteText(salvRaw, 'save_chapter');
-    check(salvRes && salvRes.text === '抢救正文\n\n抢救状态',
-      `${fileName}: V5.99 断流抢救 lkSalvageIncompleteText 多槽按 \\n\\n 分段`, JSON.stringify(salvRes));
-
-    // (v) 双向开关防假亮灯：关武装货舱 / 开 tool-loop / 飞燕编队暂避
+    // (v) V6.2 开关独立性：飞燕暂避保留配置；关闭武装货舱或能量续航不再误关 allTool；手动开启双轮工具链时让位关闭 allTool
     api.setCfg('allTool', true);
     api.setCfg('toolChan', 'on');
     api.setCfg('grab', 2);
     check(api.lkVisualTier() === 'abyss' && api.uiJailHTML().includes('飞燕暂避'),
-      `${fileName}: V5.99 飞燕编队开启时保留 allTool 配置但视觉与文案显式标「飞燕暂避」不假亮`);
+      `${fileName}: 飞燕编队开启时保留 allTool 配置但视觉与文案显式标「飞燕暂避」不假亮`);
     api.setCfg('grab', 0);
     await new Promise((r) => setTimeout(r, 420));
     api.onPanelClick({ target: { getAttribute: (k) => (k === 'data-ar6' ? 'tool-off' : null), parentNode: null }, type: 'click' });
-    check(api.getCfg().toolChan === 'off' && api.getCfg().allTool === false && api.lkVisualTier() === 'abyss',
-      `${fileName}: V5.99 关闭武装货舱同步收束 allTool 并还原深渊视觉`);
+    check(api.getCfg().toolChan === 'off' && api.getCfg().allTool === true && api.lkVisualTier() === 'supreme',
+      `${fileName}: V6.2 关闭武装货舱不再误关破暗化光，闪耀视觉持续生效`);
+    await new Promise((r) => setTimeout(r, 420));
+    api.onPanelClick({ target: { getAttribute: (k) => (k === 'data-ar6' ? 'gm:trunc:0' : null), parentNode: null }, type: 'click' });
+    check(api.getCfg().allTool === true && api.lkVisualTier() === 'supreme',
+      `${fileName}: V6.2 关闭能量续航不再误关破暗化光`);
+    api.setCfg('trunc', 'medium');
     api.setCfg('toolChan', 'on');
-    api.setCfg('allTool', true);
     await new Promise((r) => setTimeout(r, 420));
     api.onPanelClick({ target: { getAttribute: (k) => (k === 'data-ar6' ? 'tool-loop' : null), parentNode: null }, type: 'click' });
     check(api.getCfg().toolLoop === true && api.getCfg().allTool === false,
-      `${fileName}: V5.99 手动开启双轮工具链时自动让位关闭 allTool`);
+      `${fileName}: 手动开启双轮工具链时自动让位关闭 allTool`);
     api.setCfg('toolLoop', false);
 
-    // 单工具模式 save_chapter 检验
+    // 单工具模式 save_chapter 检验（非 abyss 档 + allTool=false + toolChan=on）
     api.setCfg('allTool', false);
+    api.setCfg('jail', 'strong');
     api.setCfg('toolChan', 'on');
     const plan1 = api.planRequest(JSON.stringify({
       model: 'gemini-4-hydrogen',
@@ -386,7 +350,7 @@ for (const fileName of TARGETS) {
     }), '/api/backends/chat-completions/generate', false);
     const out1 = JSON.parse(plan1.body);
     check(Array.isArray(out1.tools) && out1.tools.length === 1 && out1.tools[0].function.name === 'save_chapter',
-      `${fileName}: 关闭 allTool 后回退单路 save_chapter 工具`);
+      `${fileName}: 关闭 allTool 后强力档 + 武装货舱正常走单路 save_chapter 工具`);
 
     // 5. 全 10 套皮肤专属暗转明按键文案 + 第 5 套仪式弹窗 + 觉醒演出全覆盖
     for (const skId of SKINS) {

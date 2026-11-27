@@ -235,7 +235,7 @@ function jailPatchBody(body, opt) {
 function resumeTruncWhy(tail, chars) {
   var t = String(tail || '');
   if (!t) return '';
-  var flat = t.replace(/\s+$/, '');
+  var flat = t.replace(/(?:\s|[\u200B-\u200D\u2060])+$/, '');
   if (!flat) return '';
 
   var fences = flat.split('```').length - 1;
@@ -425,13 +425,13 @@ function jailFire() { return resumeFire('jail'); }
 /* ---- 五档去技术化圣殿仪式确认弹窗与事件委托（含 V5.98 破暗化光·闪耀三轨） ---- */
 var JAIL_ASK = { at: 0, code: '', key: '' };
 
-/* 视觉形态解析：全工具破甲(allTool)实际生效且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
+/* 视觉形态解析：破暗化光(allTool)实际生效且当前为深渊或石像待机时，顶栏/圆章/3D桌宠同步由暗转明化回闪耀迪迦(supreme) */
 function lkVisualTier() {
   try {
     if (!cfg || !cfg.enabled) return 'off';
     var j = String(cfg.jail || 'off');
     if (j === 'gatanothor' || j === 'noa') return 'noa';
-    var dawnLive = !!(cfg.allTool === true && cfg.toolChan === 'on' && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
+    var dawnLive = !!(cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
     if (dawnLive && (j === 'abyss' || j === 'off')) return 'supreme';
     return j;
   } catch (e) { return 'off'; }
@@ -942,9 +942,9 @@ function lkDawnHTML() {
     'dawn',
     '〘 FINAL ODYSSEY · 破暗化光 〙',
     '由暗转明 · 终化闪耀迪迦',
-    '“三千万年前，他也曾立于无尽黑暗的深渊。当最后一道信念穿透永夜，黑曜铠甲寸寸崩落，三道神光自暗影深处破茧而出——”',
-    '「就算曾经诞生于黑暗，我也能亲手将它化作光明！<br>舍弃深渊的枷锁，以三路圣光重塑身躯——再一次，变回闪耀迪迦吧！」',
-    '◈ 破晓圣谕：正文 / 状态栏 / 选项分三路工具通道纯净投递（自动代开武装货舱、工具破甲让位，顶栏与 3D 桌宠同步化回闪耀迪迦）· 既往记录分毫无损',
+    '“三千万年前，他也曾立于无尽黑暗的深渊。当最后一道信念穿透永夜，黑曜铠甲寸寸崩落，炽金圣光自暗影深处破茧而出——”',
+    '「就算曾经诞生于黑暗，我也能亲手将它化作光明！<br>舍弃深渊的枷锁，以全量粒子化纯文圣光重塑身躯——再一次，变回闪耀迪迦吧！」',
+    '◈ 破晓圣谕：纯文全量 \\uXXXX 转译 + 注音/探针护航，不走工具通道（武装货舱与工具破甲自动让位，顶栏与 3D 桌宠同步化回闪耀迪迦）· 既往记录分毫无损',
     'dawnok', '【破暗化光 · 变回闪耀迪迦】',
     'dawnno', '暂留暗影之中'
   );
@@ -968,10 +968,10 @@ function lkDawnAsk() {
       closeCard();
       cfg.allTool = true;
       var allNote = '';
-      if (String(cfg.toolChan || 'off') !== 'on') { cfg.toolChan = 'on'; allNote += '已代开武装货舱'; }
+      if (String(cfg.toolChan || 'off') === 'on') { allNote += '武装货舱本轮让位'; }
       if (String(cfg.jailTool || 'off') !== 'off') { cfg.jailTool = 'off'; allNote += (allNote ? '，' : '') + '工具破甲已让位'; }
       if (cfg.toolLoop === true) { cfg.toolLoop = false; allNote += (allNote ? '，' : '') + '双轮工具链已让位'; }
-      if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间三轨暂避'; }
+      if (cfg.grab > 0) { allNote += (allNote ? '，' : '') + '飞燕编队省流期间破暗化光暂避'; }
       saveCfg(); ensureHooks();
       try { if (typeof UI_SIG !== 'undefined') UI_SIG = {}; } catch (eUs) {}
       render();
@@ -981,13 +981,13 @@ function lkDawnAsk() {
       try { if (typeof avatarSay === 'function') avatarSay('form', (rt && rt.petLine) || '黑暗终将散去 · 闪耀迪迦破暗归来！'); } catch (eSay) {}
       var okMsg = (rt && rt.bannerOk)
         ? (rt.bannerOk + (allNote ? '（' + allNote + '）' : ''))
-        : ('✦ 破暗化光！闪耀迪迦已归来：正文 / 状态栏 / 选项三路圣柜投递开启' + (allNote ? '（' + allNote + '）' : ''));
+        : ('✦ 破暗化光！闪耀迪迦已归来：纯文全量转译 + 注音/探针护航已开启，不走工具通道' + (allNote ? '（' + allNote + '）' : ''));
       banner(okMsg, 'ok', true);
       return;
     }
     if (act === 'dawnno' || (ev && ev.target === node)) {
       closeCard();
-      banner((rt && rt.bannerNo) || '暂留暗影之中，未开启三路全工具投递', 'gray');
+      banner((rt && rt.bannerNo) || '暂留暗影之中，未开启破暗化光纯文全量转译', 'gray');
     }
   });
   return true;

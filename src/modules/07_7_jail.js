@@ -666,7 +666,7 @@ var MENU_SPEC = {
               set: function (v) { cfg.jailTool = v;
                 if (v !== 'off' && !cfg.jailToolKeep) cfg.jail = 'off';
                 if (v !== 'off' && cfg.toolChan === 'on') cfg.toolChan = 'off';   /* 4.6.1：与武装货舱互斥 */
-                if (v !== 'off' && cfg.allTool === true) cfg.allTool = false;    /* V5.99：与破暗化光三轨互斥 */
+                if (v !== 'off' && cfg.allTool === true) cfg.allTool = false;    /* V6.2：与破暗化光互斥 */
               } },
   trunc:  { label: '能量续航', items: [['关闭', 'off'], ['续航叮嘱', 'light'], ['自动接力', 'medium']],
             get: function () { return truncLevel(cfg.trunc); }, set: function (v) { cfg.trunc = v; } },

@@ -657,7 +657,7 @@ function criticalWarn(label, err) {
 }
 
 function planRequest(rawBody, url, internal) {
-  var out = { changed: [], desens: false, armor: false, tool: false, model: '', base: '', body: rawBody };
+  var out = { changed: [], desens: false, armor: false, tool: false, canary: false, model: '', base: '', body: rawBody };
   var edits = 0, added = 0;
   if (!rawBody) return out;
   var body;
@@ -807,7 +807,7 @@ function planRequest(rawBody, url, internal) {
   } catch (eOpf) { origPrefill = false; }
 
   var protoWillRun = !origPrefill && (typeof lkProtoEligible === 'function' ? lkProtoEligible(body) : false);
-  var wantToolChan = !protoWillRun && !(cfg.enabled && cfg.grab > 0) && cfg.enabled && cfg.toolChan === 'on' && String(cfg.jailTool || 'off') === 'off';
+  var wantToolChan = !protoWillRun && !(cfg.allTool === true) && !(cfg.enabled && cfg.grab > 0) && cfg.enabled && cfg.toolChan === 'on' && String(cfg.jailTool || 'off') === 'off';
   var toolWillRun = wantToolChan && !origPrefill && (typeof toolChanEligible === 'function' ? toolChanEligible(body) : true);
 
   try {
@@ -822,8 +822,12 @@ function planRequest(rawBody, url, internal) {
   }
 
   /* v7.1 破甲：放在微扰之后、序列化之前——放前面会被微扰再扰动一遍 */
+  var skipForPreset = false;
+  var zhEncoded = false;
   if (cfg.enabled) {
     try {
+      skipForPreset = (typeof presetCompatForce === 'function' && !presetCompatForce() &&
+        typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body));
       /* v5.78：先降权再清洗——先洗会把降权要抓的同类词洗没，归位/下沉几乎 0 命中；
          V6.0 协议化通道自带全量 system→context.world 降权，跳过 lkDemoteBody 避免抽空设定段并污染对话流 */
       if (!protoWillRun) {
@@ -837,15 +841,23 @@ function planRequest(rawBody, url, internal) {
       try { if (lkSingleSection(body)) out.changed.push('单节折叠'); } catch (eSS) {}
       try { if (!toolWillRun && !protoWillRun && lkReceiptInject(body)) out.changed.push('尾句回执'); } catch (eRC) {}
       try { if (lkPrefixStable(body)) out.changed.push('前缀稳定'); } catch (ePS) {}
+      /* V6.2 注音层：仅编码自然语言段（受 LK_STRUCT_SAFE_RE 护栏保护），abyss 协议化模式下延迟至协议化后再单次贴注音说明避免 4 倍复制 */
       try {
-        var skipArmorForPreset = (typeof presetCompatForce === 'function' && !presetCompatForce() &&
-          typeof lkPresetOwnsJail === 'function' && lkPresetOwnsJail(body));
-        if (!skipArmorForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
+        if (!skipForPreset && !(cfg.grab > 0) && typeof lkZhuyinApply === 'function') {
+          var zhHits = lkZhuyinApply(body, { skipNote: protoWillRun });
+          if (zhHits && zhHits.length) {
+            zhEncoded = true;
+            out.changed.push(zhHits[0]);
+          }
+        }
+      } catch (eZh) {}
+      try {
+        if (!skipForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
           var arHits = lkArmorApply(body);
           if (arHits > 0) { out.armor = true; out.changed.push('码点护甲 ' + arHits + ' 处'); }
         }
       } catch (eAR) {}
-      /* 以上四步（降权下沉/历史剥离/单节折叠/码点护甲）属于预期的请求副本整理；
+      /* 以上步骤（降权下沉/历史剥离/单节折叠/注音层/码点护甲）属于预期的请求副本整理；
          刷新快照基线后继续用 assistant-protection 守护后续 jailPatchBody / desensPatchBody，
          避免多轮对话在闪耀/加坦杰厄/深渊三档下误触发整包回退。 */
       assistantBefore = assistantSnapshot(body);
@@ -885,6 +897,21 @@ function planRequest(rawBody, url, internal) {
         assistantBefore = assistantSnapshot(body);
       }
     } catch (eProto) { criticalWarn('协议化', eProto); }
+  }
+
+  /* V6.2：在协议化之后单次挂载【注音说明】（仅当实际命中编码）与【校验】探针，杜绝 abyss 4 倍复制 */
+  if (cfg.enabled && !skipForPreset && !(cfg.grab > 0)) {
+    try {
+      if (protoWillRun && zhEncoded && typeof lkZhAttachNote === 'function') {
+        lkZhAttachNote(body);
+      }
+    } catch (eZhN) {}
+    try {
+      if (typeof lkCanaryAttach === 'function' && lkCanaryAttach(body)) {
+        out.canary = true;
+        out.changed.push('探针 3 枚');
+      }
+    } catch (eCn) {}
   }
 
   if (wantToolChan) {

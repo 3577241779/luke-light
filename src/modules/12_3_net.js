@@ -2137,28 +2137,43 @@ function desensSafeCut(s) {
   if (mArm) best = Math.min(best, mArm.index);
   return best < 0 ? 0 : best;
 }
-/* V5.72：字段级流式还原（只在解析后的 JSON 文本字段上执行，绝不在原始 SSE 字节层切分破坏帧结构） */
-function lkCreateFieldUnmasker() {
+/* V5.72/V6.2：字段级流式还原（只在解析后的 JSON 文本字段上执行，支持脱敏/码点/Canary 零宽探针单次收尾检验与剥离） */
+function lkCreateFieldUnmasker(opt) {
   var cHold = '', tHold = '', reasonAccum = '', contentChars = 0, sawToolCall = false;
+  var canaryActive = !!(opt && opt.canary);
+  var canaryHits = [false, false, false], canaryTail = '', canaryDone = false;
   var canDesens = function () { return !!(cfg && cfg.enabled && cfg.desens === 'a' && cfg.desensUnmask !== false); };
   var canArmor = function () { return !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function'); };
+  function scanCanary(raw) {
+    if (!canaryActive || !raw || typeof LK_CANARY_MARKS === 'undefined') return;
+    var joined = canaryTail + raw;
+    for (var ci = 0; ci < LK_CANARY_MARKS.length; ci++) {
+      if (!canaryHits[ci] && joined.indexOf(LK_CANARY_MARKS[ci]) >= 0) canaryHits[ci] = true;
+    }
+    canaryTail = joined.slice(-4);
+  }
   function restoreRaw(s) {
     if (!s) return '';
-    if (canDesens()) return desensRestoreTxt(s);
-    if (canArmor()) return lkArmorRestore(s);
-    return s;
+    var out = s;
+    if (canDesens()) out = desensRestoreTxt(out);
+    else if (canArmor()) out = lkArmorRestore(out);
+    if (canaryActive && typeof lkCanaryStrip === 'function') out = lkCanaryStrip(out);
+    return out;
   }
   function feedBuf(isThink, raw, isFinal) {
     var comb = (isThink ? tHold : cHold) + String(raw || '');
     if (isThink) tHold = ''; else cHold = '';
     if (!comb) return '';
-    if (!isFinal && (canDesens() || canArmor())) {
-      var cut = desensSafeCut(comb);
+    if (!isFinal && (canDesens() || canArmor() || canaryActive)) {
+      var cut = comb.length;
+      if (canDesens() || canArmor()) cut = Math.min(cut, desensSafeCut(comb));
+      if (canaryActive && typeof lkCanarySafeCut === 'function') cut = Math.min(cut, lkCanarySafeCut(comb));
       if (cut < comb.length) {
         if (isThink) tHold = comb.slice(cut); else cHold = comb.slice(cut);
         comb = comb.slice(0, cut);
       }
     }
+    if (comb && canaryActive && !isThink) scanCanary(comb);
     var out = comb ? restoreRaw(comb) : '';
     if (out) {
       if (isThink) { if (reasonAccum.length < 131072) reasonAccum += out; }
@@ -2206,6 +2221,13 @@ function lkCreateFieldUnmasker() {
       }
       return o;
     }
+    if (o.type === 'message' && Array.isArray(o.content)) {
+      for (var ai = 0; ai < o.content.length; ai++) {
+        var ab = o.content[ai];
+        if (ab && ab.type === 'text' && typeof ab.text === 'string' && ab.text) ab.text = feedBuf(false, ab.text, true);
+      }
+      return o;
+    }
     if (o.type === 'content_block_delta' && o.delta) {
       if (o.delta.type === 'text_delta' && typeof o.delta.text === 'string') o.delta.text = feedBuf(false, o.delta.text, false);
       else if (o.delta.type === 'thinking_delta' && typeof o.delta.thinking === 'string') o.delta.thinking = feedBuf(true, o.delta.thinking, false);
@@ -2215,15 +2237,29 @@ function lkCreateFieldUnmasker() {
     }
     return o;
   }
+  function finishCanary() {
+    if (!canaryActive || canaryDone) return -1;
+    canaryDone = true;
+    /* 兜底消费尚未 flush 的末尾缓存，确保流尾探针不遗漏 */
+    if (cHold) { scanCanary(cHold); }
+    var matched = [];
+    if (typeof LK_CANARY_MARKS !== 'undefined') {
+      for (var mi = 0; mi < LK_CANARY_MARKS.length; mi++) {
+        if (canaryHits[mi]) matched.push(LK_CANARY_MARKS[mi]);
+      }
+    }
+    return (typeof lkCanaryCheck === 'function') ? lkCanaryCheck(matched.join(' '), { force: true }) : -1;
+  }
   return {
     applyObj: applyObj,
     flush: function () { return { content: feedBuf(false, '', true), reasoning: feedBuf(true, '', true) }; },
+    finishCanary: finishCanary,
     reasoningFallback: function () { return (!sawToolCall && contentChars === 0 && reasonAccum.trim()) ? reasonAccum : ''; },
     hasContent: function () { return contentChars > 0; }
   };
 }
 
-function desensWrapResponse(res) {
+function desensWrapResponse(res, opt) {
   try {
     var H = HOST || {};
     var RS = H.ReadableStream || (typeof ReadableStream === 'function' ? ReadableStream : null);
@@ -2232,7 +2268,7 @@ function desensWrapResponse(res) {
     var reader = res.body.getReader();
     var dec = new H.TextDecoder('utf-8');
     var enc = new H.TextEncoder();
-    var um = lkCreateFieldUnmasker();
+    var um = lkCreateFieldUnmasker(opt);
     var lineBuf = '', pendingEvent = '', mode = '';
 
     function procLine(rawLn) {
@@ -2274,7 +2310,10 @@ function desensWrapResponse(res) {
                     var jObj = JSON.parse(lineBuf.trim());
                     um.applyObj(jObj, true);
                     out = JSON.stringify(jObj);
-                  } catch (eJ2) { out = desensRestoreTxt(lineBuf); }
+                  } catch (eJ2) {
+                    out = desensRestoreTxt(lineBuf);
+                    if (opt && opt.canary && typeof lkCanaryStrip === 'function') out = lkCanaryStrip(out);
+                  }
                 } else {
                   var rem = lineBuf.split('\n');
                   for (var ri = 0; ri < rem.length; ri++) out += procLine(rem[ri]);
@@ -2286,6 +2325,7 @@ function desensWrapResponse(res) {
                 if (flEnd.reasoning) out += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { reasoning_content: flEnd.reasoning }, finish_reason: null }] }) + '\n\n';
                 if (flEnd.content) out += 'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: flEnd.content }, finish_reason: null }] }) + '\n\n';
               }
+              try { um.finishCanary(); } catch (eFc) {}
               if (out) ctl.enqueue(enc.encode(out));
               ctl.close();
               return;
@@ -2331,18 +2371,19 @@ function desensMaybeRestore(res, plan, internal) {
   try {
     if (!res || internal || !cfg.enabled) return res;
     if (!plan) return res;
-    /* 若武装货舱已接管解包，文本字段已在对象层完成脱敏与护甲还原，避免双重包裹响应流 */
-    if (plan.tool && cfg.toolChan === 'on') return res;
+    /* 若武装货舱或协议化已接管解包，文本字段已在对象层完成脱敏/护甲/探针还原，避免双重包裹响应流 */
+    if (plan.tool && (cfg.toolChan === 'on' || plan.proto)) return res;
     var needDesens = !!(plan.desens && cfg.desens === 'a' && cfg.desensUnmask !== false);
     var needArmor = !!plan.armor;
-    if (!needDesens && !needArmor) return res;
+    var needCanary = !!plan.canary;
+    if (!needDesens && !needArmor && !needCanary) return res;
     if (!(res.status >= 200 && res.status < 300)) return res;
     if (!res.body || typeof res.body.getReader !== 'function') return res;
     var ct = '';
     try { ct = String(res.headers && res.headers.get ? res.headers.get('content-type') : ''); } catch (eC) {}
     if (ct && !/json|event-stream|text/i.test(ct)) return res;
-    var wrapped = desensWrapResponse(res);
-    if (wrapped !== res) DESENS_FIXED += 1;
+    var wrapped = desensWrapResponse(res, { canary: needCanary });
+    if (wrapped !== res && (needDesens || needArmor)) DESENS_FIXED += 1;
     return wrapped;
   } catch (e) { return res; }
 }
@@ -2392,15 +2433,18 @@ function lkCleanLatestAiFloor() {
     if (DISPOSED || !cfg || !cfg.enabled || cfg.safe) return false;
     var needDesens = (cfg.desens === 'a' && cfg.desensUnmask !== false);
     var needArmor = !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function');
-    if (!needDesens && !needArmor) return false;
+    var hasCanaryStrip = (typeof lkCanaryStrip === 'function');
+    if (!needDesens && !needArmor && !hasCanaryStrip) return false;
     var ctx = stCtx();
     var chat = ctx && Array.isArray(ctx.chat) ? ctx.chat : null;
     if (!chat || !chat.length) return false;
     var cleanStr = function (s) {
       if (typeof s !== 'string' || !s) return s;
-      var hit = s.indexOf('\u00a6') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
+      var hasCanary = hasCanaryStrip && (s.indexOf('\u200b\u200c') >= 0 || s.indexOf('\u200d\u200b') >= 0 || s.indexOf('\u2060\u200b') >= 0);
+      var hit = hasCanary || s.indexOf('\u00a6') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
       if (!hit) return s;
-      var out = needDesens ? desensRestoreTxt(s) : lkArmorRestore(s);
+      var out = needDesens ? desensRestoreTxt(s) : (needArmor ? lkArmorRestore(s) : s);
+      if (hasCanary) out = lkCanaryStrip(out);
       return out;
     };
     var anyChanged = false;
@@ -2519,8 +2563,9 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   var useTool = !!(cfg && cfg.enabled && !internal && (cfg.toolChan === 'on' || (plan && plan.proto)) && plan && plan.tool && res.status >= 200 && res.status < 300);
   var needDesens = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.desens && cfg.desens === 'a' && cfg.desensUnmask !== false);
   var needArmor = !useTool && !!(cfg && cfg.enabled && !internal && plan && plan.armor);
-  var useFieldUnmask = !!(needDesens || needArmor) && (!ct || /json|event-stream|text/i.test(ct));
-  if (useFieldUnmask) DESENS_FIXED += 1;
+  var needCanary = !!(cfg && cfg.enabled && !internal && plan && plan.canary && res.status >= 200 && res.status < 300);
+  var useFieldUnmask = !useTool && !!(needDesens || needArmor || needCanary) && (!ct || /json|event-stream|text/i.test(ct));
+  if (useFieldUnmask && (needDesens || needArmor)) DESENS_FIXED += 1;
 
   var isSseHint = /event-stream/i.test(ct);
   var isJsonHint = !isSseHint && /\bjson\b/i.test(ct);
@@ -2539,8 +2584,9 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
   var dec = new H.TextDecoder('utf-8');
   var enc = new H.TextEncoder();
   var hbBytes = enc.encode(': keepalive\n\n');
-  var uw = useTool ? toolCreateUnwrapper() : null;
-  var fum = useFieldUnmask ? lkCreateFieldUnmasker() : null;
+  var uw = useTool ? toolCreateUnwrapper({ canary: needCanary }) : null;
+  var fum = useFieldUnmask ? lkCreateFieldUnmasker({ canary: needCanary }) : null;
+  var canarySettled = false;
 
   var rawChunks = [], rawBytes = 0, teeChars = 0, outBytes = 0;
   var mode = isSseHint ? 'sse' : (isJsonHint ? 'json' : '');
@@ -2597,6 +2643,14 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
       }
     } catch (eTeeS) {}
     if (uw) { try { uw.finalizeStats(); } catch (eUwF) {} }
+    if (needCanary && !canarySettled && !error && reason !== 'aborted') {
+      canarySettled = true;
+      try {
+        if (uw && typeof uw.finishCanary === 'function') uw.finishCanary();
+        else if (fum && typeof fum.finishCanary === 'function') fum.finishCanary();
+        else if (typeof lkCanaryCheck === 'function') lkCanaryCheck('', { force: true });
+      } catch (eCnF) {}
+    }
     if (ev) { ev.__streamDone = true; ev.__streamReason = reason; }
     /* 从活跃流表移除 */
     var ai = LK_ACTIVE_STREAMS.indexOf(activeEntry);
@@ -2794,8 +2848,23 @@ function lkAttachResponsePipeline(res, ev, plan, internal, reqSignal) {
                 mode = 'json';
                 try {
                   var jObj = JSON.parse(lineBuf.trim());
-                  if (uw) { if (!toolFixJson(jObj)) uw.handleObj(jObj); }
-                  else if (fum) fum.applyObj(jObj, true);
+                  if (uw) {
+                    var fixOpt = { canary: needCanary, canaryDone: false };
+                    if (!toolFixJson(jObj, fixOpt)) {
+                      uw.handleObj(jObj);
+                      if (needCanary && !fixOpt.canaryDone) {
+                        var mPlain = jObj && jObj.choices && jObj.choices[0] && jObj.choices[0].message;
+                        if (mPlain && typeof mPlain.content === 'string') {
+                          if (typeof lkCanaryCheck === 'function') lkCanaryCheck(mPlain.content, { force: true });
+                          if (typeof lkCanaryStrip === 'function') mPlain.content = lkCanaryStrip(mPlain.content);
+                          fixOpt.canaryDone = true;
+                        }
+                      }
+                    }
+                    if (fixOpt.canaryDone) canarySettled = true;
+                  } else if (fum) {
+                    fum.applyObj(jObj, true);
+                  }
                   endStr = JSON.stringify(jObj);
                 } catch (eJEnd) {
                   if (uw && /^data:\s?/m.test(lineBuf)) {

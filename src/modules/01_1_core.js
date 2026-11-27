@@ -1,11 +1,11 @@
 /* ===== 1_core.js ===== */
 /* ============================================================================
- * Anti-Route v6.0 — 1/4 Core
+ * Anti-Route v6.2 — 1/4 Core
  * 宿主 / 存储 / 模型归一化 / 保护区 / 静态区选择
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '6.0';
+var VERSION = '6.2';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -92,9 +92,11 @@ var CFG_DEFAULT = {
   wire: 'auto', /* off/mask/all/auto：mask=65 词表，all=整包字符串全量 \uXXXX，auto=强力档以上全量、复合型词表 */
   salt: 'auto', /* off/auto：会话盐 */
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
+  zhuyin: 'auto', /* V6.2 注音层：auto（深渊/破暗化光自动启用）| on | off */
+  canary: 'auto', /* V6.2 探针：auto（深渊/破暗化光自动启用）| on | off */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
   toolChan: 'off',       // off | on（武装货舱）
-  allTool: false,        /* V5.98 全工具破甲（破暗化光·闪耀三轨）：正文/状态/选项分三路工具投递 */
+  allTool: false,        /* V6.2 破暗化光：纯文全量 \uXXXX 转译 + 注音/探针护航（不走工具通道） */
   toolLoop: false,       // 第三期：双轮工具链（合成读入工具轮 + auto，适配 Gemini 兼容反代）
   toolCover: false,      // 第三期：可选原创中性外层封装 + 流式零延迟自动剥壳
   retry503: 'on',
@@ -493,6 +495,8 @@ function readCfg() {
   d.shape = ar6Pick(d.shape, ['on', 'off'], 'on');
   d.toolChan = ar6Pick(d.toolChan, ['off', 'on'], 'off');
   d.allTool = d.allTool === true;
+  d.zhuyin = ar6Pick(d.zhuyin, ['auto', 'on', 'off'], 'auto');
+  d.canary = ar6Pick(d.canary, ['auto', 'on', 'off'], 'auto');
   d.toolLoop = d.toolLoop === true;
   d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');

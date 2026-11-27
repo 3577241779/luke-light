@@ -1069,8 +1069,8 @@ async function runAsyncPipelineChecks(win, api, raw, fileLabel) {
     api.setCfg('pvp', savedPvp);
     api.setCfg('onlyGemini', savedOnlyGem);
 
-    // (d) V5.4 ~ V6.0 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
-    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70' || api.VERSION === '5.71' || api.VERSION === '5.72' || api.VERSION === '5.73' || api.VERSION === '5.74' || api.VERSION === '5.75' || api.VERSION === '5.76' || api.VERSION === '5.77' || api.VERSION === '5.78' || api.VERSION === '5.81' || api.VERSION === '5.90' || api.VERSION === '5.91' || api.VERSION === '5.92' || api.VERSION === '5.94' || api.VERSION === '5.95' || api.VERSION === '5.96' || api.VERSION === '5.97' || api.VERSION === '5.98' || api.VERSION === '5.99' || api.VERSION === '6.0') {
+    // (d) V5.4 ~ V6.2 Ritual Modal Child-Element Click Delegation + Awakening Screen FX
+    if (api.VERSION === '5.4' || api.VERSION === '5.5' || api.VERSION === '5.6' || api.VERSION === '5.61' || api.VERSION === '5.65' || api.VERSION === '5.70' || api.VERSION === '5.71' || api.VERSION === '5.72' || api.VERSION === '5.73' || api.VERSION === '5.74' || api.VERSION === '5.75' || api.VERSION === '5.76' || api.VERSION === '5.77' || api.VERSION === '5.78' || api.VERSION === '5.81' || api.VERSION === '5.90' || api.VERSION === '5.91' || api.VERSION === '5.92' || api.VERSION === '5.94' || api.VERSION === '5.95' || api.VERSION === '5.96' || api.VERSION === '5.97' || api.VERSION === '5.98' || api.VERSION === '5.99' || api.VERSION === '6.0' || api.VERSION === '6.2') {
       api.openPanel();
       api.setUITab('jail');
       api.render();
@@ -1116,6 +1116,13 @@ async function testJsonFile(jsonPath) {
 
     const res = api.runSelfTest();
     const failed = res.items.filter(x => !x.ok);
+
+    // V6.2 H6: Also verify full 115/115 runSelfTest() passes when user has allTool=true active
+    api.setCfg('allTool', true);
+    const resAll = api.runSelfTest();
+    const failedAll = resAll.items.filter(x => !x.ok);
+    for (const fa of failedAll) failed.push({ name: '[allTool=true] ' + fa.name, ok: false, err: fa.err });
+    api.setCfg('allTool', false);
 
     // Also test openPanel() in strict mode!
     let openPanelErr = null;
