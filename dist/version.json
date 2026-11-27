@@ -1,10 +1,10 @@
 {
-  "version": "6.2",
-  "releasedAt": "2026-11-27T03:53:38.107Z",
-  "changelog": "V6.2 · 破暗化光纯文全量转译重构 + 540 词注音层与流尾完整性探针加固：破暗化光（allTool）彻底切换为纯文全量 \\uXXXX 透明转译 + 注音/探针护航（不走工具通道、根治脑裂冲突、完整保留暗转明闪耀仪式与 10 皮肤联动）；接入 540 词注音层（修复 5 处错拼、加 LK_STRUCT_SAFE_RE 结构护栏与仅命中附加说明、消除深渊 4 倍复制）；重构三枚零宽探针至流尾一次性回收并干净剥离（支持 desens=off 与 Gemini 原生 contents）；修复透明护甲 ASCII 词边界与跨引号标签保护，并持久化 zhuyin/canary 配置项。",
+  "version": "6.5",
+  "releasedAt": "2026-11-27T09:07:30.356Z",
+  "changelog": "V6.5 · 全 8 档严格单选互斥与形态切换修复 + 破暗化光纯文全量转译与流尾探针优化。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.2/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.5/dist/luke-light-desktop.json"
   }
 }
