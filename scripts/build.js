@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.2/dist';
-const CHANGELOG_LATEST = 'V7.2 · 根治思考型副 API 吐出 <think> 绕过拒答/元抱怨闸门导致「本轮消息未包含小说草稿正文或【本轮术语映射表】」报错的问题（发前/回后/流式全链路剥离副 API <think>）；新增「深度清洗状态栏 / 表格敏感词值」可选开关（只洗纯文本值、绝不破坏 HTML/JSON 键名与 <UpdateVariable>）；升级发前实测为「正文残留 + 状态栏内含」诚实双维度审计，并将「发前+回后双向副API」置顶为首选推荐模式。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.20/dist';
+const CHANGELOG_LATEST = 'V7.20 · 根治思考型副 API 吐出 <think> 绕过拒答/元抱怨闸门导致「本轮消息未包含小说草稿正文或【本轮术语映射表】」报错的问题（发前/回后/流式全链路剥离副 API <think>）；新增「深度清洗状态栏 / 表格敏感词值」可选开关（只洗纯文本值、绝不破坏 HTML/JSON 键名与 <UpdateVariable>）；升级发前实测为「正文残留 + 状态栏内含」诚实双维度审计，并将「发前+回后双向副API」置顶为首选推荐模式。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -88,10 +88,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V7.2·ST酒馆适配.json',
+    fileName: '卢克之光 V7.20·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V7.2·ST酒馆适配',
-    info: '卢克之光 V7.2「星语暗渡」· 手机 ST 酒馆适配（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹）',
+    name: '卢克之光 V7.20·ST酒馆适配',
+    info: '卢克之光 V7.20「星语暗渡」· 手机 ST 酒馆适配（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -99,10 +99,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V7.2·TT酒馆适配.json',
+    fileName: '卢克之光 V7.20·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V7.2·TT酒馆适配',
-    info: '卢克之光 V7.2「星语暗渡」· TT 酒馆适配（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / TT 双入口）',
+    name: '卢克之光 V7.20·TT酒馆适配',
+    info: '卢克之光 V7.20「星语暗渡」· TT 酒馆适配（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -110,10 +110,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V7.2·桌面版.json',
+    fileName: '卢克之光 V7.20·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V7.2·桌面版',
-    info: '卢克之光 V7.2「星语暗渡」· 电脑桌面版（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
+    name: '卢克之光 V7.20·桌面版',
+    info: '卢克之光 V7.20「星语暗渡」· 电脑桌面版（思考型副API <think>全链路防漏与拒答闸门加固 / 可选状态栏敏感词安全清洗+双维度诚实审计 / 双向副API与回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

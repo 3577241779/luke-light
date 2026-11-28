@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.2 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.20 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.2' && String(verJson.packages.st).includes('@v7.2'),
-    `${fileName}: dist/version.json 为 7.2 且指向 @v7.2`);
+  check(verJson.version === '7.20' && String(verJson.packages.st).includes('@v7.20'),
+    `${fileName}: dist/version.json 为 7.20 且指向 @v7.20`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.2', `${fileName}: VERSION === 7.2`, api && api.VERSION);
-  check(pkg.name.includes('V7.2') && pkg.info.includes('V7.2') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.2 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.20', `${fileName}: VERSION === 7.20`, api && api.VERSION);
+  check(pkg.name.includes('V7.20') && pkg.info.includes('V7.20') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.20 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
