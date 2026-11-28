@@ -947,11 +947,13 @@ function planRequest(rawBody, url, internal) {
   try { out.audit = lockAudit(body); } catch (eA) { criticalWarn('锁定审计', eA); }
   try { out.foreign = foreignShield(body); } catch (eF) { criticalWarn('外来护盾', eF); }
 
+  var preWireChars = rawBody.length;
   if (out.changed.length) {
     try {
       var rawSerialized = JSON.stringify(body);
       try { JAIL_INJ.ver = jailVerify(rawSerialized); } catch (eV) {}
       out.body = rawSerialized;
+      preWireChars = rawSerialized.length;
       try {
         if (cfg.enabled && typeof lkWireOn === 'function' && lkWireOn()) {
           var wOut = lkWireApply(out.body);
@@ -973,6 +975,9 @@ function planRequest(rawBody, url, internal) {
       }
     } catch (eWA2) {}
   }
+  out.rawChars = rawBody.length;
+  out.preWireChars = preWireChars;
+  out.sentChars = String(out.body || '').length;
   out.edits = edits;
   out.added = added;
   return out;

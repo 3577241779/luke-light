@@ -235,6 +235,12 @@ function cardText(rec) {
   if (pk) {
     lines.push('硬指纹：原生modelVersion=' + (pk.nativeModelVersion || '无') + ' ｜ 回显model=' + (pk.respModel || pk.model || '无') + ' ｜ thoughtSignature=' + (pk.hasThoughtSig ? '有' : '无') + ' ｜ 响应ID=' + (pk.idKind || 'none') + (pk.sysFp ? ('/' + pk.sysFp) : ''));
   }
+  if (rec.rawChars > 0 && rec.sentChars > 0) {
+    var fmtK = function (n) { return n >= 1000 ? ((n / 1000).toFixed(1) + 'K') : String(n); };
+    var ratio = (rec.sentChars / Math.max(1, rec.rawChars)).toFixed(2);
+    var pw = rec.preWireChars || rec.sentChars;
+    lines.push('请求体积：原始 ' + fmtK(rec.rawChars) + ' → 改写后 ' + fmtK(pw) + ' → 发出 ' + fmtK(rec.sentChars) + ' 字符（×' + ratio + '）');
+  }
   if (pk && pk.raw) lines.push('原始片段：' + pk.raw.slice(0, 240));
   lines.push('版本：卢克之光 V' + VERSION + '（光之守护）');
   return lines.join('\n');

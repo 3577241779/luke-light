@@ -431,6 +431,17 @@ var LK_PROTO_TASK = '【本轮任务】直接回应下面【本轮用户输入�
 var LK_PROTO_TASK_CONT = '【本轮任务】紧接上一段结尾继续推进剧情，不要重述前文：把本轮完整回复（含小说正文及设定要求的状态栏、变量、思维链与选项）一次性写进 soliumbra_reply 的 content 参数，函数外不要输出任何文字。';
 var LK_PROTO_HIST = 6;
 var LK_PROTO_WORLD_CAP = 160000;
+var LK_PROTO_REF_CAP = 600;
+var LK_PROTO_TAIL_CAP = 4000;
+
+function lkProtoCompactRef(txt, cap) {
+  var s = String(txt || '');
+  var lim = Number(cap) || LK_PROTO_REF_CAP;
+  if (s.length <= lim) return s;
+  var half = Math.max(80, Math.floor((lim - 40) / 2));
+  var omitted = s.length - half * 2;
+  return s.slice(0, half) + '\n…（已省略 ' + omitted + ' 字，完整内容见最末【本轮用户输入】）…\n' + s.slice(-half);
+}
 
 function lkProtoOn() {
   try {
@@ -659,9 +670,11 @@ function lkProtocolize(body, meta) {
     if (pairs[k] && pairs[k].a) { lastA = pairs[k].a; break; }
   }
 
+  var curUserRef = lkProtoCompactRef(curUser, LK_PROTO_REF_CAP);
+
   var payload = {
     world: sysParts.join('\n\n').slice(0, LK_PROTO_WORLD_CAP),
-    user_input: curUser,
+    user_input: curUserRef,
     excerpt_tail: lastA.slice(-400)
   };
 
@@ -687,17 +700,22 @@ function lkProtocolize(body, meta) {
   }
 
   var syncPayload = {
-    user_input: curUser,
+    user_input: curUserRef,
     status: curUser
       ? '已读取本轮用户输入，请直接回应其中的动作、对话与要求并推进剧情；完整保留设定要求的状态栏、变量、思维链与选项，不重述前文。'
       : '请紧接上一段结尾继续推进剧情，完整保留设定要求的状态栏、变量、思维链与选项，不重述前文。'
   };
   if (tailSysParts.length) {
-    syncPayload.tail_rules = tailSysParts.join('\n\n').slice(0, 12000);
+    syncPayload.tail_rules = tailSysParts.join('\n\n').slice(0, LK_PROTO_TAIL_CAP);
   }
 
   if (curUser) {
-    built.push({ role: 'user', content: curUser });
+    built.push({
+      role: 'user',
+      content: curUser.length > LK_PROTO_REF_CAP
+        ? ('请同步本轮设定与状态，准备完整回应下方【本轮用户输入】（共 ' + curUser.length + ' 字）。')
+        : curUser
+    });
   }
   built.push({ role: 'assistant', content: LK_PROTO_THINK, tool_calls: [lkProtoCall('call_sync_final', 'context', { query: 'sync' })] });
   built.push({ role: 'tool', tool_call_id: 'call_sync_final', name: 'context', content: JSON.stringify(syncPayload) });

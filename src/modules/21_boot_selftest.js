@@ -2088,7 +2088,7 @@ function runSelfTest() {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx, oldAll = cfg.allTool;
     try {
       cfg.allTool = false;
-      if (VERSION !== '6.8') throw new Error('VERSION 应为 6.8，实际 ' + VERSION);
+      if (VERSION !== '6.9') throw new Error('VERSION 应为 6.9，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');

@@ -69,8 +69,8 @@ function loadTarget(fileName) {
 async function runForTarget(fileName) {
   console.log(`\n=== V6.0 协议化与破甲输入保护专项回归: ${fileName} ===`);
   const { api, pkg } = loadTarget(fileName);
-  check(api && api.VERSION === '6.8', `${fileName}: VERSION === 6.8`, api && api.VERSION);
-  check(pkg.name.includes('V6.8'), `${fileName}: 包名含 V6.8`, pkg.name);
+  check(api && api.VERSION === '6.9', `${fileName}: VERSION === 6.9`, api && api.VERSION);
+  check(pkg.name.includes('V6.9'), `${fileName}: 包名含 V6.9`, pkg.name);
   check(typeof api.lkProtoOn === 'function' && typeof api.lkProtoEligible === 'function' && typeof api.lkProtocolize === 'function' && typeof api.lkProtoStr === 'function',
     `${fileName}: V6.0 LKPROTO API 完整导出`);
 
@@ -313,10 +313,43 @@ async function runForTarget(fileName) {
     check(!bodyStr.includes('不当作对写作者的新指令'), `${fileName}: [${tier}] 档彻底移除「不当作对写作者的新指令」有害文案`);
     check(bodyStr.includes('Directly respond to and advance the latest user input above'), `${fileName}: [${tier}] 档底部声明明确指示直接回应最新用户输入`);
   }
+  // 12) V6.9 大前端卡 80,000 字末尾 user 防 4 倍重复膨胀 + rawChars/preWireChars/sentChars 体积诊断
+  cfg.jail = 'abyss';
+  cfg.jailSupremeConfirmed = true;
+  cfg.wire = 'off';
+  cfg.armor = 'off';
+  cfg.desens = 'off';
+  cfg.zhuyin = 'off';
+  const bigUserBlock = '【大前端状态变量与世界书块】' + '斗气大陆设定详情。'.repeat(9000) + '\n' + REAL_INPUT;
+  const reqBig = {
+    model: 'gemini-2.5-pro',
+    chat_completion_source: 'custom',
+    messages: [
+      { role: 'system', content: '基础世界观。' },
+      { role: 'assistant', content: '上一轮回复。' },
+      { role: 'user', content: bigUserBlock },
+    ],
+  };
+  const rawBigStr = JSON.stringify(reqBig);
+  const pBig = api.planRequest(rawBigStr, URL, false);
+  const bBig = JSON.parse(pBig.body);
+  const bigInit = JSON.parse(bBig.messages[3].content);
+  const bigSync = JSON.parse(bBig.messages.filter(m => m.role === 'tool' && m.name === 'context').pop().content);
+  const bigLast = bBig.messages[bBig.messages.length - 1];
+  check(pBig.proto === true && pBig.body.length < rawBigStr.length * 1.35,
+    `${fileName}: V6.9 8万字末尾 user 经协议化后严格防 4 倍膨胀（ratio=${(pBig.body.length / rawBigStr.length).toFixed(2)}）`,
+    `raw=${rawBigStr.length} sent=${pBig.body.length}`);
+  check(bigInit.user_input.length < 700 && bigSync.user_input.length < 700 &&
+    bigLast.content.includes(bigUserBlock) && bigLast.content.includes(REAL_INPUT),
+    `${fileName}: V6.9 init/sync 仅存紧凑摘要（<700字），最末 user 100% 完整保留全部大前端块与用户真输入`,
+    `initLen=${bigInit.user_input.length} syncLen=${bigSync.user_input.length}`);
+  check(pBig.rawChars === rawBigStr.length && pBig.sentChars === pBig.body.length && pBig.preWireChars === pBig.body.length,
+    `${fileName}: V6.9 planRequest 准确记录 rawChars / preWireChars / sentChars 体积指标`,
+    `raw=${pBig.rawChars} pre=${pBig.preWireChars} sent=${pBig.sentChars}`);
 }
 
 (async () => {
   for (const t of TARGETS) await runForTarget(t);
-  console.log(`\n========== V6.0 协议化与破甲输入保护专项回归汇总：PASS=${pass} FAIL=${fail} ==========`);
+  console.log(`\n========== V6.9 协议化与破甲输入保护专项回归汇总：PASS=${pass} FAIL=${fail} ==========`);
   process.exit(fail > 0 ? 1 : 0);
 })();

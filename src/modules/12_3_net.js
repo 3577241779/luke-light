@@ -732,6 +732,11 @@ function finish(ev, meta) {
   /* v3.1.4：实际服务模型只在有值时写进记录，旧记录的键一个都不多 */
   if (ev.servedModel) rec.served = String(ev.servedModel).slice(0, 90);
   if (ev.routeHit) rec.routeHit = 1;
+  if (meta && meta.rawChars > 0) {
+    rec.rawChars = meta.rawChars;
+    rec.preWireChars = meta.preWireChars || meta.sentChars || meta.rawChars;
+    rec.sentChars = meta.sentChars || meta.rawChars;
+  }
   /* 回显渠道：名字对不上不能当「被换」的证据，降到「回显」 */
   if (rec.code === 'diff' && rec.verifiable === 'no') {
     rec.code = 'echo';
@@ -2443,7 +2448,7 @@ function lkCleanLatestAiFloor() {
     var cleanStr = function (s) {
       if (typeof s !== 'string' || !s) return s;
       var hasCanary = hasCanaryStrip && (s.indexOf('\u200b\u200c') >= 0 || s.indexOf('\u200d\u200b') >= 0 || s.indexOf('\u2060\u200b') >= 0);
-      var hit = hasCanary || s.indexOf('\u00a6') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
+      var hit = hasCanary || s.indexOf('\u00a6') >= 0 || s.indexOf('\u2740') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
       if (!hit) return s;
       var out = needDesens ? desensRestoreTxt(s) : (needArmor ? lkArmorRestore(s) : s);
       if (hasCanary) out = lkCanaryStrip(out);
