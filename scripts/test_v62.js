@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.20 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.21 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.20' && String(verJson.packages.st).includes('@v7.20'),
-    `${fileName}: dist/version.json 为 7.20 且指向 @v7.20`);
+  check(verJson.version === '7.21' && String(verJson.packages.st).includes('@v7.21'),
+    `${fileName}: dist/version.json 为 7.21 且指向 @v7.21`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.20', `${fileName}: VERSION === 7.20`, api && api.VERSION);
-  check(pkg.name.includes('V7.20') && pkg.info.includes('V7.20') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.20 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.21', `${fileName}: VERSION === 7.21`, api && api.VERSION);
+  check(pkg.name.includes('V7.21') && pkg.info.includes('V7.21') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.21 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
@@ -1873,6 +1873,20 @@ async function runForTarget(fileName) {
     thSse2.body.includes('<lk_status>{"状态":"全裸、发情","内射":3}</lk_status>'),
     `${fileName}: V7.12 subApiWashStatus=true 发前洗净状态栏敏感词值(锁死JSON键名/标签, structHits===0) + 回包本地自动还原`,
     JSON.stringify({ thAud2, body2: thSse2.body }));
+
+  // 12q) 手机端副 API 弹窗防顶出屏幕、去 role="dialog"、底栏不截断与 body 合成层逃逸校验
+  const saDlgOk = api.openSubApiModal('conn');
+  const saBg = win.document.getElementById('ar6-subapi-bg');
+  const saHtml = saBg ? String(saBg.innerHTML || '') : '';
+  const saSrc = String(pkg.content || '');
+  check(saDlgOk === true && !!saBg && !saHtml.includes('role="dialog"') &&
+    saHtml.includes('data-ar6-sa-box="1"') && saHtml.includes('ar6-sa-ft-acts') &&
+    saHtml.includes('发前+回后双向 (推荐)') && saHtml.includes('📖 隐语密表') &&
+    saSrc.includes('align-items:flex-start!important') &&
+    saSrc.includes('flex-direction:column;align-items:flex-start'),
+    `${fileName}: 手机端副API弹窗去 role="dialog" + flex-start 防顶出屏幕 + 窄屏标签两行排版 + 双按钮底栏分组`,
+    JSON.stringify({ saDlgOk, hasBg: !!saBg, hasRoleDlg: saHtml.includes('role="dialog"') }));
+  api.closeSubApiModal();
 }
 
 (async () => {

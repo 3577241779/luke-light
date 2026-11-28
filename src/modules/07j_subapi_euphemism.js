@@ -2954,44 +2954,65 @@ function subApiWrapPostResponse(res, ev, plan, signal) {
    独立副 API 与隐语密表配置窗口 UI（移动端自适应 + 严格 ES5 + 零外泄铁律）
    ============================================================================ */
 var SUBAPI_DLG_CSS = [
-  '#ar6-subapi-bg{position:fixed;inset:0;z-index:2147483645;background:rgba(4,9,18,.76);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:12px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;box-sizing:border-box;}',
-  '#ar6-subapi-bg *{box-sizing:border-box;}',
-  '#ar6-subapi-bg .ar6-sa-box{width:min(540px,100%);max-height:min(88vh,740px);display:flex;flex-direction:column;background:linear-gradient(180deg,#0E1729,#090F1D);border:1px solid rgba(56,189,248,.38);border-radius:16px;color:#E2E8F0;box-shadow:0 24px 64px rgba(0,0,0,.65);overflow:hidden;}',
-  '#ar6-subapi-bg .ar6-sa-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.72);}',
-  '#ar6-subapi-bg .ar6-sa-title{font-size:14.5px;font-weight:800;letter-spacing:.02em;color:#F0F9FF;}',
-  '#ar6-subapi-bg .ar6-sa-x{width:30px;height:30px;border-radius:8px;border:1px solid rgba(148,163,184,.28);background:rgba(30,41,59,.65);color:#CBD5E1;font-size:18px;line-height:1;cursor:pointer;}',
-  '#ar6-subapi-bg .ar6-sa-banner{margin:10px 14px 0;padding:8px 10px;border-radius:9px;background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.36);color:#A7F3D0;font-size:11.5px;line-height:1.5;}',
-  '#ar6-subapi-bg .ar6-sa-tabs{display:flex;gap:6px;padding:10px 14px 0;}',
-  '#ar6-subapi-bg .ar6-sa-tab{flex:1;padding:7px 8px;border-radius:9px;border:1px solid rgba(148,163,184,.22);background:rgba(15,23,42,.6);color:#94A3B8;font-size:12px;font-weight:700;cursor:pointer;}',
+  '#ar6-subapi-bg{position:fixed!important;left:0!important;top:0;right:auto!important;bottom:auto!important;width:100vw;height:100vh;height:var(--TH-viewport-height,100dvh);z-index:2147483645!important;background:rgba(4,9,18,.78)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex!important;align-items:flex-start!important;justify-content:center!important;padding:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));overflow-y:auto!important;overflow-x:hidden!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;box-sizing:border-box!important;transform:none!important;clip:auto!important;clip-path:none!important;contain:none!important;}',
+  '#ar6-subapi-bg *{box-sizing:border-box;min-width:0;}',
+  '#ar6-subapi-bg .ar6-sa-box{position:relative!important;flex:0 1 auto!important;width:min(540px,100%)!important;max-width:540px!important;max-height:min(88dvh,740px);min-height:0!important;margin:auto 0!important;display:flex!important;flex-direction:column!important;background:linear-gradient(180deg,#0E1729,#090F1D);border:1px solid rgba(56,189,248,.38);border-radius:16px;color:#E2E8F0;box-shadow:0 24px 64px rgba(0,0,0,.65);overflow:hidden!important;transform:none!important;}',
+  '#ar6-subapi-bg .ar6-sa-hd{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.78);}',
+  '#ar6-subapi-bg .ar6-sa-title{font-size:14.5px;font-weight:800;letter-spacing:.02em;color:#F0F9FF;line-height:1.35;flex:1;min-width:0;}',
+  '#ar6-subapi-bg .ar6-sa-x{flex:0 0 32px;width:32px;height:32px;border-radius:8px;border:1px solid rgba(148,163,184,.28);background:rgba(30,41,59,.65);color:#CBD5E1;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}',
+  '#ar6-subapi-bg .ar6-sa-banner{flex:0 0 auto;margin:8px 14px 0;padding:7px 10px;border-radius:9px;background:rgba(16,185,129,.12);border:1px solid rgba(52,211,153,.36);color:#A7F3D0;font-size:11.5px;line-height:1.45;}',
+  '#ar6-subapi-bg .ar6-sa-tabs{flex:0 0 auto;display:flex;gap:6px;padding:8px 14px 0;}',
+  '#ar6-subapi-bg .ar6-sa-tab{flex:1;min-height:34px;padding:6px 6px;border-radius:9px;border:1px solid rgba(148,163,184,.22);background:rgba(15,23,42,.6);color:#94A3B8;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
   '#ar6-subapi-bg .ar6-sa-tab.on{border-color:#38BDF8;background:rgba(14,165,233,.2);color:#F0F9FF;}',
-  '#ar6-subapi-bg .ar6-sa-body{flex:1;overflow-y:auto;padding:12px 14px;-webkit-overflow-scrolling:touch;}',
-  '#ar6-subapi-bg .ar6-sa-fld{margin-bottom:10px;}',
-  '#ar6-subapi-bg .ar6-sa-lbl{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#CBD5E1;margin-bottom:4px;font-weight:600;}',
-  '#ar6-subapi-bg .ar6-sa-lbl i{font-style:normal;font-size:11px;color:#64748B;font-weight:400;}',
+  '#ar6-subapi-bg .ar6-sa-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:12px 14px;-webkit-overflow-scrolling:touch;}',
+  '#ar6-subapi-bg .ar6-sa-fld{margin-bottom:11px;}',
+  '#ar6-subapi-bg .ar6-sa-lbl{display:flex;align-items:baseline;justify-content:space-between;gap:4px 8px;flex-wrap:wrap;font-size:12px;color:#CBD5E1;margin-bottom:5px;font-weight:600;line-height:1.35;}',
+  '#ar6-subapi-bg .ar6-sa-lbl span{flex-shrink:0;white-space:nowrap;}',
+  '#ar6-subapi-bg .ar6-sa-lbl i{font-style:normal;font-size:11px;color:#94A3B8;font-weight:400;line-height:1.35;}',
   '#ar6-subapi-bg .ar6-sa-inp,#ar6-subapi-bg .ar6-sa-sel,#ar6-subapi-bg .ar6-sa-ta{width:100%;padding:8px 10px;border-radius:9px;border:1px solid rgba(148,163,184,.28);background:#070C17;color:#F8FAFC;font-size:13px;outline:none;}',
   '#ar6-subapi-bg .ar6-sa-inp:focus,#ar6-subapi-bg .ar6-sa-ta:focus{border-color:#38BDF8;}',
   '#ar6-subapi-bg .ar6-sa-ta{min-height:90px;resize:vertical;line-height:1.5;font-family:inherit;}',
   '#ar6-subapi-bg .ar6-sa-row{display:flex;gap:6px;align-items:center;}',
-  '#ar6-subapi-bg .ar6-sa-btn{padding:7px 11px;border-radius:9px;border:1px solid rgba(148,163,184,.3);background:rgba(30,41,59,.72);color:#E2E8F0;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}',
+  '#ar6-subapi-bg .ar6-sa-row .ar6-sa-inp{flex:1;min-width:0;}',
+  '#ar6-subapi-bg .ar6-sa-btn{padding:7px 11px;min-height:36px;border-radius:9px;border:1px solid rgba(148,163,184,.3);background:rgba(30,41,59,.72);color:#E2E8F0;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}',
   '#ar6-subapi-bg .ar6-sa-btn:hover{border-color:#7DD3FC;color:#FFF;}',
   '#ar6-subapi-bg .ar6-sa-btn.pri{border-color:#38BDF8;background:linear-gradient(135deg,#0284C7,#0C4A6E);color:#F0F9FF;font-weight:700;}',
   '#ar6-subapi-bg .ar6-sa-btn.ok{border-color:#34D399;background:rgba(16,185,129,.22);color:#ECFDF5;}',
-  '#ar6-subapi-bg .ar6-sa-btn.del{border-color:rgba(248,113,113,.35);color:#FCA5A5;padding:4px 8px;font-size:11px;}',
+  '#ar6-subapi-bg .ar6-sa-btn.del{border-color:rgba(248,113,113,.35);color:#FCA5A5;padding:4px 8px;min-height:28px;font-size:11px;}',
   '#ar6-subapi-bg .ar6-sa-segs{display:flex;gap:6px;margin-top:4px;}',
   '#ar6-subapi-bg .ar6-sa-segs-2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;}',
-  '#ar6-subapi-bg .ar6-sa-seg{flex:1;padding:7px 6px;border-radius:9px;border:1px solid rgba(148,163,184,.24);background:rgba(15,23,42,.55);color:#94A3B8;font-size:11.5px;font-weight:700;cursor:pointer;}',
+  '#ar6-subapi-bg .ar6-sa-seg{flex:1;min-height:38px;padding:7px 6px;border-radius:9px;border:1px solid rgba(148,163,184,.24);background:rgba(15,23,42,.55);color:#94A3B8;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;word-break:keep-all;}',
   '#ar6-subapi-bg .ar6-sa-seg.on{border-color:#F59E0B;background:rgba(245,158,11,.2);color:#FEF3C7;}',
-  '#ar6-subapi-bg .ar6-sa-chk{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.16);margin-bottom:8px;font-size:12px;}',
-  '#ar6-subapi-bg .ar6-sa-chk small{display:block;color:#94A3B8;font-size:11px;margin-top:2px;}',
+  '#ar6-subapi-bg .ar6-sa-chk{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:9px;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.16);margin-bottom:8px;font-size:12px;line-height:1.35;}',
+  '#ar6-subapi-bg .ar6-sa-chk > span:first-child{flex:1;min-width:0;}',
+  '#ar6-subapi-bg .ar6-sa-chk small{display:block;color:#94A3B8;font-size:11px;margin-top:3px;line-height:1.4;}',
   '#ar6-subapi-bg .ar6-sa-dict{display:flex;flex-direction:column;gap:6px;max-height:270px;overflow-y:auto;margin-top:8px;padding-right:2px;}',
   '#ar6-subapi-bg .ar6-sa-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:9px;background:rgba(15,23,42,.62);border:1px solid rgba(148,163,184,.18);font-size:12px;}',
   '#ar6-subapi-bg .ar6-sa-item.off{opacity:.48;}',
   '#ar6-subapi-bg .ar6-sa-pair{flex:1;min-width:0;line-height:1.4;word-break:break-word;}',
   '#ar6-subapi-bg .ar6-sa-pair b{color:#FCD34D;}',
   '#ar6-subapi-bg .ar6-sa-pair span{color:#7DD3FC;}',
-  '#ar6-subapi-bg .ar6-sa-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-top:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.72);}',
+  '#ar6-subapi-bg .ar6-sa-ft{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.82);}',
   '#ar6-subapi-bg .ar6-sa-st{font-size:11.5px;color:#94A3B8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-  '@media (max-width:600px){#ar6-subapi-bg .ar6-sa-inp,#ar6-subapi-bg .ar6-sa-sel,#ar6-subapi-bg .ar6-sa-ta{font-size:16px;}}'
+  '#ar6-subapi-bg .ar6-sa-ft-acts{display:flex;align-items:center;gap:8px;flex-shrink:0;}',
+  '@media (max-width:600px){' +
+    '#ar6-subapi-bg{padding:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}' +
+    '#ar6-subapi-bg .ar6-sa-box{border-radius:14px;}' +
+    '#ar6-subapi-bg .ar6-sa-hd{padding:10px 12px;}' +
+    '#ar6-subapi-bg .ar6-sa-title{font-size:13.5px;}' +
+    '#ar6-subapi-bg .ar6-sa-banner{margin:6px 10px 0;padding:6px 9px;font-size:11px;line-height:1.4;}' +
+    '#ar6-subapi-bg .ar6-sa-tabs{padding:7px 10px 0;gap:5px;}' +
+    '#ar6-subapi-bg .ar6-sa-tab{font-size:11.5px;padding:6px 4px;}' +
+    '#ar6-subapi-bg .ar6-sa-body{padding:10px 11px;}' +
+    '#ar6-subapi-bg .ar6-sa-lbl{flex-direction:column;align-items:flex-start;gap:2px;}' +
+    '#ar6-subapi-bg .ar6-sa-lbl span{white-space:normal;}' +
+    '#ar6-subapi-bg .ar6-sa-inp,#ar6-subapi-bg .ar6-sa-sel,#ar6-subapi-bg .ar6-sa-ta{font-size:16px;padding:7px 10px;}' +
+    '#ar6-subapi-bg .ar6-sa-seg{font-size:11px;padding:7px 5px;min-height:40px;}' +
+    '#ar6-subapi-bg .ar6-sa-ft{flex-direction:column;align-items:stretch;gap:7px;padding:9px 11px;}' +
+    '#ar6-subapi-bg .ar6-sa-st{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4;font-size:11px;}' +
+    '#ar6-subapi-bg .ar6-sa-ft-acts{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px;}' +
+    '#ar6-subapi-bg .ar6-sa-ft-acts .ar6-sa-btn{width:100%;min-height:40px;font-size:13px;}' +
+  '}'
 ].join('\n');
 
 function ensureSubApiDlgCss() {
@@ -3095,7 +3116,7 @@ function subApiModalBodyHTML() {
     '</div>' + mdlOpts + '</div>' +
     '<div class="ar6-sa-fld"><div class="ar6-sa-lbl"><span>转译工作方向</span><i>配低审副API首选双向（最保剧情）；高审副API选回后纯本地（0拒答）</i></div>' +
     '<div class="ar6-sa-segs-2">' +
-      '<button type="button" class="ar6-sa-seg' + (dir === 'both' ? ' on' : '') + '" data-sa="dir:both">🛸 发前 + 回后双向副API (推荐)</button>' +
+      '<button type="button" class="ar6-sa-seg' + (dir === 'both' ? ' on' : '') + '" data-sa="dir:both">🛸 发前+回后双向 (推荐)</button>' +
       '<button type="button" class="ar6-sa-seg' + (dir === 'pre_local' ? ' on' : '') + '" data-sa="dir:pre_local">🛡️ 发前副API+回后纯本地</button>' +
       '<button type="button" class="ar6-sa-seg' + (dir === 'pre' ? ' on' : '') + '" data-sa="dir:pre">仅发前隐语化</button>' +
       '<button type="button" class="ar6-sa-seg' + (dir === 'post' ? ' on' : '') + '" data-sa="dir:post">仅回后副API还原</button>' +
@@ -3132,22 +3153,24 @@ function subApiModalHTML() {
     : (au
       ? ('实发核验：已洗 ' + au.totalHits + ' 处（设定' + au.sysHits + '/历史' + au.histHits + '/本轮' + au.curHits + '）· 正文残留 ' + au.remainHits + (au.structHits > 0 ? (' · 状态栏含 ' + au.structHits + ' 处') : ''))
       : ('密库 ' + lexN + ' 词 · 预命中 ' + SUBAPI_RT.preLexHits + ' 处 · 盲译 ' + SUBAPI_RT.preCount + '/' + SUBAPI_RT.postCount + ' · 影子 ' + SUBAPI_RT.shadowHits));
-  return '<div class="ar6-sa-box" role="dialog" aria-modal="true" aria-label="副 API 隐语转译与密表配置">' +
+  return '<div class="ar6-sa-box" data-ar6-sa-box="1" aria-modal="true" aria-label="副 API 隐语转译与密表配置">' +
     '<div class="ar6-sa-hd">' +
-      '<span class="ar6-sa-title">🛸 副 API 隐语转译 · 星穹 ' + lexN + ' 词自创密表</span>' +
+      '<span class="ar6-sa-title">🛸 副 API 隐语转译 · 星穹 ' + lexN + ' 词密表</span>' +
       '<button type="button" class="ar6-sa-x" data-sa="close" aria-label="关闭">×</button>' +
     '</div>' +
     '<div class="ar6-sa-banner">🔒 <b>上游零知情铁律</b>：全量 ' + lexN + ' 词自创密表仅存本机并按本轮命中动态切片下发副 API；主上游绝不见对照表。</div>' +
     '<div class="ar6-sa-tabs">' +
       '<button type="button" class="ar6-sa-tab' + (tab === 'conn' ? ' on' : '') + '" data-sa="tab:conn">📡 接口配置</button>' +
-      '<button type="button" class="ar6-sa-tab' + (tab === 'dict' ? ' on' : '') + '" data-sa="tab:dict">📖 隐语密表 (' + lexN + ')</button>' +
+      '<button type="button" class="ar6-sa-tab' + (tab === 'dict' ? ' on' : '') + '" data-sa="tab:dict">📖 隐语密表</button>' +
       '<button type="button" class="ar6-sa-tab' + (tab === 'prompt' ? ' on' : '') + '" data-sa="tab:prompt">📝 提示词</button>' +
     '</div>' +
     '<div class="ar6-sa-body" id="ar6-sa-body">' + subApiModalBodyHTML() + '</div>' +
     '<div class="ar6-sa-ft">' +
       '<span class="ar6-sa-st" id="ar6-sa-st">' + esc(stTxt) + '</span>' +
-      '<button type="button" class="ar6-sa-btn' + (on ? ' ok' : '') + '" data-sa="toggle">' + (on ? '● 已开启' : '○ 开启') + '</button>' +
-      '<button type="button" class="ar6-sa-btn pri" data-sa="save">保存并关闭</button>' +
+      '<div class="ar6-sa-ft-acts">' +
+        '<button type="button" class="ar6-sa-btn' + (on ? ' ok' : '') + '" data-sa="toggle">' + (on ? '● 已开启' : '○ 开启') + '</button>' +
+        '<button type="button" class="ar6-sa-btn pri" data-sa="save">保存并关闭</button>' +
+      '</div>' +
     '</div>' +
   '</div>';
 }
@@ -3178,15 +3201,125 @@ function subApiSetModalStatus(txt) {
   } catch (e) {}
 }
 
+function subApiViewportH() {
+  var h = 0;
+  try {
+    if (HOST && HOST.visualViewport && HOST.visualViewport.height > 200) h = HOST.visualViewport.height;
+  } catch (e0) {}
+  try {
+    var ih = HOST && HOST.innerHeight ? Number(HOST.innerHeight) : 0;
+    if (ih > 200 && (!h || ih < h)) h = ih;
+  } catch (e1) {}
+  try {
+    var ch = DOC && DOC.documentElement && DOC.documentElement.clientHeight ? Number(DOC.documentElement.clientHeight) : 0;
+    if (ch > 200 && (!h || ch < h)) h = ch;
+  } catch (e2) {}
+  return h > 200 ? Math.floor(h) : 0;
+}
+
+function subApiViewportW() {
+  var w = 0;
+  try {
+    if (HOST && HOST.visualViewport && HOST.visualViewport.width > 200) w = HOST.visualViewport.width;
+  } catch (e0) {}
+  try {
+    var iw = HOST && HOST.innerWidth ? Number(HOST.innerWidth) : 0;
+    if (iw > 200 && (!w || iw < w)) w = iw;
+  } catch (e1) {}
+  try {
+    var cw = DOC && DOC.documentElement && DOC.documentElement.clientWidth ? Number(DOC.documentElement.clientWidth) : 0;
+    if (cw > 200 && (!w || cw < w)) w = cw;
+  } catch (e2) {}
+  return w > 200 ? Math.floor(w) : 0;
+}
+
+function subApiViewportTop() {
+  try {
+    if (HOST && HOST.visualViewport && typeof HOST.visualViewport.offsetTop === 'number' && isFinite(HOST.visualViewport.offsetTop)) {
+      return Math.max(0, Math.round(HOST.visualViewport.offsetTop));
+    }
+  } catch (e0) {}
+  return 0;
+}
+
+function subApiSetImp(el, prop, val) {
+  try {
+    if (!el || !el.style) return;
+    if (typeof el.style.setProperty === 'function') el.style.setProperty(prop, val, 'important');
+    else el.style[prop] = val;
+  } catch (e) {}
+}
+
+function subApiSyncModalViewport(bg) {
+  try {
+    if (!bg) return;
+    var vh = subApiViewportH();
+    var vw = subApiViewportW();
+    var vvTop = subApiViewportTop();
+    var maskH = (vh >= 260) ? (vh + 'px') : 'var(--TH-viewport-height,100dvh)';
+    var maskW = (vw >= 240) ? (vw + 'px') : '100vw';
+    var boxMaxH = (vh >= 260) ? (Math.max(240, vh - 20) + 'px') : 'calc(var(--TH-viewport-height,100dvh) - 20px)';
+    subApiSetImp(bg, 'top', vvTop + 'px');
+    subApiSetImp(bg, 'width', maskW);
+    subApiSetImp(bg, 'max-width', maskW);
+    subApiSetImp(bg, 'height', maskH);
+    var box = bg.querySelector && bg.querySelector('.ar6-sa-box');
+    if (box) subApiSetImp(box, 'max-height', boxMaxH);
+  } catch (e) {}
+}
+
+function subApiMountParent() {
+  try {
+    var b = DOC && DOC.body;
+    var de = DOC && DOC.documentElement;
+    if (!b) return de || null;
+    var canDe = !!(de && typeof de.appendChild === 'function');
+    if (canDe && typeof HOST !== 'undefined' && HOST && typeof HOST.getComputedStyle === 'function') {
+      var cs = HOST.getComputedStyle(b);
+      var hasLayer = false;
+      if (cs) {
+        var bf = cs.backdropFilter || cs.webkitBackdropFilter || '';
+        var ct = String(cs.contain || '');
+        var wc = String(cs.willChange || '');
+        var ctype = String(cs.containerType || '');
+        hasLayer = !!((cs.transform && cs.transform !== 'none') ||
+          (cs.filter && cs.filter !== 'none') ||
+          (bf && bf !== 'none') ||
+          (cs.perspective && cs.perspective !== 'none') ||
+          /(layout|paint|strict|content)/i.test(ct) ||
+          /(transform|filter|backdrop|perspective)/i.test(wc) ||
+          (ctype && ctype !== 'normal'));
+      }
+      var br = (typeof b.getBoundingClientRect === 'function') ? b.getBoundingClientRect() : null;
+      var vh = subApiViewportH();
+      var collapsed = !!(br && (br.height < 260 || br.width < 200));
+      var shortBody = !!(br && vh >= 320 && br.height > 0 && br.height < vh * 0.85);
+      if (hasLayer || collapsed || shortBody) return de;
+    }
+    return b;
+  } catch (eMp) { return (DOC && (DOC.body || DOC.documentElement)) || null; }
+}
+
 function subApiRepaintModal() {
   try {
     if (!SUBAPI_RT.modalEl) return;
     SUBAPI_RT.modalEl.innerHTML = subApiModalHTML();
+    subApiSyncModalViewport(SUBAPI_RT.modalEl);
   } catch (e) {}
 }
 
 function closeSubApiModal() {
   try {
+    if (SUBAPI_RT.onModalResize) {
+      try { if (HOST && HOST.removeEventListener) HOST.removeEventListener('resize', SUBAPI_RT.onModalResize); } catch (eR0) {}
+      try {
+        if (HOST && HOST.visualViewport && HOST.visualViewport.removeEventListener) {
+          HOST.visualViewport.removeEventListener('resize', SUBAPI_RT.onModalResize);
+          HOST.visualViewport.removeEventListener('scroll', SUBAPI_RT.onModalResize);
+        }
+      } catch (eR1) {}
+      SUBAPI_RT.onModalResize = null;
+    }
     var el = SUBAPI_RT.modalEl || (DOC && DOC.getElementById && DOC.getElementById('ar6-subapi-bg'));
     if (el && el.parentNode) el.parentNode.removeChild(el);
     SUBAPI_RT.modalEl = null;
@@ -3421,8 +3554,19 @@ function openSubApiModal(initTab) {
         return;
       }
     }, false);
-    DOC.body.appendChild(bg);
+    var mount = subApiMountParent();
+    if (!mount) return false;
+    mount.appendChild(bg);
     SUBAPI_RT.modalEl = bg;
+    subApiSyncModalViewport(bg);
+    SUBAPI_RT.onModalResize = function () { subApiSyncModalViewport(SUBAPI_RT.modalEl); };
+    try { if (HOST && HOST.addEventListener) HOST.addEventListener('resize', SUBAPI_RT.onModalResize, false); } catch (eEv0) {}
+    try {
+      if (HOST && HOST.visualViewport && HOST.visualViewport.addEventListener) {
+        HOST.visualViewport.addEventListener('resize', SUBAPI_RT.onModalResize, false);
+        HOST.visualViewport.addEventListener('scroll', SUBAPI_RT.onModalResize, false);
+      }
+    } catch (eEv1) {}
     return true;
   } catch (eOp) { return false; }
 }
