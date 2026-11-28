@@ -289,14 +289,8 @@ function classifyRequestTraffic(init, bodyObj, url) {
       root.stream !== false);
     var thBusy = !!(TH_GEN.active && TH_GEN.at && (nowMs() - TH_GEN.at < 8000));
 
-    /* Layer 6：酒馆助手后台生成事件窗 & 最新楼层仅嵌作插件数据容器 */
+    /* Layer 6：酒馆助手后台生成事件窗 & 最新楼层仅嵌作插件数据容器（大前端流式多轮正文绝不误判为后台脚本） */
     if (!inActiveChatGen && !reqType) {
-      if (thBusy) {
-        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '酒馆助手脚本', reason: 'th-js-generation' };
-      }
-      if (isFloorEmbeddedOnlyAsScriptData(sample)) {
-        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '数据整理插件', reason: 'floor-embedded-data' };
-      }
       var hasMainMemInject = MAIN_STORY_MEM_INJECT_RE.test(headBlob);
       var asstTurnCnt = 0, usrTurnCnt = 0;
       for (var mi = 0; mi < msgs.length; mi++) {
@@ -305,6 +299,13 @@ function classifyRequestTraffic(init, bodyObj, url) {
         else if (mr === 'user') usrTurnCnt++;
       }
       var looksLikeMultiTurnStory = hasMainMemInject || (asstTurnCnt >= 2 && usrTurnCnt >= 2);
+      var isFrontendStreamingStory = (root.stream !== false) && msgs.length >= 3 && (asstTurnCnt >= 1 || usrTurnCnt >= 2);
+      if (thBusy && !isFrontendStreamingStory) {
+        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '酒馆助手脚本', reason: 'th-js-generation' };
+      }
+      if (isFloorEmbeddedOnlyAsScriptData(sample)) {
+        return { isPlugin: true, isStory: false, kind: 'script_aux', label: '数据整理插件', reason: 'floor-embedded-data' };
+      }
       if (!looksLikeMultiTurnStory && GENERIC_AUX_TASK_RE.test(sample.first + ' ' + sample.last)) {
         if (root.stream === false || !isStBackend || msgs.length <= 12) {
           return { isPlugin: true, isStory: false, kind: 'script_aux', label: '表格/摘要插件', reason: 'generic-aux-keyword' };
@@ -737,6 +738,7 @@ function finish(ev, meta) {
     rec.preWireChars = meta.preWireChars || meta.sentChars || meta.rawChars;
     rec.sentChars = meta.sentChars || meta.rawChars;
   }
+  if (meta && meta.subApiAudit) rec.subApiAudit = meta.subApiAudit;
   /* 回显渠道：名字对不上不能当「被换」的证据，降到「回显」 */
   if (rec.code === 'diff' && rec.verifiable === 'no') {
     rec.code = 'echo';
@@ -2048,8 +2050,8 @@ function startWatcher(ev, meta, reqStart) {
       }
       var ended = EV_TICK.seq > evSeq0;
       if (ended && !evEndAt) evEndAt = EV_TICK.lastEndAt || t;
-      /* V5.72：流还在跑或 isBusy() 仍为真时，绝不因 20 秒思考停顿抢跑结算导致误发二次 /continue！ */
-      var streamAlive = !!(ev && ev.__peekStarted && !ev.__streamDone && !ev.userAborted);
+      /* V5.72/V7.0：流还在跑（含副 API 流式还原接力期）或 isBusy() 仍为真时，绝不抢跑结算！ */
+      var streamAlive = !!(ev && ((ev.__peekStarted && !ev.__streamDone) || ev.__subApiStreaming) && !ev.userAborted);
       var busyNow = isBusy();
       var progress = ev.internal ? (ev.sawText ? 1 : 0) : lastLen;
       var settled = progress > 0 && ((!busyNow && !streamAlive) || ended);
@@ -2440,17 +2442,23 @@ function lkCleanLatestAiFloor() {
     if (DISPOSED || !cfg || !cfg.enabled || cfg.safe) return false;
     var needDesens = (cfg.desens === 'a' && cfg.desensUnmask !== false);
     var needArmor = !!(typeof LK_ARMOR_BUSY !== 'undefined' && LK_ARMOR_BUSY && typeof lkArmorRestore === 'function');
+    var needSubApiRev = !!(typeof subApiPostActive === 'function' && subApiPostActive() && typeof subApiLexDecode === 'function' && typeof subApiLexScanHits === 'function');
     var hasCanaryStrip = (typeof lkCanaryStrip === 'function');
-    if (!needDesens && !needArmor && !hasCanaryStrip) return false;
+    if (!needDesens && !needArmor && !needSubApiRev && !hasCanaryStrip) return false;
     var ctx = stCtx();
     var chat = ctx && Array.isArray(ctx.chat) ? ctx.chat : null;
     if (!chat || !chat.length) return false;
     var cleanStr = function (s) {
       if (typeof s !== 'string' || !s) return s;
       var hasCanary = hasCanaryStrip && (s.indexOf('\u200b\u200c') >= 0 || s.indexOf('\u200d\u200b') >= 0 || s.indexOf('\u2060\u200b') >= 0);
-      var hit = hasCanary || s.indexOf('\u00a6') >= 0 || s.indexOf('\u2740') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
+      var hasSubRev = needSubApiRev && subApiLexScanHits(s).length > 0;
+      var hit = hasCanary || hasSubRev || s.indexOf('\u00a6') >= 0 || s.indexOf('\u2740') >= 0 || /\\u[0-9A-Fa-f]{4}/.test(s) || (needDesens && /未-成年|萝-莉|正-太|幼-女|幼-童|幼-儿园/.test(s));
       if (!hit) return s;
       var out = needDesens ? desensRestoreTxt(s) : (needArmor ? lkArmorRestore(s) : s);
+      if (hasSubRev) {
+        var sm = subApiMaskStruct(out);
+        out = subApiUnmaskStruct(subApiLexDecode(sm.text), sm.kept);
+      }
       if (hasCanary) out = lkCanaryStrip(out);
       return out;
     };
@@ -3316,12 +3324,27 @@ function handleFetch(next, thisArg, args) {
       return next.apply(thisArg, args);
     }
   } catch (eScopeQuick) { criticalWarn('范围前置放行', eScopeQuick); }
+  function runMainFlow(effRawBody, preMeta) {
+  var effParsed = parsedForInternal;
+  if (effRawBody && effRawBody !== rawBody) {
+    try { effParsed = JSON.parse(effRawBody); } catch (eEp) {}
+  }
   var planMs = 0;
   try {
     var planT0 = nowMs();
-    plan = planRequest(rawBody, url, internal);
+    plan = planRequest(effRawBody, url, internal);
     planMs = nowMs() - planT0;
-    if (cfg.enabled && plan.changed.length && plan.body !== rawBody) {
+    if (preMeta && preMeta.audit) plan.subApiAudit = preMeta.audit;
+    if (preMeta && preMeta.active) {
+      var au0 = preMeta.audit;
+      if (au0) {
+        plan.changed.push('副API隐语(整包已洗' + au0.totalHits + '处/残留' + au0.remainHits + (preMeta.preMs ? ('/' + preMeta.preMs + 'ms') : '') + ')');
+      } else if (preMeta.rewritten) {
+        plan.changed.push('副API发前盲译' + (preMeta.preMs ? (' ' + preMeta.preMs + 'ms') : '(缓存)'));
+      }
+      if (preMeta.shadowHits > 0) plan.changed.push('隐语影子复用 ' + preMeta.shadowHits + ' 条');
+    }
+    if (cfg.enabled && ((plan.changed.length && plan.body !== rawBody) || (preMeta && preMeta.active && plan.body !== rawBody))) {
       var newInit = {};
       for (var k in init) newInit[k] = init[k];
       newInit.body = plan.body;
@@ -3331,7 +3354,7 @@ function handleFetch(next, thisArg, args) {
     }
     var asstTail = '', effortHint = false, prefillThinkTag = '';
     try {
-      var bodyObj = (plan && plan.body && plan.body !== rawBody) ? JSON.parse(plan.body) : (parsedForInternal || (plan.body ? JSON.parse(plan.body) : null));
+      var bodyObj = (plan && plan.body && plan.body !== rawBody) ? JSON.parse(plan.body) : (effParsed || (plan.body ? JSON.parse(plan.body) : null));
       var msgsB = (bodyObj && bodyObj.request && Array.isArray(bodyObj.request.messages))
         ? bodyObj.request.messages : ((bodyObj && Array.isArray(bodyObj.messages)) ? bodyObj.messages : []);
       for (var mbi = msgsB.length - 1; mbi >= 0; mbi--) {
@@ -3344,13 +3367,13 @@ function handleFetch(next, thisArg, args) {
       effortHint = /EFFORT LEVEL|think silently/i.test(sysB);
       prefillThinkTag = detectPrefillThinkTag(bodyObj);
     } catch (eLB) {}
-    var reqCh = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, bodyObj || parsedForInternal, null) : null;
-    if (plan.model) lastReq = { url: url, raw: rawBody, model: plan.model, base: plan.base || '', asstTail: asstTail, effort: effortHint, ch: reqCh, authHeaders: extractSafeAuthHeaders(init) };
+    var reqCh = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, bodyObj || effParsed, null) : null;
+    if (plan.model) lastReq = { url: url, raw: effRawBody, model: plan.model, base: plan.base || '', asstTail: asstTail, effort: effortHint, ch: reqCh, authHeaders: extractSafeAuthHeaders(init) };
   } catch (e) { plan = null; }
 
   var selfContinuation = false;
   if (!internal && narrative && JL.selfPending) {
-    selfContinuation = nowMs() - JL.selfAt < 90000 && parsedForInternal && parsedForInternal.type === 'continue';
+    selfContinuation = nowMs() - JL.selfAt < 90000 && effParsed && effParsed.type === 'continue';
     if (selfContinuation || nowMs() - JL.selfAt >= 90000) JL.selfPending = false;
   }
   var started = nowMs();
@@ -3360,9 +3383,9 @@ function handleFetch(next, thisArg, args) {
   ev.trafficKind = (traffic && traffic.kind) || 'story';
   ev.trafficLabel = (traffic && traffic.label) || '正文';
   try {
-    ev.ch = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, parsedForInternal, null) : null;
-    ev.reqStream = !!(parsedForInternal && (parsedForInternal.stream === true || (parsedForInternal.request && parsedForInternal.request.stream === true)));
-    ev.reqThinkOff = (typeof lkDetectReqThinkOff === 'function') ? lkDetectReqThinkOff(parsedForInternal) : false;
+    ev.ch = (typeof lkClassifyChannel === 'function') ? lkClassifyChannel(url, effParsed, null) : null;
+    ev.reqStream = !!(effParsed && (effParsed.stream === true || (effParsed.request && effParsed.request.stream === true)));
+    ev.reqThinkOff = (typeof lkDetectReqThinkOff === 'function') ? lkDetectReqThinkOff(effParsed) : false;
   } catch (eChEv) {}
   capture318(ev, started);
   var allowLive = !internal || String(cfg && cfg.contentOnly) === 'off';
@@ -3408,8 +3431,8 @@ function handleFetch(next, thisArg, args) {
       if (res.status === 400 && plan && plan.tool && plan.toolForcedChoice && typeof toolMarkChoiceFallback === 'function') {
         try {
           toolMarkChoiceFallback(plan.toolBaseKey);
-          if (!internal && rawBody && pvpBodyReusable(init)) {
-            var fbPlan = planRequest(rawBody, url, internal);
+          if (!internal && effRawBody && pvpBodyReusable(init)) {
+            var fbPlan = planRequest(effRawBody, url, internal);
             if (fbPlan && fbPlan.body) {
               var fbInit = {};
               for (var fk in init) fbInit[fk] = init[fk];
@@ -3424,6 +3447,9 @@ function handleFetch(next, thisArg, args) {
                 if (res2.status >= 400) { ev.capture.status='failed';ev.capture.source='http';ev.capture.error='HTTP '+res2.status;ev.capture.settleReason='http-error';ev.capture.totalMs=nowMs()-started; readErrorBody(res2, ev); return res2; }
                 var pipe2 = lkAttachResponsePipeline(res2, ev, plan, internal, fbInit && fbInit.signal);
                 res2 = pipe2.res;
+                if (!internal && narrative && typeof subApiWrapPostResponse === 'function' && typeof subApiPostActive === 'function' && subApiPostActive()) {
+                  res2 = subApiWrapPostResponse(res2, ev, plan, fbInit && fbInit.signal);
+                }
                 var pk2 = pipe2.pk;
                 var watching2 = (typeof startWatcher === 'function') ? !!startWatcher(ev, plan, started) : false;
                 if (!watching2 && pk2 && typeof pk2.then === 'function') {
@@ -3452,6 +3478,9 @@ function handleFetch(next, thisArg, args) {
       /* V5.72 单层零死锁响应管道：单次 pull() 同步完成统计取样、工具解包、字段脱敏还原、15s 边界心跳与断流抢救，彻底消除双 tee / TransformStream 背压死锁 */
       var pipe = lkAttachResponsePipeline(res, ev, plan, internal, init && init.signal);
       res = pipe.res;
+      if (!internal && narrative && typeof subApiWrapPostResponse === 'function' && typeof subApiPostActive === 'function' && subApiPostActive()) {
+        res = subApiWrapPostResponse(res, ev, plan, init && init.signal);
+      }
       var pk = pipe.pk;
       /* Host chat polling has no request identity and can claim concurrent responses. */
       var watching = (typeof startWatcher === 'function') ? !!startWatcher(ev, plan, started) : false;
@@ -3491,6 +3520,15 @@ function handleFetch(next, thisArg, args) {
     try { if (pvpRound && pvpRound.tries) { PVP.failRun++; } } catch (ePv2) {}
     throw err;
   });
+  }
+  if (!internal && narrative && rawBody && typeof subApiPreActive === 'function' && subApiPreActive() && typeof subApiPreTransformBody === 'function') {
+    return subApiPreTransformBody(rawBody, init && init.signal).then(function (preRes) {
+      return runMainFlow((preRes && preRes.body) ? preRes.body : rawBody, preRes);
+    }, function () {
+      return runMainFlow(rawBody, null);
+    });
+  }
+  return runMainFlow(rawBody, null);
 }
 
 /* ---------------- 钩子安装 / 还原 ---------------- */

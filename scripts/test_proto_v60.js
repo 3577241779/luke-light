@@ -69,8 +69,8 @@ function loadTarget(fileName) {
 async function runForTarget(fileName) {
   console.log(`\n=== V6.0 协议化与破甲输入保护专项回归: ${fileName} ===`);
   const { api, pkg } = loadTarget(fileName);
-  check(api && api.VERSION === '6.9', `${fileName}: VERSION === 6.9`, api && api.VERSION);
-  check(pkg.name.includes('V6.9'), `${fileName}: 包名含 V6.9`, pkg.name);
+  check(api && api.VERSION === '7.0', `${fileName}: VERSION === 7.0`, api && api.VERSION);
+  check(pkg.name.includes('V7.0'), `${fileName}: 包名含 V7.0`, pkg.name);
   check(typeof api.lkProtoOn === 'function' && typeof api.lkProtoEligible === 'function' && typeof api.lkProtocolize === 'function' && typeof api.lkProtoStr === 'function',
     `${fileName}: V6.0 LKPROTO API 完整导出`);
 

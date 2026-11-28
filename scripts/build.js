@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v6.9/dist';
-const CHANGELOG_LATEST = 'V6.9 · 彻底根治凝视深渊协议化末尾 user 块 4 倍重复膨胀（大前端卡输入直降 ~75%）、诊断证据卡新增请求体原始/改写后/发出字节数对比，并补齐火星文楼层兜底清洗。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.0/dist';
+const CHANGELOG_LATEST = 'V7.0 · 重磅新增「副 API 隐语盲译中继」独立配置窗口与自创隐语密表（全 10 套皮肤专属命名）：对照表 100% 仅存本机并只发给副 API（主上游零知情），支持发前隐语改写 + 回后无缝流式还原 + 本地隐语影子缓存零成本复用历史 + 大前端标签/MVU变量结构锁死保护。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -26,6 +26,7 @@ const MODULE_ORDER = [
   '07g_lk522.js',
   '07h_lk523.js',
   '07i_lk526.js',
+  '07j_subapi_euphemism.js',
   '08_14_trunc.js',
   '09_8_probe.js',
   '10_16_base.js',
@@ -87,10 +88,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V6.9·ST酒馆适配.json',
+    fileName: '卢克之光 V7.0·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V6.9·ST酒馆适配',
-    info: '卢克之光 V6.9「光之守护」· 手机 ST 酒馆适配（深渊协议防 4 倍输入膨胀与体积诊断 / 10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹）',
+    name: '卢克之光 V7.0·ST酒馆适配',
+    info: '卢克之光 V7.0「星语暗渡」· 手机 ST 酒馆适配（副API双向盲译隐语窗口与自创密表 / 本地隐语影子缓存 / 深渊协议防膨胀 / 10皮肤专属火星文与副API命名 / 全8档严格单选互斥 / 破暗化光纯文全量转译 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -98,10 +99,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V6.9·TT酒馆适配.json',
+    fileName: '卢克之光 V7.0·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V6.9·TT酒馆适配',
-    info: '卢克之光 V6.9「光之守护」· TT 酒馆适配（深渊协议防 4 倍输入膨胀与体积诊断 / 10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / TT 双入口）',
+    name: '卢克之光 V7.0·TT酒馆适配',
+    info: '卢克之光 V7.0「星语暗渡」· TT 酒馆适配（副API双向盲译隐语窗口与自创密表 / 本地隐语影子缓存 / 深渊协议防膨胀 / 10皮肤专属火星文与副API命名 / 全8档严格单选互斥 / 破暗化光纯文全量转译 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -109,10 +110,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V6.9·桌面版.json',
+    fileName: '卢克之光 V7.0·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V6.9·桌面版',
-    info: '卢克之光 V6.9「光之守护」· 电脑桌面版（深渊协议防 4 倍输入膨胀与体积诊断 / 10皮肤专属火星文转译按键 / 全8档严格单选互斥 / 破暗化光纯文全量转译与注音/探针护航 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球与热更自愈 / 开源防骗免责首弹 / 真协议思考强度切换 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
+    name: '卢克之光 V7.0·桌面版',
+    info: '卢克之光 V7.0「星语暗渡」· 电脑桌面版（副API双向盲译隐语窗口与自创密表 / 本地隐语影子缓存 / 深渊协议防膨胀 / 10皮肤专属火星文与副API命名 / 全8档严格单选互斥 / 破暗化光纯文全量转译 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

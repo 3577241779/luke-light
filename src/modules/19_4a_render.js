@@ -378,9 +378,18 @@ function uiJailHTML() {
   }
   wireBar += '</div>';
   var marsOn = !!(cfg && cfg.mars === true);
+  var subCfgOk = (typeof subApiConfigured === 'function') ? subApiConfigured() : false;
+  var subOn = !!(cfg && cfg.subApiOn === true && subCfgOk);
+  var subDirNow = (typeof subApiDir === 'function') ? subApiDir() : 'both';
+  var subDirTxt = (subDirNow === 'pre_local') ? '发前+本地还原' : (subDirNow === 'pre' ? '仅发前' : (subDirNow === 'post' ? '仅回后' : '双向'));
+  var subSt = subOn ? ('运行中 · ' + subDirTxt) : (subCfgOk ? '待机' : '待配置');
+  var subDictN = (typeof subApiFullLexicon === 'function') ? subApiFullLexicon().total : 567;
+  var subCfgSt = subCfgOk ? (subDictN + ' 词密表') : '去设置 · ' + subDictN + '词';
   var saltGrid = '<div class="ar6-tgrid ar6-salt-row">' +
     swCell('salt:toggle', sk('saltLabel', '✦ 计时器光印 · 会话盐'), saltOn, '', saltSt, wireOff ? 'data-off="1"' : (!saltRawOn ? '' : '')) +
     swCell('mars:toggle', sk('marsLabel', '☄️ 火星文转译 · 星语密文'), marsOn, marsOn ? 'gold' : '', marsOn ? '已开启' : '待机') +
+    swCell('subapi:toggle', sk('subApiLabel', '🛸 副API隐语 · 盲译中继'), subOn, subOn ? 'gold' : '', subSt) +
+    swCell('subapi:cfg', sk('subApiCfgLabel', '⚙ 副API · 隐语密表'), false, '', subCfgSt) +
     '</div>';
   var wireSub = sk('wireSub', '在 JSON 传输层将敏感词或整包非 ASCII 粒子化转为 \\uXXXX 绕过中转关键词扫描，上游解析无损还原且不耗思考预算；「自动」在强力型及以上启全量粒子化；「火星文转译」将敏感词转为 ❀Base36❀ 密文穿透代理并实时还原。');
   h += '<div class="ar6-ugroup ar6-wire-card">' +

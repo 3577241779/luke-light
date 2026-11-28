@@ -1,11 +1,11 @@
 /* ===== 1_core.js ===== */
 /* ============================================================================
- * Anti-Route v6.9 — 1/4 Core
+ * Anti-Route v7.0 — 1/4 Core
  * 宿主 / 存储 / 模型归一化 / 保护区 / 静态区选择
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '6.9';
+var VERSION = '7.0';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -93,6 +93,19 @@ var CFG_DEFAULT = {
   salt: 'auto', /* off/auto：会话盐 */
   armor: 'auto', /* off/on/auto：auto 时强力型以上才转码 */
   mars: false, /* V6.7 火星文转译：将敏感词转为 ❀Base36❀ 密文穿透代理，回包实时无损还原 */
+  subApiOn: false, /* V7.0 副 API 双向盲译隐语中继（对照表仅发副 API，主上游零知情） */
+  subApiUrl: '',
+  subApiKey: '',
+  subApiModel: '',
+  subApiDir: 'both', /* both | pre_local | pre | post */
+  subApiScope: 'hybrid', /* hybrid=极速混合全洗 | full=全量深度盲译(含设定/老存档分段并发冷洗+永久缓存) */
+  subApiLexMode: 'core', /* core=精准硬红线词(默认，不误伤常规小说词，防推理模型解码死循环) | all=894全量极严词表 */
+  subApiShadow: true, /* 本地隐语影子缓存：自动复用历史隐语，防直白历史回传主上游 */
+  subApiOnlySens: false, /* true=仅命中敏感词/密表词时调用发前副 API */
+  subApiStyle: 'poetic', /* poetic | guStyle | modern */
+  subApiTimeout: 25000,
+  subApiCustomPre: '',
+  subApiCustomPost: '',
   zhuyin: 'auto', /* V6.2 注音层：auto（深渊/破暗化光自动启用）| on | off */
   canary: 'auto', /* V6.2 探针：auto（深渊/破暗化光自动启用）| on | off */
   demote: 'auto', /* off/align/demote：auto 时按破甲档决定降权 */ /* V5.29：默认零覆写，交给上游；低思考更容易破甲 */
@@ -501,6 +514,19 @@ function readCfg() {
   d.wire = ar6Pick(d.wire, ['off', 'mask', 'all', 'auto'], 'auto');
   d.armor = ar6Pick(d.armor, ['off', 'on', 'auto', 'wire', 'text'], 'auto');
   d.mars = d.mars === true;
+  d.subApiOn = d.subApiOn === true;
+  d.subApiUrl = String(d.subApiUrl == null ? '' : d.subApiUrl).slice(0, 300);
+  d.subApiKey = String(d.subApiKey == null ? '' : d.subApiKey).slice(0, 300);
+  d.subApiModel = String(d.subApiModel == null ? '' : d.subApiModel).slice(0, 160);
+  d.subApiDir = ar6Pick(d.subApiDir, ['both', 'pre_local', 'pre', 'post'], 'both');
+  d.subApiScope = ar6Pick(d.subApiScope, ['hybrid', 'full'], 'hybrid');
+  d.subApiLexMode = ar6Pick(d.subApiLexMode, ['core', 'all'], 'core');
+  d.subApiShadow = d.subApiShadow !== false;
+  d.subApiOnlySens = d.subApiOnlySens === true;
+  d.subApiStyle = ar6Pick(d.subApiStyle, ['poetic', 'guStyle', 'modern'], 'poetic');
+  d.subApiTimeout = Math.round(ar6Num(d.subApiTimeout, 25000, 5000, 90000));
+  d.subApiCustomPre = String(d.subApiCustomPre == null ? '' : d.subApiCustomPre).slice(0, 4000);
+  d.subApiCustomPost = String(d.subApiCustomPost == null ? '' : d.subApiCustomPost).slice(0, 4000);
   d.toolLoop = d.toolLoop === true;
   d.toolCover = d.toolCover === true;
   d.retry503 = ar6Pick(d.retry503, ['on', 'off'], 'on');
@@ -516,7 +542,7 @@ function readCfg() {
   d.charmLethal = d.charmLethal === true;
   d.contentOnly = ar6Pick(d.contentOnly, ['on', 'off'], 'on');
   d.presetCompat = ar6Pick(d.presetCompat, ['on', 'off'], 'on');
-  d.skin = ar6Pick(d.skin, ['ultra', 'plain', 'xianxia', 'xuanhuan', 'pink'], 'ultra');
+  d.skin = ar6Pick(d.skin, ['ultra', 'plain', 'xianxia', 'xuanhuan', 'pink', 'marvel', 'imperial', 'westfantasy', 'eldritch', 'cyberpunk'], 'ultra');
   d.ooc = ar6Pick(d.ooc, ['off', 'on'], 'off');
   try { sanitizeFloat(d); } catch (eS) {}
   try { sanitizeTrunc(d); } catch (eT) {}

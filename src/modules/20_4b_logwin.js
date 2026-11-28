@@ -1482,6 +1482,28 @@ function onPanelClick(e) {
     banner(cfg.mars ? marsOnTxt : marsOffTxt, cfg.mars ? 'ok' : 'gray');
     return;
   }
+  if (act === 'subapi:cfg') {
+    if (typeof openSubApiModal === 'function') openSubApiModal('conn');
+    return;
+  }
+  if (act === 'subapi:toggle') {
+    var wantSubOn = !(cfg && cfg.subApiOn === true);
+    if (wantSubOn && typeof subApiConfigured === 'function' && !subApiConfigured()) {
+      if (typeof openSubApiModal === 'function') openSubApiModal('conn');
+      banner('🛸 请先在弹窗填写副 API 地址与模型名，保存后即可开启隐语盲译', 'warn');
+      return;
+    }
+    cfg.subApiOn = wantSubOn;
+    saveCfg(); ensureHooks(); UI_SIG = {}; render();
+    var saOnTxt = (typeof sk === 'function')
+      ? sk('subApiBannerOn', '🛸 副 API 隐语盲译已开启：自创密表仅发副 API（上游零知情），发前改写 + 回后流式还原')
+      : '🛸 副 API 隐语盲译已开启：自创密表仅发副 API（上游零知情），发前改写 + 回后流式还原';
+    var saOffTxt = (typeof sk === 'function')
+      ? sk('subApiBannerOff', '🛸 副 API 隐语盲译已关闭：恢复直发')
+      : '🛸 副 API 隐语盲译已关闭：恢复直发';
+    banner(cfg.subApiOn ? saOnTxt : saOffTxt, cfg.subApiOn ? 'ok' : 'gray');
+    return;
+  }
   if (act.indexOf('sem:') === 0) {
     var wantSem = act.slice(4);
     cfg.semantic = (wantSem === 'toggle') ? ((typeof lkSemOn === 'function' && lkSemOn()) ? 'off' : 'on') : (wantSem === 'on' ? 'on' : 'off');

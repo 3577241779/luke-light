@@ -841,9 +841,11 @@ function planRequest(rawBody, url, internal) {
       try { if (lkSingleSection(body)) out.changed.push('单节折叠'); } catch (eSS) {}
       try { if (!toolWillRun && !protoWillRun && lkReceiptInject(body)) out.changed.push('尾句回执'); } catch (eRC) {}
       try { if (lkPrefixStable(body)) out.changed.push('前缀稳定'); } catch (ePS) {}
+      /* V7.0 互斥让路：若副 API 隐语已接管发前全上下文清洗，自动让位注音/火星文/码点护甲，杜绝双重编码冲突与注音说明外泄 */
+      var subApiPreHandling = !!(typeof subApiPreActive === 'function' && subApiPreActive());
       /* V6.2 注音层：仅编码自然语言段（受 LK_STRUCT_SAFE_RE 护栏保护），abyss 协议化模式下延迟至协议化后再单次贴注音说明避免 4 倍复制 */
       try {
-        if (!skipForPreset && !(cfg.grab > 0) && typeof lkZhuyinApply === 'function') {
+        if (!subApiPreHandling && !skipForPreset && !(cfg.grab > 0) && typeof lkZhuyinApply === 'function') {
           var zhHits = lkZhuyinApply(body, { skipNote: protoWillRun });
           if (zhHits && zhHits.length) {
             zhEncoded = true;
@@ -852,12 +854,12 @@ function planRequest(rawBody, url, internal) {
         }
       } catch (eZh) {}
       try {
-        if (!skipForPreset && typeof lkMarsOn === 'function' && lkMarsOn() && typeof lkMarsBody === 'function') {
+        if (!subApiPreHandling && !skipForPreset && typeof lkMarsOn === 'function' && lkMarsOn() && typeof lkMarsBody === 'function') {
           var marsHits = lkMarsBody(body);
           out.armor = true;
           out.mars = true;
           if (marsHits > 0) out.changed.push('火星文 ' + marsHits + ' 处');
-        } else if (!skipForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
+        } else if (!subApiPreHandling && !skipForPreset && typeof lkArmorOn === 'function' && lkArmorOn()) {
           var arHits = lkArmorApply(body);
           if (arHits > 0) { out.armor = true; out.changed.push('码点护甲 ' + arHits + ' 处'); }
         }
@@ -882,9 +884,10 @@ function planRequest(rawBody, url, internal) {
     } catch (eJail) { criticalWarn('破甲请求补丁', eJail); }
   }
 
-  /* 3.2.7 设定段脱敏（档 A）：在破甲之后、序列化之前跑；只改 system 段，正文不动 */
+  /* 3.2.7 设定段脱敏（档 A）：在破甲之后、序列化之前跑；副 API 隐语全上下文清洗生效时让位不插 ¦ */
   var dawnLiveDs = !!(cfg.allTool === true && !(cfg.grab > 0) && String(cfg.jailTool || 'off') === 'off');
-  if (cfg.enabled && cfg.desens === 'a' && (dawnLiveDs || cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss')) {
+  var subApiPreActiveNow = !!(typeof subApiPreActive === 'function' && subApiPreActive());
+  if (!subApiPreActiveNow && cfg.enabled && cfg.desens === 'a' && (dawnLiveDs || cfg.jail === 'mid' || cfg.jail === 'strong' || cfg.jail === 'supreme' || cfg.jail === 'gatanothor' || cfg.jail === 'abyss')) {
     try {
       var dch = desensPatchBody(body);
       if (dch.length) out.desens = true;

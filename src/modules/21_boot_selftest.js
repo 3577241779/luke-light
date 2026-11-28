@@ -2088,7 +2088,7 @@ function runSelfTest() {
     var oldJ = cfg.jail, oldE = cfg.enabled, oldRm = cfg.rm, oldFx = cfg.fx, oldAll = cfg.allTool;
     try {
       cfg.allTool = false;
-      if (VERSION !== '6.9') throw new Error('VERSION 应为 6.9，实际 ' + VERSION);
+      if (VERSION !== '7.0') throw new Error('VERSION 应为 7.0，实际 ' + VERSION);
       if (typeof updQuick !== 'function' || typeof updAutoOn !== 'function') throw new Error('光之星轨更新模块未挂载');
       if (typeof triggerSparklenceSummon !== 'function' || typeof ar6SfxPlay !== 'function' || typeof avatarSyncForm !== 'function') {
         throw new Error('V5.6 3D 神光棒与音效联动模块未挂载');
@@ -2819,6 +2819,11 @@ function dispose() {
     try { var skSum = DOC ? DOC.getElementById('ar6-skin-summon') : null; if (skSum && skSum.parentNode) skSum.parentNode.removeChild(skSum); } catch (eSkSum) {}
     BTN_BOUND = {}; BTN_OK = 0;
     try { closePvpDlg(); } catch (ePd) {}
+    try { if (typeof closeSubApiModal === 'function') closeSubApiModal(); } catch (eSaC) {}
+    try {
+      var sas = DOC ? DOC.getElementById('ar6-subapi-style') : null;
+      if (sas && sas.parentNode) sas.parentNode.removeChild(sas);
+    } catch (eSas) {}
     try {
       var pds = DOC ? DOC.getElementById('ar6-pvpdlg-style') : null;
       if (pds && pds.parentNode) pds.parentNode.removeChild(pds);
@@ -3504,6 +3509,41 @@ var AR6_API = {
   lkMarsApplyText: (typeof lkMarsApplyText === 'function') ? lkMarsApplyText : null,
   lkMarsRestore: (typeof lkMarsRestore === 'function') ? lkMarsRestore : null,
   lkMarsBody: (typeof lkMarsBody === 'function') ? lkMarsBody : null,
+  /* ---- V7.0 副 API 双向盲译隐语中继与自创对照表导出 ---- */
+  subApiOn: (typeof subApiOn === 'function') ? subApiOn : null,
+  subApiConfigured: (typeof subApiConfigured === 'function') ? subApiConfigured : null,
+  subApiDir: (typeof subApiDir === 'function') ? subApiDir : null,
+  subApiPreActive: (typeof subApiPreActive === 'function') ? subApiPreActive : null,
+  subApiPostActive: (typeof subApiPostActive === 'function') ? subApiPostActive : null,
+  subApiPostLocalOnly: (typeof subApiPostLocalOnly === 'function') ? subApiPostLocalOnly : null,
+  subApiCreateLocalStreamDecoder: (typeof subApiCreateLocalStreamDecoder === 'function') ? subApiCreateLocalStreamDecoder : null,
+  subApiEndpoint: (typeof subApiEndpoint === 'function') ? subApiEndpoint : null,
+  subApiReadDict: (typeof subApiReadDict === 'function') ? subApiReadDict : null,
+  subApiSaveDict: (typeof subApiSaveDict === 'function') ? subApiSaveDict : null,
+  subApiResetDict: (typeof subApiResetDict === 'function') ? subApiResetDict : null,
+  subApiFullLexicon: (typeof subApiFullLexicon === 'function') ? subApiFullLexicon : null,
+  subApiLexEncode: (typeof subApiLexEncode === 'function') ? subApiLexEncode : null,
+  subApiLexDecode: (typeof subApiLexDecode === 'function') ? subApiLexDecode : null,
+  subApiLexScanHits: (typeof subApiLexScanHits === 'function') ? subApiLexScanHits : null,
+  subApiGenerateAndSaveWords: (typeof subApiGenerateAndSaveWords === 'function') ? subApiGenerateAndSaveWords : null,
+  subApiScopeMode: (typeof subApiScopeMode === 'function') ? subApiScopeMode : null,
+  subApiSplitIntoChunks: (typeof subApiSplitIntoChunks === 'function') ? subApiSplitIntoChunks : null,
+  subApiShadowSet: (typeof subApiShadowSet === 'function') ? subApiShadowSet : null,
+  subApiShadowLookup: (typeof subApiShadowLookup === 'function') ? subApiShadowLookup : null,
+  subApiShadowClear: (typeof subApiShadowClear === 'function') ? subApiShadowClear : null,
+  subApiShadowCount: (typeof subApiShadowCount === 'function') ? subApiShadowCount : null,
+  subApiMaskStruct: (typeof subApiMaskStruct === 'function') ? subApiMaskStruct : null,
+  subApiUnmaskStruct: (typeof subApiUnmaskStruct === 'function') ? subApiUnmaskStruct : null,
+  subApiPreTransformBody: (typeof subApiPreTransformBody === 'function') ? subApiPreTransformBody : null,
+  subApiWrapPostResponse: (typeof subApiWrapPostResponse === 'function') ? subApiWrapPostResponse : null,
+  subApiBuildPrePrompt: (typeof subApiBuildPrePrompt === 'function') ? subApiBuildPrePrompt : null,
+  subApiBuildPostPrompt: (typeof subApiBuildPostPrompt === 'function') ? subApiBuildPostPrompt : null,
+  subApiTestConnection: (typeof subApiTestConnection === 'function') ? subApiTestConnection : null,
+  subApiFetchModels: (typeof subApiFetchModels === 'function') ? subApiFetchModels : null,
+  openSubApiModal: (typeof openSubApiModal === 'function') ? openSubApiModal : null,
+  closeSubApiModal: (typeof closeSubApiModal === 'function') ? closeSubApiModal : null,
+  SUBAPI_PRESETS: (typeof SUBAPI_PRESETS !== 'undefined') ? SUBAPI_PRESETS : null,
+  SUBAPI_RT: (typeof SUBAPI_RT !== 'undefined') ? SUBAPI_RT : null,
   getArmorBusy: function () { return (typeof LK_ARMOR_BUSY !== 'undefined') ? !!LK_ARMOR_BUSY : false; },
   /* ---- 导出表 ---- */
 };

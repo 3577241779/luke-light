@@ -241,6 +241,10 @@ function cardText(rec) {
     var pw = rec.preWireChars || rec.sentChars;
     lines.push('请求体积：原始 ' + fmtK(rec.rawChars) + ' → 改写后 ' + fmtK(pw) + ' → 发出 ' + fmtK(rec.sentChars) + ' 字符（×' + ratio + '）');
   }
+  if (rec.subApiAudit) {
+    var sa = rec.subApiAudit;
+    lines.push('副API隐语：整包已洗 ' + sa.totalHits + ' 处（设定 ' + sa.sysHits + ' · 历史 ' + sa.histHits + ' · 本轮 ' + sa.curHits + (sa.deepChunks > 0 ? (' · 深度冷洗 ' + sa.deepChunks + ' 段') : '') + ' · 影子复用 ' + sa.shadowHits + ' · 发送残留 ' + sa.remainHits + '）');
+  }
   if (pk && pk.raw) lines.push('原始片段：' + pk.raw.slice(0, 240));
   lines.push('版本：卢克之光 V' + VERSION + '（光之守护）');
   return lines.join('\n');
