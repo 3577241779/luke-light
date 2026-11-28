@@ -198,7 +198,7 @@ for (const fileName of TARGETS) {
   vm.runInNewContext(raw.content, win, { filename: fileName });
   const api = win.__AR6__;
   try {
-    check(api && api.VERSION === '7.01', `${fileName}: VERSION === 7.01`, api && api.VERSION);
+    check(api && api.VERSION === '7.1', `${fileName}: VERSION === 7.1`, api && api.VERSION);
     check(typeof api.lkDawnHTML === 'function' && typeof api.lkDawnAsk === 'function' && typeof api.lkVisualTier === 'function',
       `${fileName}: 导出 lkDawnHTML / lkDawnAsk / lkVisualTier`);
     check(api.getCfg().allTool === false, `${fileName}: 默认 allTool === false`);

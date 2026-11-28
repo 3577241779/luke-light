@@ -1,10 +1,10 @@
 {
-  "version": "7.01",
-  "releasedAt": "2026-11-28T07:07:39.192Z",
-  "changelog": "V7.01 · 优化「发前副API+回后纯本地 0ms 流式还原（pre_local）」原词锚定发前提示词（锁死标准 4 字密表词只顺滑语法、大幅拉升主模型沿用率与本地还原率），保留动作力度与剧情张力；同步修复旗舰词撞词并强化跨片防切碎守卫。",
+  "version": "7.1",
+  "releasedAt": "2026-11-28T09:48:05.137Z",
+  "changelog": "V7.1 · 修复副 API 回后还原在无命中映射表/纯保护壳场景下吐出「未包含小说草稿正文或映射表」的问题：无表时自动切无表直白还原模板、纯保护壳/极短正文 0ms 直通放行、拒答闸门新增元抱怨与极端缩水拦截保底主正文；同步集成 pre_local 原词锚定增强。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-desktop.json"
   }
 }

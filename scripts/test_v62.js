@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.01 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.1 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.01' && String(verJson.packages.st).includes('@v7.01'),
-    `${fileName}: dist/version.json 为 7.01 且指向 @v7.01`);
+  check(verJson.version === '7.1' && String(verJson.packages.st).includes('@v7.1'),
+    `${fileName}: dist/version.json 为 7.1 且指向 @v7.1`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.01', `${fileName}: VERSION === 7.01`, api && api.VERSION);
-  check(pkg.name.includes('V7.01') && pkg.info.includes('V7.01') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.01 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.1', `${fileName}: VERSION === 7.1`, api && api.VERSION);
+  check(pkg.name.includes('V7.1') && pkg.info.includes('V7.1') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.1 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
@@ -1738,6 +1738,64 @@ async function runForTarget(fileName) {
     !bothPrePrompt.includes('原词锚定') && bothPrePrompt.includes('本轮精确命中对照'),
     `${fileName}: V7.0 pre_local 原词锚定提示词：发前锁死标准4字密表词只顺滑语法，both 模式保持常规自由润色模板`,
     JSON.stringify({ preLocalHasAnchor: plSubPreSysPrompt.includes('原词锚定'), bothHasAnchor: bothPrePrompt.includes('原词锚定') }));
+
+  // 12o) 修复“本轮消息未包含小说草稿正文或【本轮术语映射表】”实机报错：
+  //      ① 无命中映射表时 postPrompt 绝不再提及“下方【本轮术语映射表】”；
+  //      ② 纯保护壳/极短正文 0ms 直通不骚扰副 API；
+  //      ③ 即使副 API 仍吐出“未包含草稿或映射表，请提供后再试”元抱怨，拒答闸门 100% 拦截丢弃并保底主模型正文！
+  const noHitPostPrompt = refInst.api.subApiBuildPostPrompt([]);
+  const hasHitPostPrompt = refInst.api.subApiBuildPostPrompt([{ w: '做爱', e: '拂花映月', c: '互动' }]);
+  check(!noHitPostPrompt.includes('根据下方【本轮术语映射表】') && noHitPostPrompt.includes('本轮不需要额外映射表') &&
+    hasHitPostPrompt.includes('【本轮术语映射表（右侧代称 -> 还原为左侧原设定用语）】'),
+    `${fileName}: V7.02 无命中映射表时 postPrompt 切为无表还原模板，杜绝向副 API 索要不存在的映射表`);
+
+  let metaSubPostCalls = 0;
+  const metaInst = loadTarget(fileName, {}, async (u, init) => {
+    const uStr = String(u || '');
+    const bObj = JSON.parse(String((init && init.body) || '{}'));
+    if (uStr.includes('sub.meta.local')) {
+      if (!bObj.stream) {
+        return new Response(JSON.stringify({ choices: [{ message: { content: bObj.messages[1].content } }] }), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        });
+      }
+      metaSubPostCalls++;
+      return new Response(makeChunkStream([
+        'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '本轮消息未包含小说草稿正文或【本轮术语映射表】。请提供完整草稿与映射表后再试。' }, finish_reason: 'stop' }] }) + '\n\n',
+        'data: [DONE]\n\n',
+      ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }
+    const reqTxt = String((init && init.body) || '');
+    if (reqTxt.includes('SHELL_ONLY_CASE')) {
+      return new Response(makeChunkStream([
+        'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '<details>全被折叠壳包住的内容</details>。<lk_status>HP:100</lk_status>' }, finish_reason: 'stop' }] }) + '\n\n',
+        'data: [DONE]\n\n',
+      ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }
+    return new Response(makeChunkStream([
+      'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '主模型生成的普通剧情章节：萧炎站在乌坦城广场上，抬头望向云岚宗方向的青色天空，拂花映月之夜已成过往。' }, finish_reason: 'stop' }] }) + '\n\n',
+      'data: [DONE]\n\n',
+    ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  });
+  const mcfg2 = metaInst.api.getCfg();
+  mcfg2.enabled = true; mcfg2.jail = 'off'; mcfg2.wire = 'off'; mcfg2.armor = 'off'; mcfg2.desens = 'off'; mcfg2.trunc = 'off'; mcfg2.pvp = false;
+  mcfg2.subApiOn = true; mcfg2.subApiUrl = 'https://sub.meta.local/v1'; mcfg2.subApiModel = 'picky-sub'; mcfg2.subApiDir = 'both';
+  const shellRes = await metaInst.win.fetch(URL, {
+    method: 'POST',
+    body: JSON.stringify({ model: 'gemini-4-argon', stream: true, messages: [{ role: 'user', content: 'SHELL_ONLY_CASE' }] }),
+  });
+  const shellSse = parseSseAll(await shellRes.text());
+  const shellSubCalls = metaSubPostCalls;
+  const metaRes = await metaInst.win.fetch(URL, {
+    method: 'POST',
+    body: JSON.stringify({ model: 'gemini-4-argon', stream: true, messages: [{ role: 'user', content: '正常剧情推进' }] }),
+  });
+  const metaSse = parseSseAll(await metaRes.text());
+  check(shellSubCalls === 0 && shellSse.body.includes('<details>全被折叠壳包住的内容</details>') &&
+    metaSubPostCalls === 1 && !metaSse.body.includes('未包含小说草稿正文') &&
+    metaSse.body.includes('萧炎站在乌坦城广场上') && metaSse.body.includes('做爱之夜已成过往'),
+    `${fileName}: V7.02 纯壳回复 0 次调副API直通 + 副API元抱怨“未包含草稿或映射表”100% 拦截丢弃并无损保底主正文`,
+    JSON.stringify({ shellSubCalls, shellBody: shellSse.body, metaSubPostCalls, metaBody: metaSse.body }));
 }
 
 (async () => {

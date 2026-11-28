@@ -70,8 +70,8 @@ function makeEnv() {
 
 const { api } = makeEnv();
 
-console.log('\n=== Refract v2 专项测试（V7.01） ===');
-ok('VERSION 为 7.01', api.VERSION === '7.01', api.VERSION);
+console.log('\n=== Refract v2 专项测试（V7.1） ===');
+ok('VERSION 为 7.1', api.VERSION === '7.1', api.VERSION);
 
 const sampleSystem = [
   '# 角色与叙事规则',
