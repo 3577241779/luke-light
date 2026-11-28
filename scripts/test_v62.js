@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.0 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.01 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.0' && String(verJson.packages.st).includes('@v7.0'),
-    `${fileName}: dist/version.json 为 7.0 且指向 @v7.0`);
+  check(verJson.version === '7.01' && String(verJson.packages.st).includes('@v7.01'),
+    `${fileName}: dist/version.json 为 7.01 且指向 @v7.01`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.0', `${fileName}: VERSION === 7.0`, api && api.VERSION);
-  check(pkg.name.includes('V7.0') && pkg.info.includes('V7.0') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.0 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.01', `${fileName}: VERSION === 7.01`, api && api.VERSION);
+  check(pkg.name.includes('V7.01') && pkg.info.includes('V7.01') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.01 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
@@ -1668,6 +1668,7 @@ async function runForTarget(fileName) {
   //      回包 0 次调用副API、跨 SSE 分片 4 字隐语无损还原、<lk_status> 跨片绝对保护、Shadow Cache 自动入库、配置持久化与 UI 显示
   let plSubPreCnt = 0;
   let plSubPostCnt = 0;
+  let plSubPreSysPrompt = '';
   const plStore = {};
   const plInst = loadTarget(fileName, plStore, async (u, init) => {
     const uStr = String(u || '');
@@ -1678,6 +1679,7 @@ async function runForTarget(fileName) {
         throw new Error('pre_local 模式禁止在回后流式调用副 API');
       }
       plSubPreCnt++;
+      plSubPreSysPrompt = String((bObj.messages && bObj.messages[0] && bObj.messages[0].content) || '');
       return new Response(JSON.stringify({ choices: [{ message: { content: bObj.messages[1].content } }] }), {
         status: 200, headers: { 'content-type': 'application/json' },
       });
@@ -1728,6 +1730,14 @@ async function runForTarget(fileName) {
     plReload.api.getCfg().subApiDir === 'pre_local',
     `${fileName}: V7.0 pre_local 全链路：发前1次/回后0次副API + 实时多片流式还原跨片隐语 + <lk_status>原样保护 + Shadow入库 + 持久化`,
     JSON.stringify({ plSubPreCnt, plSubPostCnt, frames: plContentFrames.length, plJoined, plShadowHit, reloadDir: plReload.api.getCfg().subApiDir }));
+
+  // 12n) pre_local 原词锚定提示词校验：发前系统提示词明确要求原字保留本轮 4 字密表词（绝不自由改写），而 both 模式保持常规自然改写模板
+  const bothPrePrompt = refInst.api.subApiBuildPrePrompt([{ w: '做爱', e: '拂花映月', c: '互动' }]);
+  check(plSubPreSysPrompt.includes('原词锚定') && plSubPreSysPrompt.includes('原字不改') &&
+    plSubPreSysPrompt.includes('本轮必须原字保留的密表词') && plSubPreSysPrompt.includes('拂花映月') && plSubPreSysPrompt.includes('星河登岸') &&
+    !bothPrePrompt.includes('原词锚定') && bothPrePrompt.includes('本轮精确命中对照'),
+    `${fileName}: V7.0 pre_local 原词锚定提示词：发前锁死标准4字密表词只顺滑语法，both 模式保持常规自由润色模板`,
+    JSON.stringify({ preLocalHasAnchor: plSubPreSysPrompt.includes('原词锚定'), bothHasAnchor: bothPrePrompt.includes('原词锚定') }));
 }
 
 (async () => {

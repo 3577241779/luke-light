@@ -1,10 +1,10 @@
 {
-  "version": "7.0",
-  "releasedAt": "2026-11-28T05:57:37.278Z",
-  "changelog": "V7.0 · 重磅新增「副 API 隐语盲译中继」独立配置窗口与自创隐语密表（全 10 套皮肤专属命名）：对照表 100% 仅存本机并只发给副 API（主上游零知情），支持发前隐语改写 + 回后无缝流式还原 + 本地隐语影子缓存零成本复用历史 + 大前端标签/MVU变量结构锁死保护。",
+  "version": "7.01",
+  "releasedAt": "2026-11-28T07:07:39.192Z",
+  "changelog": "V7.01 · 优化「发前副API+回后纯本地 0ms 流式还原（pre_local）」原词锚定发前提示词（锁死标准 4 字密表词只顺滑语法、大幅拉升主模型沿用率与本地还原率），保留动作力度与剧情张力；同步修复旗舰词撞词并强化跨片防切碎守卫。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.0/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.0/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.0/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.01/dist/luke-light-desktop.json"
   }
 }
