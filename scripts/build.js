@@ -6,8 +6,8 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC_MOD = path.join(ROOT, 'src/modules');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DESKTOP_OUT_DIR = process.env.LUKE_OUT_DIR || '';
-const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist';
-const CHANGELOG_LATEST = 'V7.1 · 修复副 API 回后还原在无命中映射表/纯保护壳场景下吐出「未包含小说草稿正文或映射表」的问题：无表时自动切无表直白还原模板、纯保护壳/极短正文 0ms 直通放行、拒答闸门新增元抱怨与极端缩水拦截保底主正文；同步集成 pre_local 原词锚定增强。';
+const REPO_RAW_CDN = 'https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.11/dist';
+const CHANGELOG_LATEST = 'V7.11 · 根治大前端巨型状态栏尾补撑破副 API 拒答/元抱怨拦截闸门的漏洞：改用原始副 API 流执行安检、无条件拦截「未包含草稿或映射表」元抱怨、新增流结束极端缩水硬保底，并彻底移除无表提示词中的粉红大象字眼，确保主模型正文与大前端标签 100% 完好不丢字。';
 
 const MODULE_ORDER = [
   '01_1_core.js',
@@ -88,10 +88,10 @@ const TARGETS = [
     id: 'st',
     platform: 'st',
     uiMode: 'mobile',
-    fileName: '卢克之光 V7.1·ST酒馆适配.json',
+    fileName: '卢克之光 V7.11·ST酒馆适配.json',
     distName: 'luke-light-st.json',
-    name: '卢克之光 V7.1·ST酒馆适配',
-    info: '卢克之光 V7.1「星语暗渡」· 手机 ST 酒馆适配（双向副API无表直白还原+元抱怨拦截闸门 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹）',
+    name: '卢克之光 V7.11·ST酒馆适配',
+    info: '卢克之光 V7.11「星语暗渡」· 手机 ST 酒馆适配（原始流拒答/元抱怨硬拦截+巨型状态栏防绕过 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹）',
     scoredHost: true,
     buttonEnabled: false,
   },
@@ -99,10 +99,10 @@ const TARGETS = [
     id: 'tt',
     platform: 'tt',
     uiMode: 'mobile',
-    fileName: '卢克之光 V7.1·TT酒馆适配.json',
+    fileName: '卢克之光 V7.11·TT酒馆适配.json',
     distName: 'luke-light-tt.json',
-    name: '卢克之光 V7.1·TT酒馆适配',
-    info: '卢克之光 V7.1「星语暗渡」· TT 酒馆适配（双向副API无表直白还原+元抱怨拦截闸门 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / TT 双入口）',
+    name: '卢克之光 V7.11·TT酒馆适配',
+    info: '卢克之光 V7.11「星语暗渡」· TT 酒馆适配（原始流拒答/元抱怨硬拦截+巨型状态栏防绕过 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / TT 双入口）',
     scoredHost: false,
     buttonEnabled: true,
   },
@@ -110,10 +110,10 @@ const TARGETS = [
     id: 'desktop',
     platform: 'desktop',
     uiMode: 'desktop',
-    fileName: '卢克之光 V7.1·桌面版.json',
+    fileName: '卢克之光 V7.11·桌面版.json',
     distName: 'luke-light-desktop.json',
-    name: '卢克之光 V7.1·桌面版',
-    info: '卢克之光 V7.1「星语暗渡」· 电脑桌面版（双向副API无表直白还原+元抱怨拦截闸门 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
+    name: '卢克之光 V7.11·桌面版',
+    info: '卢克之光 V7.11「星语暗渡」· 电脑桌面版（原始流拒答/元抱怨硬拦截+巨型状态栏防绕过 / 发前副API+回后纯本地0ms原词锚定 / 894词自创密表 / 本地隐语影子缓存 / 精准硬红线防长思考 / 10皮肤×18态3D雕像桌宠 / 四生合体单悬浮球 / 光鉴四维硬指纹 / 桌面宽屏拖拽）',
     scoredHost: false,
     buttonEnabled: false,
   },

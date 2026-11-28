@@ -1,10 +1,10 @@
 {
-  "version": "7.1",
-  "releasedAt": "2026-11-28T09:48:05.137Z",
-  "changelog": "V7.1 · 修复副 API 回后还原在无命中映射表/纯保护壳场景下吐出「未包含小说草稿正文或映射表」的问题：无表时自动切无表直白还原模板、纯保护壳/极短正文 0ms 直通放行、拒答闸门新增元抱怨与极端缩水拦截保底主正文；同步集成 pre_local 原词锚定增强。",
+  "version": "7.11",
+  "releasedAt": "2026-11-28T10:07:11.038Z",
+  "changelog": "V7.11 · 根治大前端巨型状态栏尾补撑破副 API 拒答/元抱怨拦截闸门的漏洞：改用原始副 API 流执行安检、无条件拦截「未包含草稿或映射表」元抱怨、新增流结束极端缩水硬保底，并彻底移除无表提示词中的粉红大象字眼，确保主模型正文与大前端标签 100% 完好不丢字。",
   "packages": {
-    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-st.json",
-    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-tt.json",
-    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.1/dist/luke-light-desktop.json"
+    "st": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.11/dist/luke-light-st.json",
+    "tt": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.11/dist/luke-light-tt.json",
+    "desktop": "https://cdn.jsdelivr.net/gh/3577241779/luke-light@v7.11/dist/luke-light-desktop.json"
   }
 }

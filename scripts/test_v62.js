@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.1 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.11 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.1' && String(verJson.packages.st).includes('@v7.1'),
-    `${fileName}: dist/version.json 为 7.1 且指向 @v7.1`);
+  check(verJson.version === '7.11' && String(verJson.packages.st).includes('@v7.11'),
+    `${fileName}: dist/version.json 为 7.11 且指向 @v7.11`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.1', `${fileName}: VERSION === 7.1`, api && api.VERSION);
-  check(pkg.name.includes('V7.1') && pkg.info.includes('V7.1') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.1 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.11', `${fileName}: VERSION === 7.11`, api && api.VERSION);
+  check(pkg.name.includes('V7.11') && pkg.info.includes('V7.11') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.11 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
@@ -1739,17 +1739,19 @@ async function runForTarget(fileName) {
     `${fileName}: V7.0 pre_local 原词锚定提示词：发前锁死标准4字密表词只顺滑语法，both 模式保持常规自由润色模板`,
     JSON.stringify({ preLocalHasAnchor: plSubPreSysPrompt.includes('原词锚定'), bothHasAnchor: bothPrePrompt.includes('原词锚定') }));
 
-  // 12o) 修复“本轮消息未包含小说草稿正文或【本轮术语映射表】”实机报错：
-  //      ① 无命中映射表时 postPrompt 绝不再提及“下方【本轮术语映射表】”；
+  // 12o) 修复“本轮消息未包含小说草稿正文或【本轮术语映射表】”实机报错（含大前端巨型状态栏防膨胀绕过闸门！）：
+  //      ① 无命中映射表时 postPrompt 绝不再提及“映射表”三字（防粉红大象效应）；
   //      ② 纯保护壳/极短正文 0ms 直通不骚扰副 API；
-  //      ③ 即使副 API 仍吐出“未包含草稿或映射表，请提供后再试”元抱怨，拒答闸门 100% 拦截丢弃并保底主模型正文！
+  //      ③ 即使主回复附带 1,600 字巨型 <lk_status>/<UpdateVariable> 块、副 API 仍吐出 39 字“未包含草稿或映射表”，
+  //         拒答闸门在原始副回复上直接 100% 拦截丢弃（绝不被 um.flush 尾补状态栏撑大绕过）并无损保底主模型正文！
   const noHitPostPrompt = refInst.api.subApiBuildPostPrompt([]);
   const hasHitPostPrompt = refInst.api.subApiBuildPostPrompt([{ w: '做爱', e: '拂花映月', c: '互动' }]);
-  check(!noHitPostPrompt.includes('根据下方【本轮术语映射表】') && noHitPostPrompt.includes('本轮不需要额外映射表') &&
+  check(!noHitPostPrompt.includes('映射表') && noHitPostPrompt.includes('100% 原字不动原样输出') &&
     hasHitPostPrompt.includes('【本轮术语映射表（右侧代称 -> 还原为左侧原设定用语）】'),
-    `${fileName}: V7.02 无命中映射表时 postPrompt 切为无表还原模板，杜绝向副 API 索要不存在的映射表`);
+    `${fileName}: V7.11 无命中映射表时 postPrompt 彻底移除“映射表”字样防粉红大象效应`);
 
   let metaSubPostCalls = 0;
+  const hugeStatusBlock = '<lk_status>' + '角色状态数据项=正常|'.repeat(160) + '</lk_status><UpdateVariable>hp=100;mp=100;</UpdateVariable>';
   const metaInst = loadTarget(fileName, {}, async (u, init) => {
     const uStr = String(u || '');
     const bObj = JSON.parse(String((init && init.body) || '{}'));
@@ -1773,7 +1775,7 @@ async function runForTarget(fileName) {
       ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
     }
     return new Response(makeChunkStream([
-      'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '主模型生成的普通剧情章节：萧炎站在乌坦城广场上，抬头望向云岚宗方向的青色天空，拂花映月之夜已成过往。' }, finish_reason: 'stop' }] }) + '\n\n',
+      'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '主模型生成的完整剧情章节：萧炎站在乌坦城广场上，抬头望向云岚宗方向的青色天空，拂花映月之夜已成过往。' + hugeStatusBlock }, finish_reason: 'stop' }] }) + '\n\n',
       'data: [DONE]\n\n',
     ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
   });
@@ -1793,9 +1795,10 @@ async function runForTarget(fileName) {
   const metaSse = parseSseAll(await metaRes.text());
   check(shellSubCalls === 0 && shellSse.body.includes('<details>全被折叠壳包住的内容</details>') &&
     metaSubPostCalls === 1 && !metaSse.body.includes('未包含小说草稿正文') &&
-    metaSse.body.includes('萧炎站在乌坦城广场上') && metaSse.body.includes('做爱之夜已成过往'),
-    `${fileName}: V7.02 纯壳回复 0 次调副API直通 + 副API元抱怨“未包含草稿或映射表”100% 拦截丢弃并无损保底主正文`,
-    JSON.stringify({ shellSubCalls, shellBody: shellSse.body, metaSubPostCalls, metaBody: metaSse.body }));
+    metaSse.body.includes('萧炎站在乌坦城广场上') && metaSse.body.includes('做爱之夜已成过往') &&
+    metaSse.body.includes('<UpdateVariable>hp=100;mp=100;</UpdateVariable>'),
+    `${fileName}: V7.11 巨型大前端状态栏场景下：副API 39字元抱怨 100% 拦截丢弃（绝不被状态栏膨胀绕过）并完整保底主正文与状态栏`,
+    JSON.stringify({ shellSubCalls, metaSubPostCalls, head: metaSse.body.slice(0, 120) }));
 }
 
 (async () => {
