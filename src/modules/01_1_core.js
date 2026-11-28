@@ -1,11 +1,11 @@
 /* ===== 1_core.js ===== */
 /* ============================================================================
- * Anti-Route v7.11 — 1/4 Core
+ * Anti-Route v7.2 — 1/4 Core
  * 宿主 / 存储 / 模型归一化 / 保护区 / 静态区选择
  * 设计来自 v5/v6/v7 的实战教训
  * ========================================================================== */
 
-var VERSION = '7.11';
+var VERSION = '7.2';
 var TAG = '[AR6]';
 /* @PLATFORM_CONFIG_START@ */
 var PLATFORM = 'st';
@@ -102,6 +102,7 @@ var CFG_DEFAULT = {
   subApiLexMode: 'core', /* core=精准硬红线词(默认，不误伤常规小说词，防推理模型解码死循环) | all=894全量极严词表 */
   subApiShadow: true, /* 本地隐语影子缓存：自动复用历史隐语，防直白历史回传主上游 */
   subApiOnlySens: false, /* true=仅命中敏感词/密表词时调用发前副 API */
+  subApiWashStatus: false, /* true=安全清洗 <status>/<lk_status>/<details>/Markdown表格 中的敏感词文本值（锁死标签名与JSON键名，回包自动还原） */
   subApiStyle: 'poetic', /* poetic | guStyle | modern */
   subApiTimeout: 25000,
   subApiCustomPre: '',
@@ -523,6 +524,7 @@ function readCfg() {
   d.subApiLexMode = ar6Pick(d.subApiLexMode, ['core', 'all'], 'core');
   d.subApiShadow = d.subApiShadow !== false;
   d.subApiOnlySens = d.subApiOnlySens === true;
+  d.subApiWashStatus = d.subApiWashStatus === true;
   d.subApiStyle = ar6Pick(d.subApiStyle, ['poetic', 'guStyle', 'modern'], 'poetic');
   d.subApiTimeout = Math.round(ar6Num(d.subApiTimeout, 25000, 5000, 90000));
   d.subApiCustomPre = String(d.subApiCustomPre == null ? '' : d.subApiCustomPre).slice(0, 4000);

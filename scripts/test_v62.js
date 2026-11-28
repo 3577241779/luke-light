@@ -172,10 +172,10 @@ function makeChunkStream(chunks) {
 }
 
 async function runForTarget(fileName) {
-  console.log(`\n=== V7.11 专项全量回归校验: ${fileName} ===`);
+  console.log(`\n=== V7.2 专项全量回归校验: ${fileName} ===`);
   const verJson = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8'));
-  check(verJson.version === '7.11' && String(verJson.packages.st).includes('@v7.11'),
-    `${fileName}: dist/version.json 为 7.11 且指向 @v7.11`);
+  check(verJson.version === '7.2' && String(verJson.packages.st).includes('@v7.2'),
+    `${fileName}: dist/version.json 为 7.2 且指向 @v7.2`);
 
   const store = {};
   const banners = [];
@@ -183,9 +183,9 @@ async function runForTarget(fileName) {
   const { api, pkg, win } = loadTarget(fileName, store, async () => nextFetchRes(), banners);
 
   // 0) 元数据与 API 导出
-  check(api && api.VERSION === '7.11', `${fileName}: VERSION === 7.11`, api && api.VERSION);
-  check(pkg.name.includes('V7.11') && pkg.info.includes('V7.11') && !pkg.info.includes('V6.0'),
-    `${fileName}: 包名与 info 元数据统一升级为 V7.11 无 V6.0 残留`, pkg.info);
+  check(api && api.VERSION === '7.2', `${fileName}: VERSION === 7.2`, api && api.VERSION);
+  check(pkg.name.includes('V7.2') && pkg.info.includes('V7.2') && !pkg.info.includes('V6.0'),
+    `${fileName}: 包名与 info 元数据统一升级为 V7.2 无 V6.0 残留`, pkg.info);
   check(typeof api.lkZhOn === 'function' && typeof api.lkZhuyinApply === 'function' &&
     typeof api.lkCanaryOn === 'function' && typeof api.lkCanaryAttach === 'function' &&
     typeof api.lkCanaryCheck === 'function' && typeof api.lkCanaryStrip === 'function' &&
@@ -1799,6 +1799,80 @@ async function runForTarget(fileName) {
     metaSse.body.includes('<UpdateVariable>hp=100;mp=100;</UpdateVariable>'),
     `${fileName}: V7.11 巨型大前端状态栏场景下：副API 39字元抱怨 100% 拦截丢弃（绝不被状态栏膨胀绕过）并完整保底主正文与状态栏`,
     JSON.stringify({ shellSubCalls, metaSubPostCalls, head: metaSse.body.slice(0, 120) }));
+
+  // 12p) 副 API 内联 <think> 剥离（发前防泄原词 + 回后防冲开 90 字拒答闸门）+ 状态栏敏感词审计与可选深度值清洗
+  let thinkPreMainSent = '';
+  const thinkSubInst = loadTarget(fileName, {}, async (u, init) => {
+    const uStr = String(u || '');
+    const bObj = JSON.parse(String((init && init.body) || '{}'));
+    if (uStr.includes('sub.think.local')) {
+      if (!bObj.stream) {
+        // 模拟发前副 API 是思考模型，开头吐出含原始敏感词的 <think>...</think>
+        return new Response(JSON.stringify({
+          choices: [{ message: { content: '<think>玩家想把做爱和高潮改成纯洁文艺词，让我思考一下如何替换原词做爱与高潮……</think>\n夜色下二人拂花映月，情至深处迎来星河登岸。' } }],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      // 模拟回后副 API 先吐 160 字 <think>...</think>，随后紧跟 39 字元抱怨（旧版 V7.11 会在第 90 字 <think> 处提前开门放行报错！）
+      const longThink = '<think>' + '我检查了用户发来的消息，里面有很多系统占位符，让我先思考一下是不是缺少草稿正文和映射表……'.repeat(4) + '</think>\n';
+      return new Response(makeChunkStream([
+        'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: longThink.slice(0, 100) }, finish_reason: null }] }) + '\n\n',
+        'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: longThink.slice(100) }, finish_reason: null }] }) + '\n\n',
+        'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '本轮消息未包含小说草稿正文或【本轮术语映射表】。请提供完整草稿与映射表后再试。' }, finish_reason: 'stop' }] }) + '\n\n',
+        'data: [DONE]\n\n',
+      ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+    }
+    thinkPreMainSent = String((init && init.body) || '');
+    return new Response(makeChunkStream([
+      'data: ' + JSON.stringify({ choices: [{ index: 0, delta: { content: '主模型完整章节：月色下二人拂花映月，迎来星河登岸。<lk_status>{"状态":"素雪无尘、兰波暗涌","内射":3}</lk_status>' }, finish_reason: 'stop' }] }) + '\n\n',
+      'data: [DONE]\n\n',
+    ]), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  });
+  const tcfg = thinkSubInst.api.getCfg();
+  tcfg.enabled = true; tcfg.jail = 'off'; tcfg.wire = 'off'; tcfg.armor = 'off'; tcfg.desens = 'off'; tcfg.trunc = 'off'; tcfg.pvp = false;
+  tcfg.subApiOn = true; tcfg.subApiUrl = 'https://sub.think.local/v1'; tcfg.subApiModel = 'think-sub'; tcfg.subApiDir = 'both';
+  tcfg.subApiWashStatus = false;
+
+  // 第一轮：subApiWashStatus=false -> 核验应诚实报告 structHits >= 2，且发前副 API <think> 剥离 + 回后 <think>+元抱怨 100% 拦截！
+  const thRes1 = await thinkSubInst.win.fetch(URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      model: 'gemini-4-argon', stream: true,
+      messages: [
+        { role: 'system', content: '状态栏设定：<lk_status>{"状态":"全裸发情","内射":3}</lk_status>' },
+        { role: 'user', content: '推进做爱与高潮剧情' },
+      ],
+    }),
+  });
+  const thSse1 = parseSseAll(await thRes1.text());
+  const thAud1 = thinkSubInst.api.SUBAPI_RT.lastAudit;
+  check(!thinkPreMainSent.includes('<think>') && !thinkPreMainSent.includes('做爱') &&
+    !thSse1.body.includes('<think>') && !thSse1.body.includes('未包含小说草稿正文') &&
+    thSse1.body.includes('主模型完整章节') && thSse1.body.includes('做爱') && thSse1.body.includes('高潮') &&
+    thAud1 && thAud1.remainHits === 0 && thAud1.structHits >= 2,
+    `${fileName}: V7.12 副API <think> 发前防泄原词 + 回后防冲开闸门 100% 拦截元抱怨 + 审计诚实报告状态栏内敏感词数`,
+    JSON.stringify({ mainHasThink: thinkPreMainSent.includes('<think>'), body: thSse1.body, thAud1 }));
+
+  // 第二轮：开启 subApiWashStatus=true -> 状态栏值区全裸/发情被洗净（锁死 JSON 键名 "状态":/"内射":），回包自动还原！
+  tcfg.subApiWashStatus = true;
+  tcfg.subApiDir = 'pre_local';
+  thinkPreMainSent = '';
+  const thRes2 = await thinkSubInst.win.fetch(URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      model: 'gemini-4-argon', stream: true,
+      messages: [
+        { role: 'system', content: '状态栏设定：<lk_status>{"状态":"全裸发情","内射":3}</lk_status>' },
+        { role: 'user', content: '新输入推进做爱剧情' },
+      ],
+    }),
+  });
+  const thSse2 = parseSseAll(await thRes2.text());
+  const thAud2 = thinkSubInst.api.SUBAPI_RT.lastAudit;
+  check(thinkPreMainSent.includes('\\"内射\\":3') && !thinkPreMainSent.includes('全裸') && !thinkPreMainSent.includes('发情') &&
+    thAud2 && thAud2.remainHits === 0 && thAud2.structHits === 0 &&
+    thSse2.body.includes('<lk_status>{"状态":"全裸、发情","内射":3}</lk_status>'),
+    `${fileName}: V7.12 subApiWashStatus=true 发前洗净状态栏敏感词值(锁死JSON键名/标签, structHits===0) + 回包本地自动还原`,
+    JSON.stringify({ thAud2, body2: thSse2.body }));
 }
 
 (async () => {
